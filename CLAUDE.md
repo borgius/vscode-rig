@@ -56,4 +56,3 @@ All types in `src/types.ts`. Important ones:
 - @README.md -- Project overview and quick start
 - @docs/architecture.md -- Full system design
 - @docs/getting-started.md -- Installation and usage guide
-- @docs/retrospectives/ -- Design decisions and GStack comparison (phases 1-7)

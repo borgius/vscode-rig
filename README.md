@@ -13,6 +13,14 @@ Rig installs guardrails into a Claude Code project:
 
 Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patterns) L2 and L3 patterns.
 
+## Requirements
+
+- [Claude Code](https://claude.ai/code) CLI
+- Node.js 18+
+- [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
+- [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
+- [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server (strongly recommended; powers the scout agent and tool router fallback)
+
 ## Quick start
 
 ```bash
@@ -112,14 +120,6 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
   agents/
     scout.md             # Cross-repo scout agent
 ```
-
-## Requirements
-
-- [Claude Code](https://claude.ai/code) CLI
-- Node.js 18+
-- [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
-- [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
-- [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server (strongly recommended; powers the scout agent and tool router fallback)
 
 ## Development
 

@@ -238,7 +238,7 @@ Writes .harness.yaml with default enforcement config
 
 ## Design decisions
 
-Seven phase retrospectives are in `docs/retrospectives/`. Key decisions:
+Key design decisions:
 
 | Decision | Rationale |
 | -------- | ---------- |
@@ -252,8 +252,6 @@ Seven phase retrospectives are in `docs/retrospectives/`. Key decisions:
 ---
 
 ## Known limitations
-
-From retrospective action items:
 
 - No auto-test generation for coverage gaps
 - No mode-aware enforcement (same thresholds regardless of workflow phase)

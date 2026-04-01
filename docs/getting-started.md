@@ -157,4 +157,3 @@ Then remove hook registrations from `.claude/settings.json`. The `init` command 
 ## Next steps
 
 - Read [docs/architecture.md](architecture.md) for the full system design
-- Check [docs/retrospectives/](retrospectives/) for design decisions and GStack comparison notes
