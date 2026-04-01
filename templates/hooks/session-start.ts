@@ -6,6 +6,7 @@
  * Generated: {{GENERATED_DATE}}
  *
  * Detects environment (rtk, jcodemunch), auto-indexes CWD, initializes session cache.
+ * Detected tools: rtk={{RTK_PATH}} jcodemunch={{JCODEMUNCH_AVAILABLE}}
  */
 import { createRequire } from 'node:module';
 import { join } from 'node:path';

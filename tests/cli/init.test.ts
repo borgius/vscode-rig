@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, existsSync, readFileSync, writeFileSync
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { initCommand } from '../../src/cli/init.js';
+import type { ExecFn } from '../../src/session/environment.js';
 
 describe('initCommand', () => {
   let tempDir: string;
@@ -174,7 +175,7 @@ describe('initCommand', () => {
     }
   });
 
-  it('generates hook scripts that use constructors, not load/save', async () => {
+  it('generates hook scripts that use constructors with cwd, not load/save', async () => {
     await initCommand(tempDir, { force: false });
 
     const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
@@ -184,8 +185,8 @@ describe('initCommand', () => {
       expect(content).not.toContain('SessionCache.load()');
       expect(content).not.toContain('FileTracker.load()');
       expect(content).not.toContain('cache.save()');
-      // Must use constructors
-      expect(content).toContain('new SessionCache()');
+      // Must use constructors with cwd
+      expect(content).toContain('new SessionCache(cwd)');
     }
   });
 
@@ -340,5 +341,44 @@ console.log('stale old hook');
       // No flat-format entries should remain
       expect(entries.some((e: Record<string, unknown>) => 'command' in e && !('hooks' in e))).toBe(false);
     }
+  });
+
+  describe('environment-aware context', () => {
+    it('sets RTK_PATH when rtk is available', async () => {
+      const exec: ExecFn = (cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/local/bin/rtk\n';
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        return '';
+      };
+      await initCommand(tempDir, { force: false, exec });
+
+      const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+      for (const hookFile of ['pre-tool-use.ts', 'session-start.ts']) {
+        const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
+        expect(content).toContain('/usr/local/bin/rtk');
+      }
+    });
+
+    it('omits rtk path when rtk is not available', async () => {
+      const exec: ExecFn = () => { throw new Error('not found'); };
+      await initCommand(tempDir, { force: false, exec });
+
+      const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+      for (const hookFile of ['pre-tool-use.ts', 'session-start.ts']) {
+        const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
+        // Should still have the template structure but with unresolved placeholder
+        expect(content).toContain('Detected tools:');
+        // Should have unresolved placeholder (renderTemplate leaves unknown vars)
+        expect(content).toContain('{{RTK_PATH}}');
+        // Should NOT have the resolved rtk path from the "available" test
+        expect(content).not.toContain('/usr/local/bin/rtk');
+      }
+    });
+
+    it('works without exec parameter (real detection)', async () => {
+      // Should not throw — environment detection is best-effort
+      await initCommand(tempDir, { force: false });
+      expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
+    });
   });
 });

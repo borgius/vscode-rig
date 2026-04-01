@@ -7,6 +7,7 @@
  *
  * Intercepts tool calls and routes to optimal tools based on environment.
  * Config: .harness.yaml
+ * Detected tools: rtk={{RTK_PATH}} jcodemunch={{JCODEMUNCH_AVAILABLE}}
  */
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';

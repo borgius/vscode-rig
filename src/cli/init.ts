@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { renderTemplate } from './renderer.js';
 import { DEFAULT_CONFIG } from '../config.js';
 import { stringify as yamlStringify } from 'yaml';
+import { detectEnvironment, type ExecFn } from '../session/environment.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const TEMPLATES_DIR = resolve(__dirname, '..', '..', 'templates');
 
 interface InitOptions {
   force: boolean;
+  exec?: ExecFn;
 }
 
 export async function initCommand(projectDir: string, options: InitOptions): Promise<void> {
@@ -17,7 +19,25 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   const projectName = basename(projectDir);
   const generatedDate = new Date().toISOString().split('T')[0];
   const rigDistPath = resolve(__dirname, '..');
-  const renderContext = { PROJECT_NAME: projectName, GENERATED_DATE: generatedDate, RIG_DIST_PATH: rigDistPath };
+
+  // Build render context with environment-aware variables
+  const renderContext: Record<string, string> = {
+    PROJECT_NAME: projectName,
+    GENERATED_DATE: generatedDate,
+    RIG_DIST_PATH: rigDistPath,
+  };
+
+  try {
+    const env = await detectEnvironment(projectDir, options.exec);
+    if (env.rtkAvailable && env.rtkPath) {
+      renderContext.RTK_PATH = env.rtkPath;
+    }
+    if (env.jcodemunchAvailable) {
+      renderContext.JCODEMUNCH_AVAILABLE = 'true';
+    }
+  } catch {
+    // Environment detection is best-effort; templates render with available vars
+  }
 
   // Create directory structure
   const dirs = [
