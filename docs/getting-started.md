@@ -41,6 +41,7 @@ This generates:
 | `.claude/skills/verify-plus/` | Verification skill |
 | `.claude/skills/review-plus/` | Code review skill |
 | `.claude/skills/verify-harness/` | Installation verifier |
+| `.claude/skills/savings/` | Session token savings report |
 | `.claude/agents/scout.md` | Cross-repo scout agent |
 | `.claude/settings.json` | Hook registrations (merged, not overwritten) |
 | `.harness.yaml` | Enforcement configuration |
@@ -65,9 +66,10 @@ Skills are invoked as slash commands in Claude Code:
 /tdd+      -> Write tests, then implement
 /verify+   -> Verify the implementation works
 /review+   -> Review code quality
+/savings   -> Report token savings from rtk/jcodemunch this session
 ```
 
-Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. You can't run `/verify+` until you've visited `/tdd+`.
+Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. You can't run `/verify+` until you've visited `/tdd+`. `/savings` has no prerequisites and works from any phase.
 
 ## Configure enforcement
 

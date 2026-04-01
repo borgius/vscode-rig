@@ -140,6 +140,12 @@ Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are S
 
 **Files:** `src/skills/phase-tracker.ts`, `templates/skills/`
 
+### Standalone skills
+
+`savings` reports rtk and jcodemunch token savings for the current session. It has no phase prerequisite and is accessible at any time via `/savings`. The session-start hook captures a `MetricsBaseline` (rtk's cumulative saved-token count), and the post-tool-use hook increments rtk/jcodemunch call counters. The `/savings` skill computes the delta and formats the report via `formatSavingsReport()`.
+
+**Files:** `src/session/metrics.ts`, `templates/skills/savings/SKILL.md`
+
 ---
 
 ## Layer 4: Scout Agent
@@ -182,8 +188,10 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 ### Session (`src/session/`)
 
 `detectEnvironment()` checks for rtk, jcodemunch, and other tools via injectable
-`ExecFn`. `SessionCache` with 30-min TTL stores detection results.
-`handleSessionStart()` auto-indexes the project on first session.
+`ExecFn`. `SessionCache` with 30-min TTL stores detection results and metrics
+(rtk call count, jcodemunch query count, savings baseline).
+`handleSessionStart()` auto-indexes the project and captures a metrics baseline
+on first session.
 
 ### CLI (`src/cli/`)
 
@@ -211,6 +219,7 @@ copyTemplate() for each:
   - skills/verify-plus/SKILL.md
   - skills/review-plus/SKILL.md
   - skills/verify-harness/SKILL.md
+  - skills/savings/SKILL.md
   - agents/scout.md
      |
 renderTemplate() replaces {{VAR}} placeholders

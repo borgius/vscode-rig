@@ -87,8 +87,9 @@ Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warn
 | `tdd+` | Test-driven development | `superpowers:tdd` |
 | `verify+` | Installation verification | `superpowers:code-reviewer` |
 | `review+` | Code review | `superpowers:code-reviewer` |
+| `savings` | Session token savings report | -- |
 
-Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit.
+Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `savings` skill is standalone (no phase prerequisite).
 
 ## What gets installed
 
@@ -107,6 +108,7 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
     verify-plus/         # verify+ skill
     review-plus/         # review+ skill
     verify-harness/      # Installation verifier
+    savings/             # Session savings report
   agents/
     scout.md             # Cross-repo scout agent
 ```
