@@ -1,7 +1,7 @@
 {
   "name": "claude-stack-utils",
   "version": "0.1.0",
-  "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline for Claude Code",
+  "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline in Claude Code",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -11,7 +11,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "lint:md": "markdownlint-cli2 '**/*.md'"
   },
   "keywords": [
     "claude-code",
@@ -21,6 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "markdownlint-cli2": "^0.22.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },
