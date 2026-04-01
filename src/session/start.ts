@@ -12,7 +12,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   cache.setEnvironment(env);
 
   const lines = [
-    '[claude-stack-utils] Session initialized',
+    '[rig] Session initialized',
     `  rtk: ${env.rtkAvailable ? `available (${env.rtkPath})` : 'not found'}`,
     `  jcodemunch: ${env.jcodemunchAvailable ? 'available' : 'not found'}`,
   ];

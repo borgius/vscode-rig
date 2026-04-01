@@ -3,3 +3,9 @@ dist/
 *.js.map
 *.d.ts.map
 .harness.local.yaml
+
+# rig-generated files (installed, not source)
+.harness.yaml
+.claude/hooks/
+.claude/skills/
+.claude/agents/scout.md

@@ -1,4 +1,4 @@
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderTemplate } from './renderer.js';
@@ -30,6 +30,16 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 
   // Copy and render hook scripts
   const hookTemplates = ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts'];
+
+  // Prune old-format hooks (pre-scripts layout: files directly in .claude/hooks/)
+  const hooksDir = join(claudeDir, 'hooks');
+  for (const hookFile of hookTemplates) {
+    const oldPath = join(hooksDir, hookFile);
+    if (existsSync(oldPath)) {
+      unlinkSync(oldPath);
+    }
+  }
+
   for (const hookFile of hookTemplates) {
     const src = join(TEMPLATES_DIR, 'hooks', hookFile);
     const dest = join(claudeDir, 'hooks', 'scripts', hookFile);
@@ -104,14 +114,40 @@ function updateSettingsJson(claudeDir: string, projectName: string): void {
     if (!hooks[event]) {
       hooks[event] = [];
     }
-    const entries = hooks[event] as Array<Record<string, string>>;
+    const entries = hooks[event] as Array<Record<string, unknown>>;
+    const command = `npx tsx .claude/hooks/scripts/${script}`;
+
+    // Remove old-format entries (flat matcher+command without nested hooks array)
+    let i = entries.length;
+    while (i--) {
+      const e = entries[i];
+      if (
+        typeof e === 'object' &&
+        e !== null &&
+        'command' in e &&
+        typeof e.command === 'string' &&
+        e.command.includes(script) &&
+        !('hooks' in e)
+      ) {
+        entries.splice(i, 1);
+      }
+    }
+
+    // Check if new-format entry already exists
     const exists = entries.some(
-      e => typeof e === 'object' && e.command?.includes(script),
+      e =>
+        typeof e === 'object' &&
+        e !== null &&
+        'hooks' in e &&
+        Array.isArray((e as Record<string, unknown>).hooks) &&
+        ((e as Record<string, unknown>).hooks as Array<Record<string, string>>).some(
+          h => h.command?.includes(script),
+        ),
     );
     if (!exists) {
       entries.push({
         matcher: '',
-        command: `npx tsx .claude/hooks/scripts/${script}`,
+        hooks: [{ type: 'command', command }],
       });
     }
   }

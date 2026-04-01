@@ -1,9 +1,12 @@
 {
-  "name": "claude-stack-utils",
+  "name": "rig",
   "version": "0.1.0",
   "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline in Claude Code",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/cli/index.js",
+  "exports": {
+    "./*": "./dist/*"
+  },
   "bin": {
     "rig": "dist/cli/index.js"
   },

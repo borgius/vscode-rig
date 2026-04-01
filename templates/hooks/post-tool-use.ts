@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 /**
- * claude-stack-utils: PostToolUse hook
+ * rig: PostToolUse hook
  * Project: {{PROJECT_NAME}}
  * Generated: {{GENERATED_DATE}}
  *
  * Enforces stale test detection, constitutional rules, zero-defect.
  * Config: .harness.yaml
  */
-import { handlePostToolUse } from 'claude-stack-utils/enforcement/post-tool-use.js';
-import { FileTracker } from 'claude-stack-utils/enforcement/file-tracker.js';
-import { SessionCache } from 'claude-stack-utils/session/cache.js';
-import { loadConfig } from 'claude-stack-utils/config.js';
+import { handlePostToolUse } from 'rig/enforcement/post-tool-use.js';
+import { FileTracker } from 'rig/enforcement/file-tracker.js';
+import { SessionCache } from 'rig/session/cache.js';
+import { loadConfig } from 'rig/config.js';
 import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 
-const cache = SessionCache.load();
-const tracker = FileTracker.load();
+const cache = new SessionCache();
+const tracker = new FileTracker();
 const config = await loadConfig(resolve(process.cwd(), '.harness.yaml'));
 
-const input = JSON.parse(process.argv[2] ?? '{}');
+const input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
 const result = handlePostToolUse(input.tool_name, input.tool_input, tracker, cache, config);
 
 if (result) {

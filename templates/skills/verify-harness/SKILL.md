@@ -1,12 +1,12 @@
 ---
 name: verify-harness
-description: "Run after `claude-stack-utils init` to verify all hooks, skills, and agents are installed and working correctly in the live session."
+description: "Run after `rig init` to verify all hooks, skills, and agents are installed and working correctly in the live session."
 user-invocable: true
 ---
 
 # verify-harness — Post-Install Verification
 
-Run this skill after `claude-stack-utils init` to confirm everything is working.
+Run this skill after `rig init` to confirm everything is working.
 
 ## Procedure
 
