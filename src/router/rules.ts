@@ -54,10 +54,10 @@ export function getDefaultRules(): ToolRule[] {
       enforcement: 'advise',
     },
 
-    // ── File Modify (always block destructive operations) ──
+    // ── File Modify (Bash sed -i / awk > only — Claude Edit/Write tools are pass-through) ──
     {
       match: (tool: string, args: Record<string, unknown>) => {
-        return classifyIntent(tool, args) === 'file_modify';
+        return tool === 'Bash' && classifyIntent(tool, args) === 'file_modify';
       },
       intent: 'file_modify',
       resolutions: {
