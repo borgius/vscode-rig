@@ -1,0 +1,59 @@
+# rig -- Project Instructions
+
+## Overview
+
+Agent middleware for Claude Code. TypeScript, vitest, commander CLI.
+
+## Commands
+
+```bash
+npm test           # Run all tests (vitest run)
+npm run test:watch  # Watch mode
+npm run build      # Compile TypeScript to dist/
+npm run lint       # Type-check (tsc --noEmit)
+```
+
+## Architecture
+
+Four-layer middleware:
+
+1. **Tool Router** (`src/router/`) -- PreToolUse hook, intent classification, priority resolution (rtk > jcodemunch > claudeTool > fallback > allow)
+2. **Enforcement** (`src/enforcement/`) -- PostToolUse hook, composable pipeline: stale tests -> test scope -> constitutional -> zero-defect
+3. **Skill Chain** (`src/skills/`) -- Phase tracker validates transitions (brain+ -> plan+ -> tdd+ -> verify+ -> review+)
+4. **Scout** (`src/scout/`) -- Cross-repo indexing, CodebaseMap formatter, TTL cache
+
+Supporting: `src/config.ts` (YAML config), `src/session/` (environment detection, session cache), `src/cli/` (init command, template renderer)
+
+## Key Types
+
+All types in `src/types.ts`. Important ones:
+
+- `IntentType` -- file_read, text_search, file_discovery, file_modify
+- `EnforcementLevel` -- block, advise, silent
+- `Resolution` -- redirect, advise, block, allow
+- `ToolRule` -- match pattern + resolutions per environment
+- `CodebaseMap` -- languages, symbols, entryPoints, keyExports, dependencies
+- `HarnessConfig` -- enforcement rules with levels and grace periods
+
+## Conventions
+
+- Config via `.harness.yaml` (YAML, layered merge with base + local)
+- Environment detection uses injectable `ExecFn` for testability
+- Session cache has 30-min TTL, in-memory only
+- All hooks read JSON from stdin, write JSON to stdout (Claude Code hook protocol)
+- Skill templates use `{{VAR}}` substitution via `renderTemplate()`
+- Enforcement levels: block (exit 2), advise (print + exit 0), silent (log + exit 0)
+
+## Testing
+
+- 240+ tests in `tests/` mirroring `src/` structure
+- Vitest with v8 coverage provider
+- Coverage gate: 80% statements/functions/lines, 75% branches
+- No mocks for environment detection -- use injectable `ExecFn`
+
+## Docs
+
+- @README.md -- Project overview and quick start
+- @docs/architecture.md -- Full system design
+- @docs/getting-started.md -- Installation and usage guide
+- @docs/retrospectives/ -- Design decisions and GStack comparison (phases 1-7)
