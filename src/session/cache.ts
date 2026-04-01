@@ -16,7 +16,7 @@ export class SessionCache {
   private editedFiles: Map<string, Set<string>> = new Map();
   private currentPhase: string | null = null;
   private metricsBaseline: MetricsBaseline | undefined;
-  private metricCounters = { rtkCalls: 0, jmCalls: 0 };
+  private metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
   private changedFiles: string[] = [];
   private toolsWarned = false;
 
@@ -77,7 +77,7 @@ export class SessionCache {
     return { ...this.metricCounters };
   }
 
-  incrementMetricCounter(counter: 'rtkCalls' | 'jmCalls'): void {
+  incrementMetricCounter(counter: 'rtkCalls' | 'jmCalls' | 'efficientCalls'): void {
     this.metricCounters[counter]++;
     this.save();
   }
@@ -105,7 +105,7 @@ export class SessionCache {
     this.editedFiles.clear();
     this.currentPhase = null;
     this.metricsBaseline = undefined;
-    this.metricCounters = { rtkCalls: 0, jmCalls: 0 };
+    this.metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
     this.toolsWarned = false;
     this.changedFiles = [];
     this.save();
@@ -155,7 +155,7 @@ export class SessionCache {
 
       this.currentPhase = data.currentPhase ?? null;
       this.metricsBaseline = data.metricsBaseline ?? undefined;
-      this.metricCounters = data.metricCounters ?? { rtkCalls: 0, jmCalls: 0 };
+      this.metricCounters = data.metricCounters ?? { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
       this.toolsWarned = data.toolsWarned ?? false;
       this.changedFiles = data.changedFiles ?? [];
     } catch {

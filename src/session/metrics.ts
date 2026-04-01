@@ -16,7 +16,7 @@ export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {
 export function incrementMetric(
   toolName: string,
   toolInput: Record<string, unknown>,
-): 'rtkCalls' | 'jmCalls' | null {
+): 'rtkCalls' | 'jmCalls' | 'efficientCalls' | null {
   if (toolName === 'Bash' && typeof toolInput.command === 'string') {
     if (/\brtk\b/.test(toolInput.command)) {
       return 'rtkCalls';
@@ -25,13 +25,27 @@ export function incrementMetric(
   if (toolName.startsWith('mcp__jcodemunch__')) {
     return 'jmCalls';
   }
+  // Track efficient native tool usage on code files
+  if (toolName === 'Read' && typeof toolInput.file_path === 'string') {
+    if (isCodeFile(toolInput.file_path)) return 'efficientCalls';
+  }
+  if (toolName === 'Grep') {
+    return 'efficientCalls';
+  }
+  if (toolName === 'Glob') {
+    return 'efficientCalls';
+  }
   return null;
+}
+
+function isCodeFile(filePath: string): boolean {
+  return /\.(ts|tsx|js|jsx|py|rs|go|java|rb|php|c|cpp|h|cs|swift|kt)$/i.test(filePath);
 }
 
 export function formatSavingsReport(
   baseline: MetricsBaseline,
   currentSaved: number,
-  counters: { rtkCalls: number; jmCalls: number },
+  counters: { rtkCalls: number; jmCalls: number; efficientCalls: number },
 ): string {
   const delta = currentSaved - baseline.totalSaved;
   const lines: string[] = ['[rig] Session Savings'];
@@ -46,6 +60,10 @@ export function formatSavingsReport(
 
   if (counters.jmCalls > 0) {
     lines.push(`  jcodemunch: ${counters.jmCalls} queries`);
+  }
+
+  if (counters.efficientCalls > 0) {
+    lines.push(`  efficient tools: ${counters.efficientCalls} calls (Read/Grep/Glob on code files)`);
   }
 
   return lines.join('\n');

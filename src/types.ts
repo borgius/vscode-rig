@@ -72,7 +72,7 @@ export interface SessionCacheFile {
   editedFiles: Record<string, string[]>;
   currentPhase: string | null;
   metricsBaseline: MetricsBaseline | null;
-  metricCounters: { rtkCalls: number; jmCalls: number };
+  metricCounters: { rtkCalls: number; jmCalls: number; efficientCalls: number };
   toolsWarned: boolean;
   changedFiles: string[];
 }

@@ -57,12 +57,32 @@ describe('incrementMetric', () => {
   });
 
   it('returns null for unrelated tools', () => {
-    const result = incrementMetric('Read', { file_path: '/some/file.ts' });
+    const result = incrementMetric('Edit', { file_path: '/some/file.txt' });
     expect(result).toBeNull();
   });
 
   it('returns null for Bash without rtk', () => {
     const result = incrementMetric('Bash', { command: 'ls -la' });
+    expect(result).toBeNull();
+  });
+
+  it('detects efficient Read on code files', () => {
+    const result = incrementMetric('Read', { file_path: '/src/router/resolver.ts' });
+    expect(result).toBe('efficientCalls');
+  });
+
+  it('detects efficient Grep on code patterns', () => {
+    const result = incrementMetric('Grep', { pattern: 'classifyIntent' });
+    expect(result).toBe('efficientCalls');
+  });
+
+  it('detects efficient Glob on code patterns', () => {
+    const result = incrementMetric('Glob', { pattern: '**/*.test.ts' });
+    expect(result).toBe('efficientCalls');
+  });
+
+  it('returns null for Read on non-code files', () => {
+    const result = incrementMetric('Read', { file_path: '/package.json' });
     expect(result).toBeNull();
   });
 });

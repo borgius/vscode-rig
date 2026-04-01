@@ -49,4 +49,11 @@ describe('scout agent definition', () => {
   it('includes rtk usage instructions', () => {
     expect(content).toContain('rtk');
   });
+
+  it('includes Read, Glob, and Grep for efficient file access', () => {
+    const frontmatter = content.split('---')[1];
+    expect(frontmatter).toContain('Read');
+    expect(frontmatter).toContain('Glob');
+    expect(frontmatter).toContain('Grep');
+  });
 });
