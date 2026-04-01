@@ -49,7 +49,7 @@ export function handlePreToolUse(
       `${prefix} Tool Router: ${match.intent} detected`,
       `advise: use ${resolution.tool} — ${resolution.reason}`,
       enforcementLevel === 'block'
-        ? `This operation is blocked by .harness-conf.yaml. Use the recommended tool instead.`
+        ? `This operation is blocked by .harness.yaml. Use the recommended tool instead.`
         : `Consider using the recommended tool for better efficiency.`,
     ].join('\n');
   }

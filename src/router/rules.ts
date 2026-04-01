@@ -5,7 +5,7 @@ import { classifyIntent } from './intent.js';
  * Default routing rules — ported and evolved from damage-control-guardrails.
  *
  * Priority resolution for each rule: rtk > jcodemunch > claudeTool > fallback
- * Enforcement: block | advise | silent (configurable per-rule in .harness-conf.yaml)
+ * Enforcement: block | advise | silent (configurable per-rule in .harness.yaml)
  */
 export function getDefaultRules(): ToolRule[] {
   return [

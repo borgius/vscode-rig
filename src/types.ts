@@ -33,7 +33,7 @@ export type EnvResolution = Resolution | 'allow';
 // ── Tool Rule Types ──
 
 export interface ToolRule {
-  match: RegExp | ((tool: string, args: unknown) => boolean);
+  match: RegExp | ((tool: string, args: Record<string, unknown>) => boolean);
   intent: IntentType;
   resolutions: {
     _?: EnvResolution;
