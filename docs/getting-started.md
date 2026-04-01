@@ -4,13 +4,20 @@
 
 - [Claude Code](https://claude.ai/code) CLI installed and configured
 - Node.js 18+
-- [superpowers](https://github.com/obra/superpowers) -- base skills framework. **Required.** Every skill in the chain (`brain+`, `plan+`, `tdd+`, `verify+`, `review+`) wraps a `superpowers:*` skill. Without superpowers installed, the skill chain will not function.
+- [superpowers](https://github.com/obra/superpowers) -- base skills framework.
+  **Required.** Every skill in the chain (`brain+`, `plan+`, `tdd+`,
+  `verify+`, `review+`) wraps a `superpowers:*` skill. Without superpowers
+  installed, the skill chain will not function.
 - A project you want to add guardrails to
 
 Strongly recommended:
 
-- [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy. The tool router intercepts shell commands and redirects them through rtk when available, saving 60-90% on token usage for common dev operations.
-- [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server. Powers the scout agent for cross-repo indexing and serves as the tool router's fallback for `grep`/`find`/`cat` redirection.
+- [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy.
+  The tool router redirects shell commands through rtk when available,
+  saving 60-90% on token usage for common dev operations.
+- [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code
+  search MCP server. Powers the scout agent for cross-repo indexing and
+  serves as the tool router's fallback for `grep`/`find`/`cat` redirection.
 
 ## Install and initialize
 
