@@ -13,10 +13,19 @@ Optional but recommended:
 
 ## Install and initialize
 
-From your project's root directory:
-
 ```bash
-npx rig init
+# Clone and build rig
+git clone https://github.com/franklywatson/claude-rig.git
+cd claude-rig
+npm install
+npm run build
+
+# Link globally so `rig init` works anywhere
+npm link
+
+# Go to your project and initialize
+cd /path/to/your/project
+rig init
 ```
 
 This generates:
@@ -119,7 +128,7 @@ When a Claude Code session starts, the session-start hook:
 To regenerate templates (e.g., after updating rig):
 
 ```bash
-npx rig init --force
+rig init --force
 ```
 
 This overwrites existing hook and skill templates but preserves your `.harness.yaml` config and any custom settings in `.claude/settings.json`.

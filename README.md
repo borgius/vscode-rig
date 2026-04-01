@@ -16,8 +16,18 @@ Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patte
 ## Quick start
 
 ```bash
-# Install and initialize in your project
-npx rig init
+# Clone and build
+git clone https://github.com/franklywatson/claude-rig.git
+cd claude-rig
+npm install
+npm run build
+
+# Link globally so `rig init` works anywhere
+npm link
+
+# Initialize in your project
+cd /path/to/your/project
+rig init
 
 # Verify installation (in a Claude Code session)
 /verify-harness
