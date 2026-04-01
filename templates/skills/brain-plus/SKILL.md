@@ -5,6 +5,8 @@ argument-hint: "[feature description]"
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # brain+ — Context-Aware Design
 
 Wraps `superpowers:brainstorming`. Requires superpowers to be installed.

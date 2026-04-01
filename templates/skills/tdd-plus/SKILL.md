@@ -5,6 +5,8 @@ argument-hint: "[plan file path or task range]"
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # tdd+ — Disciplined Implementation
 
 Wraps `superpowers:test-driven-development`. Requires superpowers to be installed.

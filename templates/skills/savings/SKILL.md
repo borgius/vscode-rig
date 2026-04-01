@@ -5,6 +5,8 @@ argument-hint: ""
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # savings — Session Savings Report
 
 Report token savings from rtk and jcodemunch usage during this session.

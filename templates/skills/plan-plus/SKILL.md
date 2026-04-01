@@ -5,6 +5,8 @@ argument-hint: "[plan description]"
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # plan+ — Disciplined Planning
 
 Wraps `superpowers:writing-plans`. Requires superpowers to be installed.

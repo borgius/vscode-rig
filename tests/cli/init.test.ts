@@ -58,15 +58,17 @@ describe('initCommand', () => {
 
   it('does not overwrite existing files without --force', async () => {
     await initCommand(tempDir, { force: false });
-    // Modify a file
+    // Modify a file by appending custom content and removing the rig marker
+    // (simulating a user who customized the skill)
     const skillPath = join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md');
     const original = readFileSync(skillPath, 'utf-8');
-    writeFileSync(skillPath, original + '\n# Custom addition\n');
+    const customized = original.replace('<!-- rig-generated -->', '') + '\n# Custom addition\n';
+    writeFileSync(skillPath, customized);
 
     // Re-run init
     await initCommand(tempDir, { force: false });
 
-    // Should NOT have overwritten
+    // Should NOT have overwritten user-modified content
     const after = readFileSync(skillPath, 'utf-8');
     expect(after).toContain('Custom addition');
   });
@@ -272,6 +274,23 @@ console.log('stale old hook');
     expect(content).toContain('createRequire');
     expect(content).toContain('@rig-generated');
     expect(content).not.toContain('stale old hook');
+  });
+
+  it('updates unmodified rig-installed skills without --force', async () => {
+    await initCommand(tempDir, { force: false });
+
+    // Simulate a stale rig-installed skill that still has the rig watermark:
+    // the content differs from the current template but still has the marker.
+    const skillPath = join(tempDir, '.claude', 'skills', 'savings', 'SKILL.md');
+    writeFileSync(skillPath, '<!-- rig-generated -->\n# old savings skill content\n');
+
+    // Re-init without --force — should update because the file still has the marker
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(skillPath, 'utf-8');
+    expect(content).toContain('savings');
+    expect(content).toContain('rtk gain');
+    expect(content).not.toBe('<!-- rig-generated -->\n# old savings skill content\n');
   });
 
   it('preserves user-modified skill files without --force', async () => {

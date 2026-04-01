@@ -83,7 +83,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 function isRigGenerated(filePath: string): boolean {
   if (!existsSync(filePath)) return false;
   const content = readFileSync(filePath, 'utf-8');
-  return content.includes('@rig-generated');
+  return content.includes('@rig-generated') || content.includes('<!-- rig-generated -->');
 }
 
 function copyGeneratedTemplate(

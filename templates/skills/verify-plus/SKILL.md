@@ -5,6 +5,8 @@ argument-hint: "[plan file path]"
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # verify+ — Evidence-Based Verification
 
 Wraps `superpowers:verification-before-completion`. Requires superpowers to be installed.

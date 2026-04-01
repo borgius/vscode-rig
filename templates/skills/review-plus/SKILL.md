@@ -5,6 +5,8 @@ argument-hint: "[plan file path]"
 user-invocable: true
 ---
 
+<!-- rig-generated -->
+
 # review+ — Compliance Review
 
 Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed.
