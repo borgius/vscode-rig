@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
+ * @rig-generated
  * rig: SessionStart hook
  * Project: {{PROJECT_NAME}}
  * Generated: {{GENERATED_DATE}}
  *
  * Detects environment (rtk, jcodemunch), auto-indexes CWD, initializes session cache.
  */
-import { handleSessionStart } from 'rig/session/start.js';
-import { SessionCache } from 'rig/session/cache.js';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const { handleSessionStart } = require(join('{{RIG_DIST_PATH}}', 'session', 'start.js'));
+const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
 
 const cache = new SessionCache();
 const cwd = process.cwd();
 
-const output = await handleSessionStart(cwd, cache);
-
-console.error(output);
-process.exit(0);
+handleSessionStart(cwd, cache).then((output: string) => {
+  console.error(output);
+  process.exit(0);
+});

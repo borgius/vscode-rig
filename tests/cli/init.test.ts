@@ -8,7 +8,7 @@ describe('initCommand', () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'claude-stack-utils-test-'));
+    tempDir = mkdtempSync(join(tmpdir(), 'rig-test-'));
   });
 
   afterEach(() => {
@@ -158,20 +158,15 @@ describe('initCommand', () => {
     expect(existsSync(join(tempDir, '.claude', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
   });
 
-  it('generates hook scripts that import from rig, not claude-stack-utils', async () => {
+  it('generates hook scripts that import via createRequire from rig dist', async () => {
     await initCommand(tempDir, { force: false });
 
     const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
-      // Import lines should use 'rig', not 'claude-stack-utils'
-      const importLines = content.split('\n').filter(l => l.trim().startsWith('import '));
-      for (const line of importLines) {
-        expect(line).not.toContain('claude-stack-utils');
-        if (line.includes('router/') || line.includes('enforcement/') || line.includes('session/') || line.includes('config')) {
-          expect(line).toContain("'rig/");
-        }
-      }
+      // Should use createRequire + require() with rig dist path, not bare imports
+      expect(content).toContain('createRequire');
+      expect(content).toContain("require(join(");
     }
   });
 
@@ -219,6 +214,48 @@ describe('initCommand', () => {
     expect(existsSync(join(oldHooksDir, 'session-start.ts'))).toBe(false);
     // scripts/ dir still present
     expect(existsSync(join(oldHooksDir, 'scripts', 'pre-tool-use.ts'))).toBe(true);
+  });
+
+  it('overwrites stale hook scripts without --force', async () => {
+    // First init
+    await initCommand(tempDir, { force: false });
+
+    // Simulate stale artifact: replace hook content with outdated code
+    const hookPath = join(tempDir, '.claude', 'hooks', 'scripts', 'session-start.ts');
+    const staleContent = `#!/usr/bin/env node
+console.log('stale old hook');
+`;
+    writeFileSync(hookPath, staleContent);
+
+    // Re-init without --force should overwrite the stale file
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(hookPath, 'utf-8');
+    expect(content).toContain('createRequire');
+    expect(content).toContain('@rig-generated');
+    expect(content).not.toContain('stale old hook');
+  });
+
+  it('preserves user-modified skill files without --force', async () => {
+    await initCommand(tempDir, { force: false });
+
+    const skillPath = join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md');
+    writeFileSync(skillPath, '# My custom brain skill\n');
+
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(skillPath, 'utf-8');
+    expect(content).toBe('# My custom brain skill\n');
+  });
+
+  it('generates hook scripts with @rig-generated marker', async () => {
+    await initCommand(tempDir, { force: false });
+
+    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
+      const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
+      expect(content).toContain('@rig-generated');
+    }
   });
 
   it('migrates old flat-format hook entries to nested format', async () => {

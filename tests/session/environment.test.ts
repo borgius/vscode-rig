@@ -64,12 +64,12 @@ describe('detectEnvironment', () => {
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': '/usr/local/bin/jcodemunch',
-      'list_repos': JSON.stringify({ repos: ['local/claude-stack-utils'] }),
+      'list_repos': JSON.stringify({ repos: ['local/rig'] }),
     });
 
-    const env = await detectEnvironment('/home/jerome/projects/claude-stack-utils', exec);
+    const env = await detectEnvironment('/home/jerome/projects/rig', exec);
     expect(env.jcodemunchAvailable).toBe(true);
-    expect(env.jcodemunchKnownRepos).toContain('local/claude-stack-utils');
+    expect(env.jcodemunchKnownRepos).toContain('local/rig');
   });
 
   it('returns valid timestamp', async () => {

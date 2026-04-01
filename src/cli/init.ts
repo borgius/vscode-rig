@@ -16,7 +16,8 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   const claudeDir = join(projectDir, '.claude');
   const projectName = basename(projectDir);
   const generatedDate = new Date().toISOString().split('T')[0];
-  const renderContext = { PROJECT_NAME: projectName, GENERATED_DATE: generatedDate };
+  const rigDistPath = resolve(__dirname, '..');
+  const renderContext = { PROJECT_NAME: projectName, GENERATED_DATE: generatedDate, RIG_DIST_PATH: rigDistPath };
 
   // Create directory structure
   const dirs = [
@@ -43,7 +44,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   for (const hookFile of hookTemplates) {
     const src = join(TEMPLATES_DIR, 'hooks', hookFile);
     const dest = join(claudeDir, 'hooks', 'scripts', hookFile);
-    copyTemplate(src, dest, renderContext, options.force);
+    copyGeneratedTemplate(src, dest, renderContext);
   }
 
   // Copy skill templates
@@ -53,7 +54,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     if (!existsSync(srcDir)) continue;
     const destDir = join(claudeDir, 'skills', skillDir);
     mkdirSync(destDir, { recursive: true });
-    copyTemplate(
+    copyUserTemplate(
       join(srcDir, 'SKILL.md'),
       join(destDir, 'SKILL.md'),
       renderContext,
@@ -66,7 +67,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   for (const agentFile of agentFiles) {
     const src = join(TEMPLATES_DIR, 'agents', agentFile);
     if (!existsSync(src)) continue;
-    copyTemplate(src, join(claudeDir, 'agents', agentFile), renderContext, options.force);
+    copyUserTemplate(src, join(claudeDir, 'agents', agentFile), renderContext, options.force);
   }
 
   // Write default config
@@ -79,13 +80,38 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   updateSettingsJson(claudeDir, projectName);
 }
 
-function copyTemplate(
+function isRigGenerated(filePath: string): boolean {
+  if (!existsSync(filePath)) return false;
+  const content = readFileSync(filePath, 'utf-8');
+  return content.includes('@rig-generated');
+}
+
+function copyGeneratedTemplate(
+  src: string,
+  dest: string,
+  context: Record<string, string>,
+): void {
+  // Always overwrite: hook scripts are generated code users shouldn't edit.
+  const content = readFileSync(src, 'utf-8');
+  writeFileSync(dest, renderTemplate(content, context));
+}
+
+function copyUserTemplate(
   src: string,
   dest: string,
   context: Record<string, string>,
   force: boolean,
 ): void {
-  if (existsSync(dest) && !force) return;
+  if (!force) {
+    if (!existsSync(dest)) {
+      // File doesn't exist — write it
+      const content = readFileSync(src, 'utf-8');
+      writeFileSync(dest, renderTemplate(content, context));
+      return;
+    }
+    // File exists — only overwrite if it's a stale rig-generated file
+    if (!isRigGenerated(dest)) return;
+  }
   const content = readFileSync(src, 'utf-8');
   writeFileSync(dest, renderTemplate(content, context));
 }

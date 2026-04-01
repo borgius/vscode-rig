@@ -35,7 +35,7 @@ describe('renderTemplate', () => {
     const template = `#!/usr/bin/env node
 // Harness hook for {{PROJECT}}
 // Generated at {{DATE}}
-import { handlePreToolUse } from 'claude-stack-utils';
+import { handlePreToolUse } from 'rig';
 `;
     const result = renderTemplate(template, { PROJECT: 'my-app', DATE: '2026-03-31' });
     expect(result).toContain('// Harness hook for my-app');
