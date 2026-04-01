@@ -13,14 +13,19 @@
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
   },
-  "keywords": ["claude-code", "agent-harness", "guardrails"],
+  "keywords": [
+    "claude-code",
+    "agent-harness",
+    "guardrails"
+  ],
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^3.0.0"
   },
   "dependencies": {
+    "commander": "^14.0.3",
     "yaml": "^2.7.0"
   }
 }
