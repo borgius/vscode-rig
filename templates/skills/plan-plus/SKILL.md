@@ -80,3 +80,12 @@ Save the plan to `docs/plans/` and feed into `tdd+` for implementation.
 After completing plan+, the next step is:
 
 - Invoke `/tdd+` to implement the plan task-by-task with RED-GREEN-REFACTOR
+
+## Completion
+
+Report one of these states when the skill finishes:
+
+- **DONE** — Plan saved to `docs/plans/`, all validation checklist items in Phase C confirmed.
+- **DONE_WITH_CONCERNS** — Plan complete but has open questions or tasks needing refinement.
+- **BLOCKED** — Cannot proceed (missing design from brain+, unclear requirements).
+- **NEEDS_CONTEXT** — Need user input to resolve a task scope or dependency question.

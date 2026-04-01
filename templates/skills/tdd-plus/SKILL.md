@@ -95,3 +95,12 @@ Full suite runs happen during `verify+` phase, not here.
 After completing all plan tasks with tdd+:
 
 - Invoke `/verify+` to run full suite and verify against plan acceptance criteria
+
+## Completion
+
+Report one of these states when the skill finishes:
+
+- **DONE** — All plan tasks implemented with passing scoped tests. No constitutional violations.
+- **DONE_WITH_CONCERNS** — All tasks implemented but some tests need attention or minor deviations exist.
+- **BLOCKED** — Tests failing, cannot proceed without fixing. Return to RED phase.
+- **NEEDS_CONTEXT** — Need user input to resolve an implementation ambiguity or design question.

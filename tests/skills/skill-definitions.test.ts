@@ -67,5 +67,15 @@ describe('skill template validation', () => {
     it('specifies argument hint', () => {
       expect(frontmatter).toContain('argument-hint:');
     });
+
+    it('includes a Completion section', () => {
+      expect(body).toContain('## Completion');
+    });
+
+    it('Completion section defines exit states', () => {
+      expect(body).toContain('DONE');
+      expect(body).toContain('BLOCKED');
+      expect(body).toContain('NEEDS_CONTEXT');
+    });
   });
 });

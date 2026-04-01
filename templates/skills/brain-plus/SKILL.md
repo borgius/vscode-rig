@@ -71,3 +71,12 @@ Return the validated design with testing strategy to feed into `plan+`.
 After completing brain+, the next step is:
 
 - Invoke `/plan+` to create the implementation plan from this design
+
+## Completion
+
+Report one of these states when the skill finishes:
+
+- **DONE** — Design validated, ready for `/plan+`. All checklist items in Phase C confirmed.
+- **DONE_WITH_CONCERNS** — Design complete but has open questions or risks to address in planning.
+- **BLOCKED** — Cannot proceed (missing context, unclear requirements, external dependency).
+- **NEEDS_CONTEXT** — Need user input to resolve an ambiguity or make a design decision.

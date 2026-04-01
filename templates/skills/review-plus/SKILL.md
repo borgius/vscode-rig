@@ -92,3 +92,12 @@ After review+ passes:
 
 - The implementation is complete
 - Proceed to merge/PR decision (superpowers:finishing-a-development-branch)
+
+## Completion
+
+Report one of these states when the skill finishes:
+
+- **DONE** — Review passed (PASS verdict). All spec compliance and code quality checks confirmed.
+- **DONE_WITH_CONCERNS** — Review passed with minor items noted for follow-up.
+- **BLOCKED** — Review failed (FAIL verdict). Items must be fixed before proceeding.
+- **NEEDS_CONTEXT** — Need user input to resolve a review question or accept a deviation.
