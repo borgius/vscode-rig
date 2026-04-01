@@ -1,6 +1,12 @@
 import { readFile } from 'node:fs/promises';
 import { parse as parseYaml } from 'yaml';
-import type { HarnessConfig, EnforcementLevel } from './types.js';
+import type {
+  HarnessConfig,
+  EnforcementLevel,
+  StaleTestRules,
+  TestScopeRules,
+  ZeroDefectRules,
+} from './types.js';
 
 export const DEFAULT_CONFIG: HarnessConfig = {
   rules: {
@@ -59,10 +65,10 @@ export function mergeConfigs(base: HarnessConfig, override: HarnessConfig): Harn
       tool_routing: { ...base.rules.tool_routing, ...override.rules.tool_routing },
       constitutional: { ...base.rules.constitutional, ...override.rules.constitutional },
       test_integrity: { ...base.rules.test_integrity, ...override.rules.test_integrity },
-      stale_tests: { ...base.rules.stale_tests, ...override.rules.stale_tests },
-      test_scope: { ...base.rules.test_scope, ...override.rules.test_scope },
-      zero_defect: { ...base.rules.zero_defect, ...override.rules.zero_defect },
-      enforcement: { ...base.rules.enforcement, ...override.rules.enforcement },
+      stale_tests: { ...(base.rules.stale_tests ?? {}), ...override.rules.stale_tests } as StaleTestRules,
+      test_scope: { ...(base.rules.test_scope ?? {}), ...override.rules.test_scope } as TestScopeRules,
+      zero_defect: { ...(base.rules.zero_defect ?? {}), ...override.rules.zero_defect } as ZeroDefectRules,
+      enforcement: { ...(base.rules.enforcement ?? {}), ...override.rules.enforcement } as { default_level: EnforcementLevel },
     },
   };
 }
@@ -77,5 +83,5 @@ export function getEnforcementLevel(
   if (categoryRules && typeof categoryRules[rule] === 'string') {
     return categoryRules[rule] as EnforcementLevel;
   }
-  return config.rules.enforcement.default_level ?? 'advise';
+  return config.rules.enforcement?.default_level ?? 'advise';
 }

@@ -21,10 +21,12 @@ export class SessionCache {
   }
 
   addEditedFile(filePath: string, category: 'source' | 'test'): void {
-    if (!this.editedFiles.has(category)) {
-      this.editedFiles.set(category, new Set());
+    let set = this.editedFiles.get(category);
+    if (!set) {
+      set = new Set<string>();
+      this.editedFiles.set(category, set);
     }
-    this.editedFiles.get(category).add(filePath);
+    set.add(filePath);
   }
 
   getEditedFiles(category: 'source' | 'test'): string[] {
