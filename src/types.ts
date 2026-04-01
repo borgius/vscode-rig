@@ -36,6 +36,7 @@ export interface ToolRule {
   match: RegExp | ((tool: string, args: unknown) => boolean);
   intent: IntentType;
   resolutions: {
+    _?: EnvResolution;
     rtk?: EnvResolution;
     jcodemunch?: EnvResolution;
     claudeTool?: EnvResolution;
