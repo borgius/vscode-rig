@@ -1,0 +1,26 @@
+{
+  "name": "claude-stack-utils",
+  "version": "0.1.0",
+  "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline for Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-stack-utils": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": ["claude-code", "agent-harness", "guardrails"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "yaml": "^2.7.0"
+  }
+}
