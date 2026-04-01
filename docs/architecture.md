@@ -193,10 +193,11 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 ### Session (`src/session/`)
 
 `detectEnvironment()` checks for rtk, jcodemunch, and other tools via injectable
-`ExecFn`. `SessionCache` with 30-min TTL stores detection results and metrics
-(rtk call count, jcodemunch query count, savings baseline).
-`handleSessionStart()` auto-indexes the project and captures a metrics baseline
-on first session.
+`ExecFn`. `SessionCache` with 30-min TTL persists to `/tmp/rig-session-{cwd-hash}.json`
+for cross-process state sharing between hook invocations. Environment detection
+results, edited file tracking, phase, metrics baseline, and tool call counters all
+persist. `handleSessionStart()` auto-indexes the project and captures a metrics
+baseline on first session.
 
 ### CLI (`src/cli/`)
 
@@ -244,7 +245,7 @@ Key design decisions:
 | -------- | ---------- |
 | Hooks over preamble text | GStack uses persuasive instructions; we use programmatic hooks that can't be skipped |
 | Typed CodebaseMap over prose context | Composable, queryable by downstream code |
-| In-memory cache over file-backed | Session-scoped, simpler, no stale file issues |
+| File-backed cache in /tmp | Cross-process state sharing; hooks are separate processes that need shared state. OS cleans /tmp automatically. |
 | `npx` over global install | Lower barrier, no global package management |
 | Separate `.harness.yaml` over CLAUDE.md injection | Cleaner separation of concerns, version-controllable |
 | Static SKILL.md templates over resolver pipeline | Simpler for 5 skills; resolver pipeline deferred |
@@ -258,4 +259,3 @@ Key design decisions:
 - No multi-agent specialist review pattern (single review+ pass)
 - No REPO_MODE awareness (solo vs collaborative)
 - No pre-existing failure classification (git-diff-based)
-- No file-backed session cache (in-memory only, dies with session)
