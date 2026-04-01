@@ -14,8 +14,8 @@ const require = createRequire(import.meta.url);
 const { handleSessionStart } = require(join('{{RIG_DIST_PATH}}', 'session', 'start.js'));
 const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
 
-const cache = new SessionCache();
 const cwd = process.cwd();
+const cache = new SessionCache(cwd);
 
 handleSessionStart(cwd, cache).then((output: string) => {
   console.error(output);

@@ -4,7 +4,7 @@ import type { HarnessConfig } from '../types.js';
 import { checkStaleTests } from './stale-test.js';
 import { checkConstitutional } from './constitutional.js';
 import { checkZeroDefect } from './zero-defect.js';
-import { incrementMetric, incrementSessionCounter } from '../session/metrics.js';
+import { incrementMetric } from '../session/metrics.js';
 
 /**
  * PostToolUse hook handler. Composes all enforcement checks.
@@ -20,7 +20,6 @@ export function handlePostToolUse(
   const metric = incrementMetric(tool, args);
   if (metric) {
     cache.incrementMetricCounter(metric);
-    incrementSessionCounter(process.cwd(), metric);
   }
 
   const violations: string[] = [];

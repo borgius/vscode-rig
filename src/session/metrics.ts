@@ -1,37 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { MetricsBaseline } from '../types.js';
 
 export type ExecFn = (cmd: string) => string;
-
-export interface SessionMetricsFile {
-  baseline: MetricsBaseline;
-  counters: { rtkCalls: number; jmCalls: number };
-}
-
-const SESSION_FILE = '.rig-session.json';
-
-export function sessionFilePath(cwd: string): string {
-  return join(cwd, SESSION_FILE);
-}
-
-export function writeSessionMetrics(cwd: string, data: SessionMetricsFile): void {
-  try {
-    mkdirSync(cwd, { recursive: true });
-    writeFileSync(sessionFilePath(cwd), JSON.stringify(data, null, 2) + '\n', 'utf-8');
-  } catch {
-    // Writing session metrics is best-effort; don't fail hooks if dir is unwritable
-  }
-}
-
-export function readSessionMetrics(cwd: string): SessionMetricsFile | null {
-  try {
-    const raw = readFileSync(sessionFilePath(cwd), 'utf-8');
-    return JSON.parse(raw) as SessionMetricsFile;
-  } catch {
-    return null;
-  }
-}
 
 export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {
   try {
@@ -57,18 +26,6 @@ export function incrementMetric(
     return 'jmCalls';
   }
   return null;
-}
-
-export function incrementSessionCounter(
-  cwd: string,
-  counter: 'rtkCalls' | 'jmCalls',
-): void {
-  const data = readSessionMetrics(cwd) ?? {
-    baseline: { totalSaved: 0, capturedAt: Date.now() },
-    counters: { rtkCalls: 0, jmCalls: 0 },
-  };
-  data.counters[counter]++;
-  writeSessionMetrics(cwd, data);
 }
 
 export function formatSavingsReport(

@@ -18,10 +18,11 @@ const { FileTracker } = require(join('{{RIG_DIST_PATH}}', 'enforcement', 'file-t
 const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
 const { loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js'));
 
-const cache = new SessionCache();
+const cwd = process.cwd();
+const cache = new SessionCache(cwd);
 const tracker = new FileTracker();
 
-loadConfig(resolve(process.cwd(), '.harness.yaml')).then((config: any) => {
+loadConfig(resolve(cwd, '.harness.yaml')).then((config: any) => {
   let input: any = {};
   try {
     input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');

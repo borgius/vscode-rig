@@ -62,6 +62,15 @@ export interface MetricsBaseline {
   capturedAt: number;
 }
 
+export interface SessionCacheFile {
+  updatedAt: number;
+  environment: Environment | null;
+  editedFiles: Record<string, string[]>;
+  currentPhase: string | null;
+  metricsBaseline: MetricsBaseline | null;
+  metricCounters: { rtkCalls: number; jmCalls: number };
+}
+
 // ── Config Types ──
 
 export interface ToolRoutingRules {
