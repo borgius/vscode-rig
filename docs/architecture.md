@@ -61,7 +61,10 @@ HookResult: { decision: "block"|"allow", reason? }
 
 The resolver checks each priority level. First match wins. The wildcard `_` always wins if present. If nothing matches, the command is allowed.
 
-Native tool rules (Read, Grep, Glob) are placed before broader intent rules in the rule array, so `findMatchingRule` returns the native-specific rule first. This prevents circular advice where the router would suggest "use Grep" when the agent is already on the Grep tool.
+Native tool rules (Read, Grep, Glob) are placed before broader intent rules in the
+rule array, so `findMatchingRule` returns the native-specific rule first. This prevents
+circular advice where the router would suggest "use Grep" when the agent is already
+on the Grep tool.
 
 ---
 
