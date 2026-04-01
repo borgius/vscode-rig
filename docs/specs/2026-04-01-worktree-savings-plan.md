@@ -1,10 +1,15 @@
 # Worktree Promotion + Session Savings Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add worktree suggestion at session start and a `/savings` skill that reports rtk/jcodemunch usage deltas per session.
 
-**Architecture:** SessionStart hook gains a git-branch check for worktree promotion. It also captures an rtk gain baseline and initializes counters in SessionCache. PostToolUse hook increments counters. A new `/savings` skill computes the delta and prints a report.
+**Architecture:** SessionStart hook gains a git-branch check for worktree promotion.
+It also captures an rtk gain baseline and initializes counters in SessionCache.
+PostToolUse hook increments counters. A new `/savings` skill computes the delta
+and prints a report.
 
 **Tech Stack:** TypeScript, vitest, Node.js child_process
 
@@ -13,6 +18,7 @@
 ## File Structure
 
 **New files:**
+
 - `src/session/worktree.ts` — `checkWorktreeSuggestion(cwd, exec)` function
 - `src/session/metrics.ts` — `captureMetricsBaseline(exec)`, `incrementMetric()`, `formatSavingsReport()`
 - `templates/skills/savings/SKILL.md` — the `/savings` skill template
@@ -20,6 +26,7 @@
 - `tests/session/metrics.test.ts` — metrics capture/report tests
 
 **Modified files:**
+
 - `src/session/start.ts` — call worktree check + metrics baseline capture
 - `src/session/cache.ts` — add metrics fields (baseline + counters)
 - `src/types.ts` — add `MetricsBaseline` interface
@@ -30,6 +37,7 @@
 ### Task 1: Add MetricsBaseline type and SessionCache fields
 
 **Files:**
+
 - Modify: `src/types.ts`
 - Modify: `src/session/cache.ts`
 - Test: `tests/session/cache.test.ts`
@@ -129,6 +137,7 @@ git commit -m "feat: add MetricsBaseline type and SessionCache metrics fields"
 ### Task 2: Implement worktree suggestion
 
 **Files:**
+
 - Create: `src/session/worktree.ts`
 - Test: `tests/session/worktree.test.ts`
 
@@ -221,6 +230,7 @@ git commit -m "feat: add worktree suggestion check"
 ### Task 3: Wire worktree suggestion into session start
 
 **Files:**
+
 - Modify: `src/session/start.ts`
 - Modify: `tests/session/start.test.ts`
 
@@ -295,6 +305,7 @@ git commit -m "feat: wire worktree suggestion into session start"
 ### Task 4: Implement metrics capture and report formatting
 
 **Files:**
+
 - Create: `src/session/metrics.ts`
 - Test: `tests/session/metrics.test.ts`
 
@@ -478,6 +489,7 @@ git commit -m "feat: add metrics capture, increment, and report formatting"
 ### Task 5: Wire metrics into session start and PostToolUse
 
 **Files:**
+
 - Modify: `src/session/start.ts`
 - Modify: `src/enforcement/post-tool-use.ts`
 
@@ -530,6 +542,7 @@ git commit -m "feat: wire metrics capture into session start and post-tool-use"
 ### Task 6: Add /savings skill template and register with init
 
 **Files:**
+
 - Create: `templates/skills/savings/SKILL.md`
 - Modify: `src/cli/init.ts`
 
@@ -537,7 +550,7 @@ git commit -m "feat: wire metrics capture into session start and post-tool-use"
 
 Create `templates/skills/savings/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: savings
 description: "Report rtk and jcodemunch token savings for the current session."
@@ -570,7 +583,7 @@ If no savings this session:
 [rig] Session Savings
   rtk: no token savings this session
 ```
-```
+````
 
 - [ ] **Step 2: Add savings to the skill copy list in init.ts**
 

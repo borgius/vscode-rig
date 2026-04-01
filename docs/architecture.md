@@ -142,7 +142,12 @@ Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are S
 
 ### Standalone skills
 
-`savings` reports rtk and jcodemunch token savings for the current session. It has no phase prerequisite and is accessible at any time via `/savings`. The session-start hook captures a `MetricsBaseline` (rtk's cumulative saved-token count), and the post-tool-use hook increments rtk/jcodemunch call counters. The `/savings` skill computes the delta and formats the report via `formatSavingsReport()`.
+`savings` reports rtk and jcodemunch token savings for the current session.
+It has no phase prerequisite and is accessible at any time via `/savings`.
+The session-start hook captures a `MetricsBaseline` (rtk's cumulative
+saved-token count), and the post-tool-use hook increments rtk/jcodemunch
+call counters. The `/savings` skill computes the delta and formats the report
+via `formatSavingsReport()`.
 
 **Files:** `src/session/metrics.ts`, `templates/skills/savings/SKILL.md`
 

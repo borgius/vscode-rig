@@ -129,6 +129,21 @@ npm run build    # TypeScript compile
 npm run lint     # type-check only
 ```
 
+## Dogfooding
+
+Rig uses itself during development. After building, run `rig init` in this repo to install hooks, skills, and agents into the local `.claude/` directory:
+
+```bash
+npm run build && npm link
+rig init
+```
+
+This wires the same guardrails that rig installs for consumers — the tool router
+intercepts shell commands, the enforcement pipeline runs after edits, and
+`/savings` reports token usage for the session. The `docs/specs/` directory
+contains the implementation plan that was built using the `brain+` -> `plan+`
+-> `tdd+` -> `verify+` -> `review+` skill chain.
+
 ## Related projects
 
 - [agentic-patterns](https://github.com/franklywatson/agentic-patterns) -- Pattern library (L0-L4) that guided this system's design
