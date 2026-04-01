@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path';
 
 const TEMPLATES = resolve(import.meta.dirname, '..', '..', 'templates', 'skills');
 
-const EXPECTED_SKILLS = ['brain-plus', 'plan-plus', 'tdd-plus', 'verify-plus', 'review-plus'];
+const EXPECTED_SKILLS = ['brain-plus', 'plan-plus', 'tdd-plus', 'verify-plus', 'review-plus', 'investigate'];
 
 describe('skill template validation', () => {
   it('all expected skill directories exist', () => {
