@@ -132,9 +132,10 @@ Run these checks before any merge or deployment:
 4. Review any new network calls for proper authentication
 ```
 
-The skill appears as `/security-review` in Claude Code. If you want it to wrap
-a superpowers skill (like the built-in chain skills do), add `invokes:
-superpowers:code-review` to the frontmatter.
+The skill appears as `/security-review` in Claude Code. To wrap a superpowers
+skill with project-specific enforcement (like the built-in chain skills do),
+see [skill-wrapping.md](skill-wrapping.md) for the wrapping pattern and
+scenarios.
 
 ## Custom agents
 
@@ -154,4 +155,10 @@ maxTurns: 15
 # Dependency Auditor
 
 Check all dependencies in package.json against known CVEs...
+
+## Related
+
+- [skill-wrapping.md](skill-wrapping.md) -- wrapping superpowers skills with
+  project-specific enforcement (threat modeling, compliance, performance budgets)
+- [architecture.md](architecture.md) -- full system design and enforcement pipeline
 ```

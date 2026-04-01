@@ -158,3 +158,5 @@ Then remove hook registrations from `.claude/settings.json`. The `init` command 
 
 - Read [docs/architecture.md](architecture.md) for the full system design
 - Read [docs/extending.md](extending.md) to add custom enforcement checks and skills
+- Read [docs/skill-wrapping.md](skill-wrapping.md) to wrap superpowers skills
+  with domain-specific enforcement (security, compliance, performance)

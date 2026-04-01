@@ -179,6 +179,12 @@ Rig is designed to be extended. Add custom enforcement checks (secrets scanning,
 version pinning, log level enforcement), new skills, or additional config rules.
 See [docs/extending.md](docs/extending.md) for patterns and examples.
 
+The skill chain wraps [superpowers](https://github.com/obra/superpowers) skills
+with project-specific enforcement -- threat modeling in brainstorming,
+compliance in planning, latency budgets in TDD, security checklists in review.
+See [docs/skill-wrapping.md](docs/skill-wrapping.md) for the wrapping pattern
+and domain-specific scenarios.
+
 ## Related projects
 
 - [agentic-patterns](https://github.com/franklywatson/agentic-patterns) -- Pattern library (L0-L4) that guided this system's design

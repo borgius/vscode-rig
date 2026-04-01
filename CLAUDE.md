@@ -57,3 +57,4 @@ All types in `src/types.ts`. Important ones:
 - @docs/architecture.md -- Full system design
 - @docs/getting-started.md -- Installation and usage guide
 - @docs/extending.md -- Custom enforcement checks, skills, and agents
+- @docs/skill-wrapping.md -- Wrapping superpowers skills with project-specific enforcement
