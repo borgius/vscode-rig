@@ -196,6 +196,18 @@ describe('initCommand', () => {
     }
   });
 
+  it('generates pre-tool-use hook that only exits 2 for BLOCK, not ADVISE', async () => {
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'), 'utf-8');
+    // Must check for [BLOCK] prefix before exiting 2
+    expect(content).toContain("startsWith('[BLOCK]')");
+    // Exit 2 must be conditional, not unconditional
+    expect(content).not.toMatch(/process\.exit\(2\)\s*;\s*\n\s*\}/);
+    // Final fallback must be exit 0
+    expect(content).toContain('process.exit(0)');
+  });
+
   it('prunes old-format hooks from .claude/hooks/ on re-init', async () => {
     // Simulate old layout: hooks directly in .claude/hooks/ (pre-scripts layout)
     await initCommand(tempDir, { force: false });

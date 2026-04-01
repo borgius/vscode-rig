@@ -25,7 +25,10 @@ loadConfig(resolve(process.cwd(), '.harness.yaml')).then((config: any) => {
 
   if (result) {
     console.error(result);
-    process.exit(2); // block
+    if (result.startsWith('[BLOCK]')) {
+      process.exit(2); // block
+    }
+    // advise: print warning but allow
   }
   process.exit(0); // allow
 });
