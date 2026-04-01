@@ -56,3 +56,4 @@ All types in `src/types.ts`. Important ones:
 - @README.md -- Project overview and quick start
 - @docs/architecture.md -- Full system design
 - @docs/getting-started.md -- Installation and usage guide
+- @docs/extending.md -- Custom enforcement checks, skills, and agents

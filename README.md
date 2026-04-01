@@ -149,7 +149,8 @@ Rig was built in seven iterative phases, each evaluated against
 [gstack](https://github.com/garrytan/gstack) — a mature agent skill framework
 used as a reference implementation. The approach was to study gstack's patterns,
 identify patterns worth adopting and avoiding, then build rig with deliberate
-advantages at each layer.
+advantages at each layer. The full phase plans and retrospectives are preserved
+in [commit a9ee32f](https://github.com/franklywatson/claude-rig/tree/a9ee32f9b8e78f138aafeb0dd1e13af272c8706e/docs).
 
 | Phase | Layer | Key decision vs gstack |
 | ----- | ----- | ---------------------- |
@@ -161,11 +162,22 @@ advantages at each layer.
 | 6 | CLI Installer | `npx`-first with `/verify-harness` vs gstack's global install, no verification |
 | 7 | CI Guardrails | CI-enforced coverage gates and docs lint vs gstack's in-session-only enforcement |
 
-The core tradeoff: gstack uses preamble text to influence agent behavior (flexible
-but skippable). Rig uses Claude Code hooks to enforce behavior programmatically
-(less flexible but non-negotiable). Each phase retro confirmed this was the
-right call while identifying gstack patterns worth adopting (resolver pipelines,
-multi-agent review, repo mode awareness).
+Every project has different requirements for rigor and oversight. A solo
+prototype needs lighter guardrails than a production system handling financial
+transactions. Some domains demand determinism — non-negotiable rules that can't
+be talked around. Rig lets builders codify their project's non-negotiables as
+enforceable hooks, then rest easy knowing Claude will follow them.
+
+[superpowers](https://github.com/obra/superpowers) and
+[gstack](https://github.com/garrytan/gstack) are excellent tools in their own
+right. Rig doesn't replace them — it complements them by adding a layer of
+programmatic enforcement that preamble-based approaches can't provide.
+
+## Extending rig
+
+Rig is designed to be extended. Add custom enforcement checks (secrets scanning,
+version pinning, log level enforcement), new skills, or additional config rules.
+See [docs/extending.md](docs/extending.md) for patterns and examples.
 
 ## Related projects
 
