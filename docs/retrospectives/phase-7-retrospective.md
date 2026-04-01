@@ -6,14 +6,16 @@
 
 ## Shared Patterns
 
-- **Coverage auditing**: Both systems audit test coverage. GStack has a 380-line `generateTestCoverageAuditInner()` with mode-specific behavior (plan/ship/review). Our coverage gate is a vitest config with 80% thresholds in CI.
-- **Coverage as gate, not just metric**: Both enforce coverage thresholds. GStack uses a multi-step interactive gate with AskUserQuestion (>= target: pass, >= minimum: ask, < minimum: override). Our CI workflow uses vitest's built-in threshold enforcement.
+- **Coverage auditing**: Both systems audit test coverage. GStack has a 380-line `generateTestCoverageAuditInner()` with mode-specific behavior (plan/ship/review). Our
+  coverage gate is a vitest config with 80% thresholds in CI.
+- **Coverage as gate, not just metric**: Both enforce coverage thresholds. GStack uses a multi-step interactive gate with AskUserQuestion (>= target: pass, >= minimum: ask,
+  < minimum: override). Our CI workflow uses vitest's built-in threshold enforcement.
 - **Quality scoring rubric**: GStack rates tests ★/★★/★★★. Our zero-defect checker classifies output as pass/fail. Same principle, different granularity.
 
 ## Differences
 
 | Aspect | GStack | Claude-Stack-Utils |
-|--------|--------|--------------------|
+| -------- | -------- | -------------------- |
 | **Coverage enforcement** | Interactive: codepath tracing → ASCII diagram → test generation → coverage gate with AskUserQuestion | CI gate: vitest coverage thresholds (80% statements, 75% branches) |
 | **Coverage audit granularity** | Per-codepath: traces every if/else, error handler, edge case via AST-like reading | Per-file: v8 coverage provider counts lines/branches/functions |
 | **Test generation** | Auto-generates tests for uncovered paths (ship mode), caps at 20 tests, 30 code paths | No auto-generation — just flags low coverage |
@@ -25,15 +27,22 @@
 
 ## GStack Pros (patterns worth adopting)
 
-1. **Multi-mode coverage audit**: GStack's `CoverageAuditMode` (plan/ship/review) adapts the coverage check to the workflow phase. Plan mode adds tests to the plan; ship mode auto-generates and gates; review mode uses Fix-First. **Why**: Our CI coverage gate is binary — it passes or fails. A mode-aware approach would be more useful (lighter enforcement during brainstorming, strict during ship).
+1. **Multi-mode coverage audit**: GStack's `CoverageAuditMode` (plan/ship/review) adapts the coverage check to the workflow phase. Plan mode adds tests to the plan; ship
+   mode auto-generates and gates; review mode uses Fix-First. **Why**: Our CI coverage gate is binary — it passes or fails. A mode-aware approach would be more useful
+   (lighter enforcement during brainstorming, strict during ship).
 
-2. **Per-codepath tracing**: GStack traces every if/else, error handler, and edge case, then generates an ASCII coverage diagram. This is far more granular than line/branch coverage percentages. **Why**: 80% line coverage can hide uncovered error paths. Codepath tracing catches logical gaps that coverage numbers miss.
+2. **Per-codepath tracing**: GStack traces every if/else, error handler, and edge case, then generates an ASCII coverage diagram. This is far more granular than line/branch
+   coverage percentages. **Why**: 80% line coverage can hide uncovered error paths. Codepath tracing catches logical gaps that coverage numbers miss.
 
-3. **Auto-test generation for gaps**: GStack auto-generates tests for uncovered paths (capped at 20 tests, 2-min per-test exploration). It reads existing test files to match conventions, then generates and commits. **Why**: Our CI just reports "coverage too low" — the developer has to figure out what to test and write it. Auto-generation would significantly reduce friction.
+3. **Auto-test generation for gaps**: GStack auto-generates tests for uncovered paths (capped at 20 tests, 2-min per-test exploration). It reads existing test files to match
+   conventions, then generates and commits. **Why**: Our CI just reports "coverage too low" — the developer has to figure out what to test and write it. Auto-generation would
+   significantly reduce friction.
 
-4. **Interactive coverage gate with override**: GStack presents options (generate more tests, accept risk, mark as intentionally uncovered) rather than just failing CI. **Why**: Hard CI gates cause frustration when legitimate code has low coverage (e.g., CLI entry points, config files). Interactive gates give developers agency.
+4. **Interactive coverage gate with override**: GStack presents options (generate more tests, accept risk, mark as intentionally uncovered) rather than just failing CI.
+   **Why**: Hard CI gates cause frustration when legitimate code has low coverage (e.g., CLI entry points, config files). Interactive gates give developers agency.
 
-5. **Test plan artifact**: GStack writes a structured test plan to `~/.gstack/projects/` for QA consumption. **Why**: Our verify-harness skill checks installation, not test coverage. A test plan artifact would help QA testers know what to verify.
+5. **Test plan artifact**: GStack writes a structured test plan to `~/.gstack/projects/` for QA consumption. **Why**: Our verify-harness skill checks installation, not test
+   coverage. A test plan artifact would help QA testers know what to verify.
 
 ## Our Pros Over GStack
 

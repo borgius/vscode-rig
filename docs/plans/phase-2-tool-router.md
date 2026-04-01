@@ -1,10 +1,17 @@
 # Phase 2: Tool Router - Intent Classification, Resolution, Hook
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the PreToolUse hook that intercepts every tool call, classifies intent, checks the environment, and returns allow/advise/block resolutions. Also includes SessionStart hook for auto-indexing CWD.
+**Goal:** Build the PreToolUse hook that intercepts every tool call, classifies intent,
+checks the environment, and returns allow/advise/block resolutions. Also includes
+SessionStart hook for auto-indexing CWD.
 
-**Architecture:** Three-stage pipeline: intent classifier parses tool+args into an intent type, resolver matches intent against routing rules with environment awareness, hook entry point formats the response for Claude Code's hook protocol. The hook reads the session cache for environment state and current phase.
+**Architecture:** Three-stage pipeline: intent classifier parses tool+args into an intent type,
+resolver matches intent against routing rules with environment awareness, hook entry point
+formats the response for Claude Code's hook protocol. The hook reads the session cache for
+environment state and current phase.
 
 **Tech Stack:** TypeScript, vitest, Node.js child_process (for auto-indexing)
 
@@ -38,6 +45,7 @@ tests/
 ### Task 1: Intent Classification
 
 **Files:**
+
 - Create: `src/router/intent.ts`
 - Create: `tests/router/intent.test.ts`
 
@@ -259,6 +267,7 @@ git commit -m "feat: add intent classification for bash commands and Claude tool
 ### Task 2: Default Routing Rules
 
 **Files:**
+
 - Create: `src/router/rules.ts`
 - Create: `tests/router/rules.test.ts`
 
@@ -469,6 +478,7 @@ git commit -m "feat: add default routing rules ported from damage-control-guardr
 ### Task 3: Environment-Aware Resolver
 
 **Files:**
+
 - Create: `src/router/resolver.ts`
 - Create: `tests/router/resolver.test.ts`
 
@@ -699,6 +709,7 @@ git commit -m "feat: add environment-aware resolver with rtk > jcodemunch > clau
 ### Task 4: PreToolUse Hook Entry Point
 
 **Files:**
+
 - Create: `src/router/hook.ts`
 - Create: `tests/router/hook.test.ts`
 
@@ -903,6 +914,7 @@ git commit -m "feat: add PreToolUse hook with environment-aware routing"
 ### Task 5: SessionStart Hook (Auto-Index + Environment Detection)
 
 **Files:**
+
 - Create: `src/session/start.ts`
 - Create: `tests/session/start.test.ts`
 
@@ -1158,6 +1170,7 @@ Use `superpowers:debugging` to analyze Phase 2 design and code quality against t
 - [ ] **Step 1: Research gstack routing/resolver patterns**
 
 Use jcodemunch to find gstack's routing, resolver, and command graph:
+
 ```
 search_symbols(repo="local/gstack", query="resolve")
 search_symbols(repo="local/gstack", query="route")

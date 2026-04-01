@@ -14,7 +14,7 @@
 ## Differences
 
 | Aspect | GStack | Claude-Stack-Utils |
-|--------|--------|--------------------|
+| -------- | -------- | -------------------- |
 | **Installation mechanism** | `npm install -g gstack` + `gstack setup` per project | `npx claude-stack-utils init` per project |
 | **Template rendering** | `TemplateContext` + `ResolverFn` pipeline (composable resolvers) | `renderTemplate()` with `{{VAR}}` substitution (flat) |
 | **Skill installation** | Discovers and installs from `~/.claude/skills/gstack/skills/` | Copies from `templates/skills/` into project `.claude/skills/` |
@@ -24,25 +24,36 @@
 
 ## GStack Pros (patterns worth adopting)
 
-1. **Resolver pipeline for template rendering**: GStack's `ResolverFn = (ctx: TemplateContext, args?: string[]) => string` pattern composes template sections via function pipeline. Each resolver handles one concern (preamble, routing, test triage). **Why**: Our `renderTemplate()` only does `{{VAR}}` substitution. If we add conditional sections (skip jcodemunch config if not available), host-aware content, or compositional context, we'll need a resolver pipeline. This was also flagged in Phase 4 retro.
+1. **Resolver pipeline for template rendering**: GStack's `ResolverFn = (ctx: TemplateContext, args?: string[]) => string` pattern composes template sections via function
+   pipeline. Each resolver handles one concern (preamble, routing, test triage). **Why**: Our `renderTemplate()` only does `{{VAR}}` substitution. If we add conditional
+   sections (skip jcodemunch config if not available), host-aware content, or compositional context, we'll need a resolver pipeline. This was also flagged in Phase 4 retro.
 
-2. **Declarative routing injection into CLAUDE.md**: GStack's setup writes routing rules into CLAUDE.md for discoverability — the agent sees them every session. **Why**: Our routing rules live in `.harness.yaml` which the agent never reads directly. The hooks enforce them, but the agent isn't aware of the rules. A hybrid approach (write rules to both `.harness.yaml` and CLAUDE.md) would give both enforcement and visibility.
+2. **Declarative routing injection into CLAUDE.md**: GStack's setup writes routing rules into CLAUDE.md for discoverability — the agent sees them every session. **Why**: Our
+   routing rules live in `.harness.yaml` which the agent never reads directly. The hooks enforce them, but the agent isn't aware of the rules. A hybrid approach (write rules
+   to both `.harness.yaml` and CLAUDE.md) would give both enforcement and visibility.
 
-3. **Skill symlinking**: GStack symlinks skills from global install to project `.claude/skills/`. Updates to gstack automatically apply to all projects. **Why**: Our init copies templates — if we update templates, projects need `init --force` to get updates. Symlinking would auto-propagate updates.
+3. **Skill symlinking**: GStack symlinks skills from global install to project `.claude/skills/`. Updates to gstack automatically apply to all projects. **Why**: Our init
+   copies templates — if we update templates, projects need `init --force` to get updates. Symlinking would auto-propagate updates.
 
-4. **Multi-host path resolution**: GStack's `HostPaths` adapts installation paths per platform (claude/codex/gemini/factory). **Why**: Our installer is Claude Code-only. If we add Codex or Gemini support, path resolution needs to be host-aware.
+4. **Multi-host path resolution**: GStack's `HostPaths` adapts installation paths per platform (claude/codex/gemini/factory). **Why**: Our installer is Claude Code-only. If we
+   add Codex or Gemini support, path resolution needs to be host-aware.
 
 ## Our Pros Over GStack
 
-1. **verify-harness post-install skill**: 28-point checklist that verifies hooks, skills, agents, and config after installation. GStack has no equivalent — users just hope setup worked. **Why**: This is a significant quality advantage. Users can run `/verify-harness` to confirm everything is wired correctly.
+1. **verify-harness post-install skill**: 28-point checklist that verifies hooks, skills, agents, and config after installation. GStack has no equivalent — users just hope
+   setup worked. **Why**: This is a significant quality advantage. Users can run `/verify-harness` to confirm everything is wired correctly.
 
-2. **`npx`-first, no global install**: Users can `npx claude-stack-utils init` without installing anything globally. GStack requires `npm install -g gstack`. **Why**: Lower barrier to entry. Users don't need to manage global packages.
+2. **`npx`-first, no global install**: Users can `npx claude-stack-utils init` without installing anything globally. GStack requires `npm install -g gstack`. **Why**: Lower
+   barrier to entry. Users don't need to manage global packages.
 
-3. **`.harness.yaml` config separation**: Enforcement config is in a separate file, not mixed into CLAUDE.md. **Why**: Cleaner separation of concerns. Users can version-control `.harness.yaml` independently. GStack mixes routing rules into CLAUDE.md which can cause conflicts.
+3. **`.harness.yaml` config separation**: Enforcement config is in a separate file, not mixed into CLAUDE.md. **Why**: Cleaner separation of concerns. Users can
+   version-control `.harness.yaml` independently. GStack mixes routing rules into CLAUDE.md which can cause conflicts.
 
-4. **Programmatic settings.json update**: `updateSettingsJson()` reads existing settings, checks for existing hook registrations, and only adds missing ones. Idempotent by design. **Why**: Won't clobber user customizations in settings.json. GStack's setup can overwrite settings.
+4. **Programmatic settings.json update**: `updateSettingsJson()` reads existing settings, checks for existing hook registrations, and only adds missing ones. Idempotent by
+   design. **Why**: Won't clobber user customizations in settings.json. GStack's setup can overwrite settings.
 
-5. **Template renderer tested with edge cases**: 6 tests covering empty templates, missing variables, multiline templates, multiple occurrences. GStack's resolver pipeline is tested indirectly through skill E2E tests.
+5. **Template renderer tested with edge cases**: 6 tests covering empty templates, missing variables, multiline templates, multiple occurrences. GStack's resolver pipeline is
+   tested indirectly through skill E2E tests.
 
 6. **Force flag for selective overwrite**: `--force` lets users selectively regenerate templates. GStack's setup is all-or-nothing.
 

@@ -16,28 +16,30 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 1. Load the plan from `docs/plans/`.
 
 2. Get the list of files changed since the plan was created:
+
    ```
    git diff --name-only [plan-commit]..HEAD
    ```
 
 3. Invoke the scout agent to get current codebase state for comparison:
+
    ```
    Agent(subagent_type="scout", prompt="Get current state of these files: [changed files list]. For each file, report: symbol count, key exports, test coverage status.")
    ```
 
 ### Phase B: Spec Compliance Review
 
-4. For each task in the plan:
+1. For each task in the plan:
    - Check: was the task implemented? (file exists, code present)
    - Check: does the implementation match the plan's specification?
    - Check: are the specified tests present and passing?
    - Check: were any plan tasks skipped or significantly changed?
 
-5. Check stale test status:
+2. Check stale test status:
    - For each changed source file, verify a corresponding test file was also changed
    - Flag any source edits without test updates as stale test violations
 
-6. Check constitutional compliance:
+3. Check constitutional compliance:
    - [ ] No protected components are mocked in any test file
    - [ ] All claims of success are backed by command output
    - [ ] Full-loop assertions present where applicable
@@ -47,9 +49,9 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 
 ### Phase C: Code Quality Review (delegate to superpowers:requesting-code-review)
 
-7. Invoke `superpowers:requesting-code-review` with the gathered context.
+1. Invoke `superpowers:requesting-code-review` with the gathered context.
 
-8. Check code quality:
+2. Check code quality:
    - Files are focused (one clear responsibility per file)
    - Interfaces are well-defined
    - No unnecessary abstractions
@@ -58,7 +60,8 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 
 ### Phase D: Review Report
 
-9. Produce a two-stage review report:
+1. Produce a two-stage review report:
+
    ```
    ## Review Report
 
@@ -78,11 +81,12 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
    PASS / FAIL with specific items to address
    ```
 
-10. If PASS: the implementation is complete. Proceed to integration.
+2. If PASS: the implementation is complete. Proceed to integration.
     If FAIL: list specific items, return to tdd+ to fix, then re-run verify+ and review+.
 
 ## Skill Chain
 
 After review+ passes:
+
 - The implementation is complete
 - Proceed to merge/PR decision (superpowers:finishing-a-development-branch)

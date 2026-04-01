@@ -13,7 +13,7 @@
 ## Differences
 
 | Aspect | GStack | Claude-Stack-Utils |
-|--------|--------|--------------------|
+| -------- | -------- | -------------------- |
 | **Context mechanism** | Preamble text injection (persuasive) | Structured `CodebaseMap` type (typed) |
 | **Cross-repo awareness** | No indexing — relies on Claude reading files | `ensureIndexed()` with jcodemunch auto-indexing |
 | **Agent definition** | Skills defined as SKILL.md files with frontmatter | Agent template `scout.md` with YAML frontmatter |
@@ -24,25 +24,34 @@
 
 ## GStack Pros (patterns worth adopting)
 
-1. **Review Army pattern**: GStack dispatches multiple specialist reviewers in parallel, merges findings, then runs a red team adversarial pass. This is a battle-tested multi-agent orchestration pattern. **Why**: Our scout is a single agent. For complex codebases, parallel specialist agents (security reviewer, test coverage reviewer, API reviewer) with structured finding merge would be more thorough.
+1. **Review Army pattern**: GStack dispatches multiple specialist reviewers in parallel, merges findings, then runs a red team adversarial pass. This is a battle-tested
+   multi-agent orchestration pattern. **Why**: Our scout is a single agent. For complex codebases, parallel specialist agents (security reviewer, test coverage reviewer, API
+   reviewer) with structured finding merge would be more thorough.
 
-2. **Multi-host template resolution**: GStack's `TemplateContext` includes host type and host-specific paths. The same skill generates different preamble text for Claude Code vs Codex vs Gemini. **Why**: If claude-stack-utils ever supports multiple AI platforms, this pattern prevents forking.
+2. **Multi-host template resolution**: GStack's `TemplateContext` includes host type and host-specific paths. The same skill generates different preamble text for Claude Code
+   vs Codex vs Gemini. **Why**: If claude-stack-utils ever supports multiple AI platforms, this pattern prevents forking.
 
-3. **Resolver function pipeline**: GStack uses `ResolverFn = (ctx: TemplateContext, args?: string[]) => string` — composable functions that generate preamble sections. Each resolver handles one concern. **Why**: Our template rendering is flat string substitution. A resolver pipeline could handle conditional sections, host-aware logic, and compositional context.
+3. **Resolver function pipeline**: GStack uses `ResolverFn = (ctx: TemplateContext, args?: string[]) => string` — composable functions that generate preamble sections. Each
+   resolver handles one concern. **Why**: Our template rendering is flat string substitution. A resolver pipeline could handle conditional sections, host-aware logic, and
+   compositional context.
 
-4. **Skill validation**: GStack has `validateSkill()` that parses SKILL.md frontmatter and checks required fields. **Why**: Our agent template test checks basic structure but doesn't validate all required frontmatter fields systematically.
+4. **Skill validation**: GStack has `validateSkill()` that parses SKILL.md frontmatter and checks required fields. **Why**: Our agent template test checks basic structure but
+   doesn't validate all required frontmatter fields systematically.
 
 ## Our Pros Over GStack
 
-1. **Structured CodebaseMap type**: Our `CodebaseMap` is a typed data structure with `languages`, `symbols`, `entryPoints`, `keyExports`, `dependencies`. GStack's context is unstructured preamble text. Typed data is composable — downstream code can query it programmatically.
+1. **Structured CodebaseMap type**: Our `CodebaseMap` is a typed data structure with `languages`, `symbols`, `entryPoints`, `keyExports`, `dependencies`. GStack's context is
+   unstructured preamble text. Typed data is composable — downstream code can query it programmatically.
 
-2. **Cross-repo indexing**: `ensureIndexed()` auto-indexes external directories when referenced. GStack has no equivalent — it relies on the agent to read files directly. Our approach is 60-90% more token-efficient for large codebases.
+2. **Cross-repo indexing**: `ensureIndexed()` auto-indexes external directories when referenced. GStack has no equivalent — it relies on the agent to read files directly. Our
+   approach is 60-90% more token-efficient for large codebases.
 
 3. **ScoutCache with TTL**: 30-minute TTL prevents redundant indexing. GStack regenerates preamble every session. Our cache persists across turns within a session.
 
 4. **Entry point detection**: `buildCodebaseMap()` derives entry points from filename patterns (index/main/cli/app/server). This is programmatic — no ambiguity about where the codebase starts.
 
-5. **Agent tool restrictions**: Our scout template restricts to `jcodemunch` + `Bash` tools only, with `maxTurns: 10`. This prevents the scout from wandering. GStack's skill execution has no equivalent tool restriction in the definition.
+5. **Agent tool restrictions**: Our scout template restricts to `jcodemunch` + `Bash` tools only, with `maxTurns: 10`. This prevents the scout from wandering. GStack's skill
+   execution has no equivalent tool restriction in the definition.
 
 6. **Symbol-level search**: `formatSymbolSearch()` returns typed `SymbolSummary` with kind, file, line, summary. GStack relies on Claude to find symbols by reading files.
 
@@ -52,7 +61,8 @@
 
 2. **No multi-host support**: Scout definition and templates are Claude Code-specific. If we want to support Codex or Gemini, we'd need to refactor.
 
-3. **Flat template rendering**: `renderTemplate()` only does `{{VAR}}` substitution. No conditional sections, no host-aware logic, no compositional context. Need resolver pipeline for Phase 6 CLI.
+3. **Flat template rendering**: `renderTemplate()` only does `{{VAR}}` substitution. No conditional sections, no host-aware logic, no compositional context. Need resolver
+   pipeline for Phase 6 CLI.
 
 4. **No skill validation**: Agent template test checks basic structure but doesn't validate all required frontmatter fields systematically like GStack's `validateSkill()`.
 

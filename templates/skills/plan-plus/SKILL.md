@@ -20,6 +20,7 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 1. Read the design output from `brain+` (from the current session or saved spec).
 
 2. Load constitutional rules from CLAUDE.md. Add a **Constitutional Compliance** section to the plan:
+
    ```
    ## Constitutional Rules for This Plan
    - Use real [database/payment/logger] connections — never mock protected components
@@ -29,6 +30,7 @@ This skill runs after `brain+` has produced a validated design. It creates the i
    ```
 
 3. Identify the mock policy for this plan:
+
    ```
    ## Mock Policy
    Protected (never mock): [list from constitutional rules]
@@ -37,14 +39,15 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 
 ### Phase B: Create Plan (delegate to superpowers:writing-plans)
 
-4. Invoke `superpowers:writing-plans` with the enriched context.
+1. Invoke `superpowers:writing-plans` with the enriched context.
 
-5. For each task in the plan, ensure it includes:
+2. For each task in the plan, ensure it includes:
    - **Test strategy**: which tests cover this task's requirements
    - **Mock check**: does this task need to interact with protected components?
    - **Evidence criteria**: what output proves this task is done
 
-6. Every task must follow the pattern:
+3. Every task must follow the pattern:
+
    ```
    ### Task N: [Name]
    **Files:** [exact paths]
@@ -59,7 +62,7 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 
 ### Phase C: Validate Plan
 
-7. Confirm the plan:
+1. Confirm the plan:
    - [ ] Every task has a test strategy
    - [ ] No task mocks a protected component
    - [ ] Plan references exact file paths (no TBDs)
@@ -73,4 +76,5 @@ Save the plan to `docs/plans/` and feed into `tdd+` for implementation.
 ## Skill Chain
 
 After completing plan+, the next step is:
+
 - Invoke `/tdd+` to implement the plan task-by-task with RED-GREEN-REFACTOR

@@ -1,10 +1,17 @@
 # Phase 6: CLI Installer
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the `claude-stack-utils init` CLI command that scaffolds hooks, skills, agents, and config into a project's `.claude/` directory. Also build the `verify-harness` skill template for post-install session verification.
+**Goal:** Build the `claude-stack-utils init` CLI command that scaffolds hooks, skills, agents,
+and config into a project's `.claude/` directory. Also build the `verify-harness` skill
+template for post-install session verification.
 
-**Architecture:** A Node.js CLI entry point that reads templates from the installed package, detects the current environment, and copies/renders them into the target project. Uses `commander` for arg parsing. The init command is idempotent — running it twice does not overwrite user customizations unless `--force` is passed.
+**Architecture:** A Node.js CLI entry point that reads templates from the installed package,
+detects the current environment, and copies/renders them into the target project. Uses
+`commander` for arg parsing. The init command is idempotent -- running it twice does not
+overwrite user customizations unless `--force` is passed.
 
 **Tech Stack:** TypeScript, vitest, commander, Node.js fs/path
 
@@ -40,6 +47,7 @@ tests/
 ### Task 1: Template Renderer
 
 **Files:**
+
 - Create: `src/cli/renderer.ts`
 - Create: `tests/cli/renderer.test.ts`
 
@@ -132,6 +140,7 @@ git commit -m "feat: add simple template renderer for CLI scaffolding"
 ### Task 2: Hook Templates
 
 **Files:**
+
 - Create: `templates/hooks/pre-tool-use.ts`
 - Create: `templates/hooks/post-tool-use.ts`
 - Create: `templates/hooks/session-start.ts`
@@ -240,6 +249,7 @@ git commit -m "feat: add hook script templates for pre/post tool use and session
 ### Task 3: Init Command
 
 **Files:**
+
 - Create: `src/cli/init.ts`
 - Create: `tests/cli/init.test.ts`
 
@@ -499,6 +509,7 @@ git commit -m "feat: add CLI init command with idempotent scaffolding"
 ### Task 4: CLI Entry Point
 
 **Files:**
+
 - Create: `src/cli/index.ts`
 
 - [ ] **Step 1: Write the CLI entry point**
@@ -540,6 +551,7 @@ Run: `npm install commander && npm install -D @types/commander`
 - [ ] **Step 3: Update package.json bin field**
 
 Ensure `package.json` has:
+
 ```json
 {
   "bin": {
@@ -565,6 +577,7 @@ git commit -m "feat: add CLI entry point with commander"
 ### Task 5: verify-harness Skill Template
 
 **Files:**
+
 - Create: `templates/skills/verify-harness/SKILL.md`
 
 - [ ] **Step 1: Create the verify-harness skill**
@@ -578,7 +591,7 @@ description: "Run after `claude-stack-utils init` to verify all hooks, skills, a
 user-invocable: true
 ---
 
-# verify-harness — Post-Install Verification
+## verify-harness — Post-Install Verification
 
 Run this skill after `claude-stack-utils init` to confirm everything is working.
 
@@ -635,8 +648,9 @@ Run each check and report PASS/FAIL with evidence.
 ## Report Format
 
 ```
-Session Verification Report
-============================
+
+Session Verification Report:
+
 Session Start:  X/5 passed
 Tool Router:    X/8 passed
 Enforcement:    X/6 passed
@@ -647,9 +661,10 @@ Configuration:  X/2 passed
 TOTAL: XX/28 passed
 
 Failures:
+
 - [ID]: [what happened]. Expected: [expected]. Got: [actual].
   Remediation: [how to fix]
-```
+
 ```
 
 - [ ] **Step 2: Commit**

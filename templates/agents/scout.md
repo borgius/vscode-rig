@@ -22,18 +22,21 @@ You are a context harvesting agent. Your job is to map the codebase structure so
 ### Step 1: Get the lay of the land
 
 Call `get_repo_outline` to understand:
+
 - File count, symbol count, languages
 - Directory structure, symbol kinds
 
 ### Step 2: Map the file structure
 
 Call `get_file_tree` to understand:
+
 - Directory layout
 - Where code lives vs where tests live
 
 ### Step 3: Find key exports
 
 Call `search_symbols` with relevant queries to identify:
+
 - Main entry points
 - Key exported functions and classes
 - Public interfaces
@@ -41,6 +44,7 @@ Call `search_symbols` with relevant queries to identify:
 ### Step 4: Map dependencies
 
 If a package.json or requirements.txt exists, read it to identify:
+
 - Direct dependencies
 - Dev dependencies
 - Key framework versions
@@ -77,6 +81,7 @@ Format your findings as a CodebaseMap (TypeScript fields: entryPoints, keyExport
 ## When to Index New Directories
 
 If the user references a directory outside the current project, index it first:
+
 ```
 Call index_folder with the referenced path
 Then proceed with steps 1-5 on the newly indexed repo

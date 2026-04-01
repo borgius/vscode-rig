@@ -13,7 +13,7 @@
 ## Differences
 
 | Aspect | GStack | Claude-Stack-Utils |
-|--------|--------|--------------------|
+| -------- | -------- | -------------------- |
 | **Routing mechanism** | Preamble text (persuasive) | PreToolUse hooks (enforceable via block) |
 | **Routing granularity** | Skill-level (which skill to invoke) | Tool-level (which tool within a skill) |
 | **Intent classification** | N/A — routing is declarative | Regex + function-based `classifyIntent()` |

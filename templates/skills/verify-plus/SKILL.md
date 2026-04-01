@@ -10,6 +10,7 @@ user-invocable: true
 Wraps `superpowers:verification-before-completion`. Requires superpowers to be installed.
 
 **This skill activates verify+ phase in the enforcement layer.** During this phase:
+
 - Full test suite runs are ALLOWED (this is the verification phase)
 - Zero-defect enforcement is at strict tolerance
 - Evidence must be shown before claiming done
@@ -19,6 +20,7 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 ### Phase A: Preparation
 
 1. Announce phase entry:
+
    ```
    Now using verify+ skill. Enforcement layer adjusted:
    - Test scope: full suite runs allowed (this is verification phase)
@@ -32,27 +34,30 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 
 ### Phase B: Full Verification (delegate to superpowers:verification-before-completion)
 
-4. Invoke `superpowers:verification-before-completion` with the plan context.
+1. Invoke `superpowers:verification-before-completion` with the plan context.
 
-5. Run the FULL test suite:
+2. Run the FULL test suite:
+
    ```
    npx vitest run
    ```
+
    Show the output. Every test must pass. Zero failures. Zero errors.
 
-6. For each acceptance criterion in the plan:
+3. For each acceptance criterion in the plan:
    - Show evidence that it is met (command output, file contents, test results)
    - Use positive framing: "Criterion X is met: [evidence]"
    - Do NOT say "tests pass" — show the actual test output
 
-7. Check for spec drift:
+4. Check for spec drift:
    - Compare the plan's task list against actual implementation
    - Were any tasks skipped? Added? Changed?
    - Document any deviations with reasons
 
 ### Phase C: Evidence Report
 
-8. Produce a verification report:
+1. Produce a verification report:
+
    ```
    ## Verification Report
 
@@ -73,10 +78,11 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
    - [ ] All source changes have test coverage
    ```
 
-9. If ALL checks pass, verification is complete.
+2. If ALL checks pass, verification is complete.
    If ANY check fails, return to tdd+ phase to fix.
 
 ## Skill Chain
 
 After verify+ passes:
+
 - Invoke `/review+` to run the compliance review agent

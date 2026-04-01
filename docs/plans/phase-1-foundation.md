@@ -1,10 +1,15 @@
 # Phase 1: Foundation - Types, Config, Environment Detection
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Establish the shared type system, configuration loader, and environment detection that all other layers depend on.
 
-**Architecture:** Pure TypeScript modules with no framework dependencies. Types are defined first, then config loader reads `.harness.yaml` with YAML override support, then environment detector probes for rtk and jcodemunch availability. All modules are independently testable with vitest.
+**Architecture:** Pure TypeScript modules with no framework dependencies. Types are defined
+first, then config loader reads `.harness.yaml` with YAML override support, then environment
+detector probes for rtk and jcodemunch availability. All modules are independently testable
+with vitest.
 
 **Tech Stack:** TypeScript, vitest, yaml (parser), Node.js fs/path
 
@@ -37,6 +42,7 @@ fixtures/
 ### Task 1: Project Scaffolding
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tsconfig.json`
 - Create: `vitest.config.ts`
@@ -152,6 +158,7 @@ git commit -m "feat: scaffold project with TypeScript, vitest, yaml deps"
 ### Task 2: Shared Type Definitions
 
 **Files:**
+
 - Create: `src/types.ts`
 - Create: `tests/types.test.ts`
 
@@ -444,6 +451,7 @@ git commit -m "feat: add shared type definitions and type guards"
 ### Task 3: Configuration Loader
 
 **Files:**
+
 - Create: `src/config.ts`
 - Create: `tests/config.test.ts`
 - Create: `fixtures/minimal-config.yaml`
@@ -712,6 +720,7 @@ git commit -m "feat: add config loader with YAML parsing and local override merg
 ### Task 4: Environment Detection
 
 **Files:**
+
 - Create: `src/session/environment.ts`
 - Create: `tests/session/environment.test.ts`
 
@@ -912,6 +921,7 @@ git commit -m "feat: add environment detection for rtk and jcodemunch"
 ### Task 5: Session Cache
 
 **Files:**
+
 - Create: `src/session/cache.ts`
 - Create: `tests/session/cache.test.ts`
 
@@ -1101,6 +1111,7 @@ Use `superpowers:debugging` to analyze Phase 1 design and code quality against t
 - [ ] **Step 1: Research gstack foundation patterns**
 
 Use jcodemunch to find gstack's type system, config, and session infrastructure:
+
 ```
 search_symbols(repo="local/gstack", query="config")
 search_symbols(repo="local/gstack", query="environment")

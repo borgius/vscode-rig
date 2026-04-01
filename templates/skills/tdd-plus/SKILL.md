@@ -10,6 +10,7 @@ user-invocable: true
 Wraps `superpowers:test-driven-development`. Requires superpowers to be installed.
 
 **This skill activates tdd+ phase in the enforcement layer.** During this phase:
+
 - Full test suite runs are redirected (use scoped tests only)
 - Stale test warnings fire when source edits lack test updates
 - Constitutional no-mock rules are enforced
@@ -19,6 +20,7 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
 ### Phase A: Setup
 
 1. Announce phase entry:
+
    ```
    Now using tdd+ skill. Enforcement layer active:
    - Test scope: scoped runs only (full suite reserved for verify+)
@@ -32,7 +34,7 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
 
 ### Phase B: Implement Each Task (delegate to superpowers:test-driven-development)
 
-4. For each task in the plan, follow RED-GREEN-REFACTOR:
+1. For each task in the plan, follow RED-GREEN-REFACTOR:
 
    **RED — Write the failing test first:**
    - Write a test that captures the task's requirement
@@ -54,29 +56,31 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
    - Run scoped tests after each refactoring step
    - Commit after each completed task
 
-5. After each source file edit, check:
+2. After each source file edit, check:
    - Was the corresponding test file also updated?
    - If not, the enforcement layer will emit a stale test warning
    - Address it before proceeding to the next task
 
 ### Phase C: Task Completion
 
-6. After each task, verify:
+1. After each task, verify:
    - [ ] Test was written first and shown to fail
    - [ ] Implementation makes the test pass
    - [ ] Scoped test run passes (not full suite)
    - [ ] No constitutional rules violated
    - [ ] Commit made with descriptive message
 
-7. Proceed to next task or exit tdd+ phase when all plan tasks complete.
+2. Proceed to next task or exit tdd+ phase when all plan tasks complete.
 
 ## Test Scope Rules
 
 During tdd+ phase, the enforcement layer redirects:
+
 - `npx vitest run` (full suite) → advise to run scoped tests only
 - `pytest` (full suite) → advise to run specific test file
 
 Use scoped commands:
+
 ```
 npx vitest run tests/router/resolver.test.ts
 pytest tests/test_config.py::test_load_config
@@ -87,4 +91,5 @@ Full suite runs happen during `verify+` phase, not here.
 ## Skill Chain
 
 After completing all plan tasks with tdd+:
+
 - Invoke `/verify+` to run full suite and verify against plan acceptance criteria

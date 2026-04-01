@@ -1,10 +1,13 @@
 # Documentation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Write public-facing documentation that makes claude-stack-utils discoverable, understandable, and installable without reading source code.
 
-**Architecture:** Four documents: README.md (entry point), CLAUDE.md (agent instructions), docs/architecture.md (system design), docs/getting-started.md (hands-on guide). No separate API reference — the type surface is small enough (108 symbols, 26 files) that inline types + architecture doc suffice. Retrospectives already document the development journey.
+**Architecture:** Four documents: README.md (entry point), CLAUDE.md (agent instructions), docs/architecture.md (system design), docs/getting-started.md (hands-on guide).
+No separate API reference — the type surface is small enough (108 symbols, 26 files) that inline types + architecture doc suffice.
+Retrospectives already document the development journey.
 
 **Tech Stack:** Markdown, mermaid diagrams (code-fenced), existing markdownlint config
 
@@ -13,19 +16,21 @@
 ## File Structure
 
 | File | Responsibility |
-|------|---------------|
+| --- | --- |
 | `README.md` | Project entry point: what, why, quick start, architecture overview, config, contributing |
 | `CLAUDE.md` | Project-level agent instructions: conventions, test commands, architecture notes |
 | `docs/architecture.md` | System design: layered middleware, data flow, module map, design decisions |
 | `docs/getting-started.md` | Hands-on: prerequisites, install, init, verify, first skill chain run |
 
-No other files needed. The 7 retrospectives in `docs/retrospectives/` and 7+1 plans in `docs/plans/` already document the development history. These four new files fill the gap for users who haven't read the source.
+No other files needed. The 7 retrospectives in `docs/retrospectives/` and 7+1 plans in `docs/plans/` already document the development history.
+These four new files fill the gap for users who haven't read the source.
 
 ---
 
 ### Task 1: README.md
 
 **Files:**
+
 - Create: `README.md`
 
 - [ ] **Step 1: Write the README**
@@ -100,7 +105,7 @@ Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warn
 ## Skill chain
 
 | Skill | Purpose | Wraps |
-|-------|---------|-------|
+| --- | --- | --- |
 | `brain+` | Ideation and requirements | `superpowers:brainstorming` |
 | `plan+` | Implementation planning | `superpowers:writing-plans` |
 | `tdd+` | Test-driven development | `superpowers:tdd` |
@@ -148,6 +153,7 @@ npm run lint     # type-check only
 ## License
 
 MIT
+
 ```
 
 - [ ] **Step 2: Run markdown lint**
@@ -167,6 +173,7 @@ git commit -m "docs: add README.md"
 ### Task 2: CLAUDE.md
 
 **Files:**
+
 - Create: `CLAUDE.md`
 
 - [ ] **Step 1: Write CLAUDE.md**
@@ -187,7 +194,7 @@ npm run build     # Compile TypeScript to dist/
 npm run lint      # Type-check (tsc --noEmit)
 ```
 
-## Architecture
+## System Architecture
 
 Four-layer middleware:
 
@@ -201,6 +208,7 @@ Supporting: `src/config.ts` (YAML config), `src/session/` (environment detection
 ## Key Types
 
 All types in `src/types.ts`. Important ones:
+
 - `IntentType` — file_read, text_search, file_discovery, file_modify
 - `EnforcementLevel` — block, advise, silent
 - `Resolution` — redirect, advise, block, allow
@@ -223,6 +231,7 @@ All types in `src/types.ts`. Important ones:
 - Vitest with v8 coverage provider
 - Coverage gate: 80% statements/functions/lines, 75% branches
 - No mocks for environment detection — use injectable `ExecFn`
+
 ```
 
 - [ ] **Step 2: Run markdown lint**
@@ -242,6 +251,7 @@ git commit -m "docs: add CLAUDE.md project instructions"
 ### Task 3: docs/architecture.md
 
 **Files:**
+
 - Create: `docs/architecture.md`
 
 - [ ] **Step 1: Write architecture.md**
@@ -265,6 +275,7 @@ claude-stack-utils is a **layered middleware** system. Each layer has one respon
 The tool router intercepts shell commands before Claude Code executes them.
 
 ```
+
 User types: grep -r "TODO" src/
      ↓
 PreToolUse Hook (handlePreToolUse)
@@ -280,6 +291,7 @@ resolve(rule, environment) → Resolution
   └──────────────────────────────────┘
      ↓
 HookResult: { decision: "block"|"allow", reason? }
+
 ```
 
 **Files:** `src/router/intent.ts` (classification), `src/router/rules.ts` (default rules), `src/router/resolver.ts` (priority resolution), `src/router/hook.ts` (hook entry point)
@@ -300,6 +312,7 @@ HookResult: { decision: "block"|"allow", reason? }
 The enforcement pipeline runs after each tool use, checking for quality violations.
 
 ```
+
 PostToolUse Hook (handlePostToolUse)
      ↓
 ┌─────────────────┐
@@ -317,6 +330,7 @@ Each check returns EnforcementResult: { level, message }
 getEffectiveEnforcement() → most severe level wins
      ↓
 HookResult: { decision, reason }
+
 ```
 
 **Enforcement levels:**
@@ -342,6 +356,7 @@ HookResult: { decision, reason }
 Skills are ordered workflow stages. The `SkillPhaseTracker` enforces valid transitions.
 
 ```
+
 brain+ → plan+ → tdd+ → verify+ → review+
    │        │       │        │         │
    │        │       │        │         └─ requires verify+ visit
@@ -349,6 +364,7 @@ brain+ → plan+ → tdd+ → verify+ → review+
    │        │       └─ requires plan+ visit
    │        └─ no prerequisite (entry point for planning)
    └─ no prerequisite (entry point for ideation)
+
 ```
 
 **Phase transition rules:**
@@ -366,6 +382,7 @@ Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are S
 The scout agent builds a typed `CodebaseMap` from jcodemunch indexes.
 
 ```
+
 Scout agent invoked
      ↓
 ensureIndexed(directory) → jcodemunch auto-index
@@ -381,6 +398,7 @@ CodebaseMap: {
 }
      ↓
 Formatted as structured context for the agent
+
 ```
 
 **Cross-repo support:** `ensureIndexed()` indexes external directories on first reference. `ScoutCache` with 30-min TTL prevents redundant indexing.
@@ -400,27 +418,30 @@ Formatted as structured context for the agent
 ## Data flow: init command
 
 ```
+
 npx claude-stack-utils init
      ↓
 initCommand(options)
      ↓
 copyTemplate() for each:
-  - hooks/pre-tool-use.ts
-  - hooks/post-tool-use.ts
-  - hooks/session-start.ts
-  - skills/brain-plus/SKILL.md
-  - skills/plan-plus/SKILL.md
-  - skills/tdd-plus/SKILL.md
-  - skills/verify-plus/SKILL.md
-  - skills/review-plus/SKILL.md
-  - skills/verify-harness/SKILL.md
-  - agents/scout.md
+
+- hooks/pre-tool-use.ts
+- hooks/post-tool-use.ts
+- hooks/session-start.ts
+- skills/brain-plus/SKILL.md
+- skills/plan-plus/SKILL.md
+- skills/tdd-plus/SKILL.md
+- skills/verify-plus/SKILL.md
+- skills/review-plus/SKILL.md
+- skills/verify-harness/SKILL.md
+- agents/scout.md
      ↓
 renderTemplate() replaces {{VAR}} placeholders
      ↓
 updateSettingsJson() registers hooks in .claude/settings.json
      ↓
 Writes .harness.yaml with default enforcement config
+
 ```
 
 ## Design decisions from retrospectives
@@ -463,6 +484,7 @@ git commit -m "docs: add architecture.md"
 ### Task 4: docs/getting-started.md
 
 **Files:**
+
 - Create: `docs/getting-started.md`
 
 - [ ] **Step 1: Write getting-started.md**
@@ -491,7 +513,7 @@ npx claude-stack-utils init
 This generates:
 
 | Path | Purpose |
-|------|---------|
+| --- | --- |
 | `.claude/hooks/pre-tool-use.ts` | Tool router — redirects grep/find/cat to better tools |
 | `.claude/hooks/post-tool-use.ts` | Enforcement — stale tests, scope, constitutional, zero-defect |
 | `.claude/hooks/session-start.ts` | Auto-indexes your project on session start |
@@ -549,7 +571,7 @@ enforcement:
 **Levels:**
 
 | Level | What happens |
-|-------|-------------|
+| --- | --- |
 | `block` | Hook rejects the tool call (exit 2) |
 | `advise` | Warning printed, tool call proceeds |
 | `silent` | Logged only, no visible output |
@@ -607,6 +629,7 @@ Then remove hook registrations from `.claude/settings.json`. The `init` command 
 
 - Read [docs/architecture.md](architecture.md) for the full system design
 - Check `docs/retrospectives/` for design decisions and GStack comparison notes
+
 ```
 
 - [ ] **Step 2: Run markdown lint**
@@ -626,6 +649,7 @@ git commit -m "docs: add getting-started.md"
 ### Task 5: Lint and link check
 
 **Files:**
+
 - Modify: (none — validation only)
 
 - [ ] **Step 1: Run full markdown lint**
@@ -636,6 +660,7 @@ Expected: PASS for all four files
 - [ ] **Step 2: Verify internal links**
 
 Check that relative links resolve:
+
 - `README.md` links to `docs/architecture.md` — must exist
 - `docs/getting-started.md` links to `architecture.md` — must exist (same directory)
 - `docs/getting-started.md` references `docs/retrospectives/` — must exist
@@ -655,6 +680,7 @@ git commit -m "docs: fix lint issues"
 ### Task 6: Agentic-patterns improvement plan
 
 **Files:**
+
 - Create: `docs/plans/2026-03-31-agentic-patterns-improvements.md` (analysis and recommendations)
 - Create: in agentic-patterns repo: plan document with concrete improvement tasks
 
@@ -677,10 +703,13 @@ git commit -m "docs: add agentic-patterns improvement analysis"
 
 ## Self-Review
 
-**1. Spec coverage:** The user asked for docs "suitably structured" with "agentic-patterns principles" and learning from "claw-code, superpower, gstack." This plan creates four documents covering all those angles — README (entry, like any good OSS project), CLAUDE.md (agent instructions, following superpowers pattern), architecture.md (system design, covering the guardrails pattern from agentic-patterns), and getting-started.md (hands-on). No gaps.
+**1. Spec coverage:** The user asked for docs "suitably structured" with "agentic-patterns principles" and learning from "claw-code, superpower, gstack."
+This plan creates four documents covering all those angles — README (entry, like any good OSS project), CLAUDE.md (agent instructions, following superpowers pattern),
+architecture.md (system design, covering the guardrails pattern from agentic-patterns), and getting-started.md (hands-on). No gaps.
 
 **2. Placeholder scan:** No TBD, TODO, or "implement later" patterns. All content is concrete.
 
 **3. Type consistency:** No code types to cross-reference — this is a documentation plan. File paths are consistent with the actual project structure verified via rtk.
 
-**4. Verbosity check:** README covers what/why/quick-start/architecture/config/skills in ~100 lines. CLAUDE.md is agent-scoped conventions in ~50 lines. Architecture is the deepest doc at ~180 lines with ASCII diagrams and data flows. Getting-started is practical walkthrough at ~130 lines. Total: ~460 lines across 4 files. Precise, not bloated.
+**4. Verbosity check:** README covers what/why/quick-start/architecture/config/skills in ~100 lines. CLAUDE.md is agent-scoped conventions in ~50 lines.
+Architecture is the deepest doc at ~180 lines with ASCII diagrams and data flows. Getting-started is practical walkthrough at ~130 lines. Total: ~460 lines across 4 files. Precise, not bloated.

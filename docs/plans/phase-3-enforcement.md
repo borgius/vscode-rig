@@ -1,10 +1,17 @@
 # Phase 3: Enforcement - Stale Tests, Test Scope, Constitutional, Zero-Defect
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the PostToolUse enforcement hooks that detect stale tests, enforce test scope during iterative fix cycles, flag missing tests after source edits, enforce constitutional rules, and implement zero-defect tolerance.
+**Goal:** Build the PostToolUse enforcement hooks that detect stale tests, enforce test scope
+during iterative fix cycles, flag missing tests after source edits, enforce constitutional
+rules, and implement zero-defect tolerance.
 
-**Architecture:** PostToolUse hooks fire after Edit, Write, and Bash (test runs) tool calls. Each hook reads the session cache for phase state and edited file tracking, then produces allow/advise/block output. Hooks are composable — each enforcement concern is a separate function that can be enabled/disabled via `.harness.yaml`.
+**Architecture:** PostToolUse hooks fire after Edit, Write, and Bash (test runs) tool calls.
+Each hook reads the session cache for phase state and edited file tracking, then produces
+allow/advise/block output. Hooks are composable — each enforcement concern is a separate
+function that can be enabled/disabled via `.harness.yaml`.
 
 **Tech Stack:** TypeScript, vitest
 
@@ -38,6 +45,7 @@ tests/
 ### Task 1: File Tracker - Source vs Test Edit Tracking
 
 **Files:**
+
 - Create: `src/enforcement/file-tracker.ts`
 - Create: `tests/enforcement/file-tracker.test.ts`
 
@@ -288,6 +296,7 @@ git commit -m "feat: add file tracker for source vs test edit detection"
 ### Task 2: Stale Test Detection
 
 **Files:**
+
 - Create: `src/enforcement/stale-test.ts`
 - Create: `tests/enforcement/stale-test.test.ts`
 
@@ -437,6 +446,7 @@ git commit -m "feat: add stale test detection — warns when source edits lack t
 ### Task 3: Test Scope Enforcement
 
 **Files:**
+
 - Create: `src/enforcement/test-scope.ts`
 - Create: `tests/enforcement/test-scope.test.ts`
 
@@ -639,6 +649,7 @@ git commit -m "feat: add test scope enforcement — redirects full suite runs du
 ### Task 4: Constitutional Rule Enforcement
 
 **Files:**
+
 - Create: `src/enforcement/constitutional.ts`
 - Create: `tests/enforcement/constitutional.test.ts`
 
@@ -873,6 +884,7 @@ git commit -m "feat: add constitutional rule enforcement — no-mock, evidence-o
 ### Task 5: Zero-Defect Enforcement
 
 **Files:**
+
 - Create: `src/enforcement/zero-defect.ts`
 - Create: `tests/enforcement/zero-defect.test.ts`
 
@@ -1075,6 +1087,7 @@ git commit -m "feat: add zero-defect enforcement — parses test output for fail
 ### Task 6: PostToolUse Hook Entry Point (Compose All Checks)
 
 **Files:**
+
 - Create: `src/enforcement/post-tool-use.ts`
 - Create: `tests/enforcement/post-tool-use.test.ts`
 

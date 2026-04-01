@@ -8,12 +8,13 @@
 
 ## Overview
 
-A bespoke, open-source agent harness that distills the best patterns from superpowers, gstack, claw-code, and damage-control-guardrails into a unified system. The harness codifies the agentic-patterns pyramid (L0-L4) into enforceable tool routing, skill chains, and multi-agent discipline for continuous, unattended development.
+A bespoke, open-source agent harness that distills the best patterns from superpowers, gstack, claw-code, and damage-control-guardrails into a unified system.
+The harness codifies the agentic-patterns pyramid (L0-L4) into enforceable tool routing, skill chains, and multi-agent discipline for continuous, unattended development.
 
 ## Source Project Analysis
 
 | Project | What We Take |
-|---------|-------------|
+| --- | --- |
 | **superpowers** | **Used as-is, not replaced.** Skills are wrapped/extended, not reimplemented. The harness depends on superpowers being installed and adds overlays on top. |
 | **gstack** | Template-based skill generation, resolver architecture, eval system, multi-platform adapter pattern |
 | **claw-code** | Command graph routing, query engine turn loop, execution registry, tool pool concept |
@@ -38,7 +39,8 @@ Layer 4: Enforcement (hooks+skills) — constitutional rules, zero-defect, test 
 
 ### Purpose
 
-Intercept every Claude Code tool call and route to the optimal tool based on intent + environment. Forces jcodemunch/rtk usage when available for broad code operations, with Read/Explore as fallback only for targeted single-file lookups.
+Intercept every Claude Code tool call and route to the optimal tool based on intent + environment.
+Forces jcodemunch/rtk usage when available for broad code operations, with Read/Explore as fallback only for targeted single-file lookups.
 
 ### Mechanism
 
@@ -47,7 +49,7 @@ Intercept every Claude Code tool call and route to the optimal tool based on int
 ### Intent Classification
 
 | Intent | Matches | Default Resolution |
-|--------|---------|-------------------|
+| --- | --- | --- |
 | `file_read` | `Bash("cat ...")`, `Bash("head ...")` | Advise: Read tool |
 | `text_search` | `Bash("grep ...")`, `Grep(...)` | Block/Advise: jcodemunch search_text or search_symbols |
 | `file_discovery` | `Bash("find ...")`, `Glob(...)` | Block/Advise: jcodemunch get_file_tree |
@@ -110,6 +112,7 @@ rules:
 ```
 
 Enforcement levels:
+
 - `block` - agent cannot proceed (returns error)
 - `advise` - agent gets warning but can proceed
 - `silent` - logged but no visible feedback
@@ -139,7 +142,7 @@ interface ResolutionBlock { action: 'block'; reason: string; }
 ### Key Interception Examples
 
 | Tool Call | Intercepted? | Resolution |
-|-----------|-------------|------------|
+| --- | --- | --- |
 | `Bash("grep -r pattern .")` | Yes | Block → use jcodemunch search_text |
 | `Grep("pattern")` | Yes | Advise → jcodemunch search_text (if indexed) |
 | `Glob("**/*.ts")` | Yes | Advise → jcodemunch get_file_tree (if indexed) |
@@ -202,7 +205,9 @@ brain+ (design with stack-first considerations + scout context)
 
 ### Skill Definitions
 
-**Important**: These skills do NOT replace superpowers. They require superpowers to be installed and wrap the existing skills with project-specific overlays. The base skills (superpowers:brainstorming, superpowers:writing-plans, etc.) remain the authoritative implementation. Our skills add harness-specific preambles, hook activations, and discipline overlays that inject before delegating to the superpowers original.
+**Important**: These skills do NOT replace superpowers. They require superpowers to be installed and wrap the existing skills with project-specific overlays.
+The base skills (superpowers:brainstorming, superpowers:writing-plans, etc.) remain the authoritative implementation.
+Our skills add harness-specific preambles, hook activations, and discipline overlays that inject before delegating to the superpowers original.
 
 Each skill lives in `.claude/skills/<name>/SKILL.md` with YAML frontmatter.
 
@@ -255,6 +260,7 @@ Each skill lives in `.claude/skills/<name>/SKILL.md` with YAML frontmatter.
 ### Skill Chain Enforcement
 
 The chain is enforced through:
+
 1. Each skill's checklist mandates invoking the previous skill's output
 2. Hooks track skill activation state across the session
 3. The reviewer agent validates chain completeness
@@ -288,7 +294,8 @@ From agentic-patterns Pattern 1.6:
 
 ### Stale Test Detection
 
-**Problem**: An agent edits application code, then runs the existing unit tests. The tests pass — but they weren't updated to reflect the code changes. The pass is a false positive: the tests validate the old behavior, not the new behavior.
+**Problem**: An agent edits application code, then runs the existing unit tests. The tests pass — but they weren't updated to reflect the code changes.
+The pass is a false positive: the tests validate the old behavior, not the new behavior.
 
 **Detection mechanism** (PostToolUse hook):
 
@@ -319,11 +326,13 @@ rules:
     grace_period: 0            # number of turns after source edit before warning fires
 ```
 
-**Review+ integration**: The reviewer agent also checks for stale tests. It compares the diff of source files against the diff of test files. If source changes have no corresponding test changes, the review fails with specific files listed.
+**Review+ integration**: The reviewer agent also checks for stale tests. It compares the diff of source files against the diff of test files.
+If source changes have no corresponding test changes, the review fails with specific files listed.
 
 ### Test Scope Enforcement
 
-**Problem**: When fixing a single type or file, the agent runs the entire test suite instead of the scoped tests that relate specifically to that file. Full suite runs are expensive, slow, and wasteful during the iterative fix cycle. They belong in the final verification phase, not during TDD loops.
+**Problem**: When fixing a single type or file, the agent runs the entire test suite instead of the scoped tests that relate specifically to that file.
+Full suite runs are expensive, slow, and wasteful during the iterative fix cycle. They belong in the final verification phase, not during TDD loops.
 
 **Detection mechanism** (PreToolUse hook on Bash):
 
@@ -356,7 +365,8 @@ rules:
       - "jest --watch"
 ```
 
-**Phase awareness**: The hook tracks which skill phase the session is in. During `tdd+` phase, unscoped test runs are blocked/redirected. During `verify+` phase, unscoped test runs are allowed (that's the full verification step).
+**Phase awareness**: The hook tracks which skill phase the session is in. During `tdd+` phase, unscoped test runs are blocked/redirected.
+During `verify+` phase, unscoped test runs are allowed (that's the full verification step).
 
 ### Configuration
 
@@ -490,7 +500,8 @@ This harness is built using its own tdd+ skill. RED-GREEN-REFACTOR discipline th
 
 ## Session Verification Checklist
 
-Hooks and skills can only be truly validated in a live Claude Code session after installation. This checklist is loaded via a `/verify-harness` command (implemented as a skill) that the user or CI runs in a fresh session to confirm everything works as designed.
+Hooks and skills can only be truly validated in a live Claude Code session after installation.
+This checklist is loaded via a `/verify-harness` command (implemented as a skill) that the user or CI runs in a fresh session to confirm everything works as designed.
 
 ### How It Works
 
@@ -587,15 +598,18 @@ Failures (if any):
 12. **Stale test detection** - source edits without test edits trigger warnings (false positive prevention)
 13. **Test scope enforcement** - full suite runs blocked during tdd+, only allowed during verify+
 14. **Phase-aware enforcement** - hooks track current skill phase and adjust rules accordingly
-15. **Positive framing in all skill instructions** - from bjcoombs' insight: agents respond better to "do X" behavioral contracts than "don't do Y" negative framing. All skill instructions use positive framing.
-16. **CI guardrails for documentation** - from bjcoombs' PR: markdown lint, link integrity, doc reachability from CLAUDE.md, writing conventions (no filler words). The harness should scaffold these as CI jobs.
+15. **Positive framing in all skill instructions** - from bjcoombs' insight: agents respond better to "do X" behavioral contracts than "don't do Y" negative framing.
+    All skill instructions use positive framing.
+16. **CI guardrails for documentation** - from bjcoombs' PR: markdown lint, link integrity, doc reachability from CLAUDE.md, writing conventions (no filler words).
+    The harness should scaffold these as CI jobs.
 17. **Coverage gates as enforcement** - per-PR patch coverage + per-component thresholds. Forces agents to write tests during implementation, not as follow-up.
 
 ## Insights from bjcoombs (agentic-patterns contributor)
 
 These informed the design but are not all in v1 scope:
 
-- **Positive framing**: Agents respond to negative framing ("don't do X") with caution and avoidance rather than confident action. All harness skill instructions use positive behavioral contracts ("use constructor injection") instead of negative ones ("don't create singletons").
+- **Positive framing**: Agents respond to negative framing ("don't do X") with caution and avoidance rather than confident action.
+  All harness skill instructions use positive behavioral contracts ("use constructor injection") instead of negative ones ("don't create singletons").
 - **CI guardrails for docs** (v1): markdownlint, link integrity, CLAUDE.md line limits, doc reachability, writing conventions. Scaffolded by init command.
 - **Coverage gates** (v1): Project-wide minimums + per-PR patch coverage. Forces test writing during implementation.
 - **Denormalized availability** (v2): Commit generated files (proto, OpenAPI) so worktrees are immediately buildable. Important for multi-agent worktree workflows.

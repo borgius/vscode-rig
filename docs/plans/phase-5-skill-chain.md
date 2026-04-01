@@ -1,10 +1,15 @@
 # Phase 5: Skill Chain - brain+ / plan+ / tdd+ / verify+ / review+
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the five skill definitions that wrap superpowers skills with agentic-patterns discipline overlays. Each skill is a markdown template with YAML frontmatter that gets installed to `.claude/skills/`. Also build the phase tracker that the enforcement hooks use to adjust behavior based on current skill phase.
+**Goal:** Build the five skill definitions that wrap superpowers skills with agentic-patterns discipline overlays.
+Each skill is a markdown template with YAML frontmatter that gets installed to `.claude/skills/`.
+Also build the phase tracker that the enforcement hooks use to adjust behavior based on current skill phase.
 
-**Architecture:** Skills are markdown files with YAML frontmatter, following Claude Code's skill format. They do NOT reimplement superpowers — they wrap it by requiring superpowers to be installed and adding harness-specific preambles, hook activations, and discipline overlays. A `SkillPhaseTracker` module manages phase state transitions and exposes current phase to enforcement hooks.
+**Architecture:** Skills are markdown files with YAML frontmatter, following Claude Code's skill format.
+They do NOT reimplement superpowers — they wrap it by requiring superpowers to be installed and adding harness-specific preambles, hook activations, and discipline overlays.
+A `SkillPhaseTracker` module manages phase state transitions and exposes current phase to enforcement hooks.
 
 **Tech Stack:** TypeScript, vitest
 
@@ -41,6 +46,7 @@ tests/
 ### Task 1: Phase Tracker
 
 **Files:**
+
 - Create: `src/skills/phase-tracker.ts`
 - Create: `tests/skills/phase-tracker.test.ts`
 
@@ -232,13 +238,14 @@ git commit -m "feat: add skill phase tracker with transition validation"
 ### Task 2: brain+ Skill Template
 
 **Files:**
+
 - Create: `templates/skills/brain-plus/SKILL.md`
 
 - [ ] **Step 1: Create the brain+ skill**
 
 Create `templates/skills/brain-plus/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: brain+
 description: "Invoke BEFORE any design or feature work. Wraps superpowers:brainstorming with scout agent context harvesting, stack-first design considerations, and constitutional rule awareness. Asks questions one at a time to refine the design."
@@ -264,7 +271,9 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
 
 1. Invoke the scout agent to map the current codebase:
    ```
+
    Agent(subagent_type="scout", prompt="Map the codebase structure for [feature area]. Focus on: existing patterns, related modules, test infrastructure, and entry points relevant to [feature].")
+
    ```
 
 2. Read the project's CLAUDE.md for constitutional rules.
@@ -308,7 +317,7 @@ Return the validated design with testing strategy to feed into `plan+`.
 
 After completing brain+, the next step is:
 - Invoke `/plan+` to create the implementation plan from this design
-```
+````
 
 - [ ] **Step 2: Commit**
 
@@ -322,13 +331,14 @@ git commit -m "feat: add brain+ skill template wrapping superpowers:brainstormin
 ### Task 3: plan+ Skill Template
 
 **Files:**
+
 - Create: `templates/skills/plan-plus/SKILL.md`
 
 - [ ] **Step 1: Create the plan+ skill**
 
 Create `templates/skills/plan-plus/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: plan+
 description: "Invoke AFTER brain+ design is approved. Wraps superpowers:writing-plans with constitutional rules, testing strategy per task, and mock policy. Creates bite-sized implementation plans."
@@ -352,18 +362,24 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 
 2. Load constitutional rules from CLAUDE.md. Add a **Constitutional Compliance** section to the plan:
    ```
-   ## Constitutional Rules for This Plan
-   - Use real [database/payment/logger] connections — never mock protected components
-   - Show command output before claiming done
-   - Every source file change requires corresponding test changes
-   - Full-loop assertions: verify primary + second-order + third-order effects
+
+## Constitutional Rules for This Plan
+
+- Use real [database/payment/logger] connections — never mock protected components
+- Show command output before claiming done
+- Every source file change requires corresponding test changes
+- Full-loop assertions: verify primary + second-order + third-order effects
+
    ```
 
 3. Identify the mock policy for this plan:
    ```
-   ## Mock Policy
+
+## Mock Policy
+
    Protected (never mock): [list from constitutional rules]
    Allowed: [external third-party services not yet containerized]
+
    ```
 
 ### Phase B: Create Plan (delegate to superpowers:writing-plans)
@@ -377,15 +393,19 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 
 6. Every task must follow the pattern:
    ```
-   ### Task N: [Name]
+
+### Task N: [Name]
+
    **Files:** [exact paths]
    **Test strategy:** [which tests, scoped to this task]
    **Mock check:** [are protected components involved?]
-   - [ ] Step 1: Write failing test
-   - [ ] Step 2: Verify it fails
-   - [ ] Step 3: Write minimal implementation
-   - [ ] Step 4: Verify it passes
-   - [ ] Step 5: Commit
+
+- [ ] Step 1: Write failing test
+- [ ] Step 2: Verify it fails
+- [ ] Step 3: Write minimal implementation
+- [ ] Step 4: Verify it passes
+- [ ] Step 5: Commit
+
    ```
 
 ### Phase C: Validate Plan
@@ -405,7 +425,7 @@ Save the plan to `docs/plans/` and feed into `tdd+` for implementation.
 
 After completing plan+, the next step is:
 - Invoke `/tdd+` to implement the plan task-by-task with RED-GREEN-REFACTOR
-```
+````
 
 - [ ] **Step 2: Commit**
 
@@ -419,13 +439,14 @@ git commit -m "feat: add plan+ skill template wrapping superpowers:writing-plans
 ### Task 4: tdd+ Skill Template
 
 **Files:**
+
 - Create: `templates/skills/tdd-plus/SKILL.md`
 
 - [ ] **Step 1: Create the tdd+ skill**
 
 Create `templates/skills/tdd-plus/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: tdd+
 description: "Invoke AFTER plan+ is approved. Wraps superpowers:test-driven-development with full-loop assertions, no-mock enforcement, zero-defect, stale test detection, and scoped test runs. Implements plan tasks with RED-GREEN-REFACTOR discipline."
@@ -448,10 +469,13 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
 
 1. Announce phase entry:
    ```
+
    Now using tdd+ skill. Enforcement layer active:
-   - Test scope: scoped runs only (full suite reserved for verify+)
-   - Stale tests: warnings when source edited without test updates
-   - Zero-defect: every failure must be fixed before proceeding
+
+- Test scope: scoped runs only (full suite reserved for verify+)
+- Stale tests: warnings when source edited without test updates
+- Zero-defect: every failure must be fixed before proceeding
+
    ```
 
 2. Load the plan from `docs/plans/`.
@@ -506,8 +530,10 @@ During tdd+ phase, the enforcement layer redirects:
 
 Use scoped commands:
 ```
+
 npx vitest run tests/router/resolver.test.ts
 pytest tests/test_config.py::test_load_config
+
 ```
 
 Full suite runs happen during `verify+` phase, not here.
@@ -516,7 +542,7 @@ Full suite runs happen during `verify+` phase, not here.
 
 After completing all plan tasks with tdd+:
 - Invoke `/verify+` to run full suite and verify against plan acceptance criteria
-```
+````
 
 - [ ] **Step 2: Commit**
 
@@ -530,13 +556,14 @@ git commit -m "feat: add tdd+ skill template wrapping superpowers:tdd with enfor
 ### Task 5: verify+ Skill Template
 
 **Files:**
+
 - Create: `templates/skills/verify-plus/SKILL.md`
 
 - [ ] **Step 1: Create the verify+ skill**
 
 Create `templates/skills/verify-plus/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: verify+
 description: "Invoke AFTER tdd+ implementation is complete. Wraps superpowers:verification-before-completion with evidence standards, spec drift check, and full-suite test run. This is the ONLY phase where full test suite runs are appropriate."
@@ -559,10 +586,13 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 
 1. Announce phase entry:
    ```
+
    Now using verify+ skill. Enforcement layer adjusted:
-   - Test scope: full suite runs allowed (this is verification phase)
-   - Zero-defect: strict — every failure must be fixed
-   - Evidence: show command output before claiming done
+
+- Test scope: full suite runs allowed (this is verification phase)
+- Zero-defect: strict — every failure must be fixed
+- Evidence: show command output before claiming done
+
    ```
 
 2. Load the plan from `docs/plans/`.
@@ -575,7 +605,9 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 
 5. Run the FULL test suite:
    ```
+
    npx vitest run
+
    ```
    Show the output. Every test must pass. Zero failures. Zero errors.
 
@@ -593,23 +625,29 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 
 8. Produce a verification report:
    ```
-   ## Verification Report
 
-   ### Test Suite
+## Verification Report
+
+### Test Suite
+
    [Full test output — ALL must pass]
 
-   ### Acceptance Criteria
-   - [ ] Criterion 1: [evidence]
-   - [ ] Criterion 2: [evidence]
-   - [ ] ...
+### Acceptance Criteria
 
-   ### Spec Drift
-   - [No deviations / List deviations with reasons]
+- [ ] Criterion 1: [evidence]
+- [ ] Criterion 2: [evidence]
+- [ ] ...
 
-   ### Constitutional Compliance
-   - [ ] No protected components mocked
-   - [ ] Evidence shown for all claims
-   - [ ] All source changes have test coverage
+### Spec Drift
+
+- [No deviations / List deviations with reasons]
+
+### Constitutional Compliance
+
+- [ ] No protected components mocked
+- [ ] Evidence shown for all claims
+- [ ] All source changes have test coverage
+
    ```
 
 9. If ALL checks pass, verification is complete.
@@ -619,7 +657,7 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
 
 After verify+ passes:
 - Invoke `/review+` to run the compliance review agent
-```
+````
 
 - [ ] **Step 2: Commit**
 
@@ -633,13 +671,14 @@ git commit -m "feat: add verify+ skill template wrapping superpowers:verificatio
 ### Task 6: review+ Skill Template
 
 **Files:**
+
 - Create: `templates/skills/review-plus/SKILL.md`
 
 - [ ] **Step 1: Create the review+ skill**
 
 Create `templates/skills/review-plus/SKILL.md`:
 
-```markdown
+````markdown
 ---
 name: review+
 description: "Invoke AFTER verify+ passes. Wraps superpowers:requesting-code-review with constitutional compliance checklist, stale test validation, and reviewer agent invocation. Two-stage review: spec compliance + code quality."
@@ -659,12 +698,16 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 
 2. Get the list of files changed since the plan was created:
    ```
+
    git diff --name-only [plan-commit]..HEAD
+
    ```
 
 3. Invoke the scout agent to get current codebase state for comparison:
    ```
+
    Agent(subagent_type="scout", prompt="Get current state of these files: [changed files list]. For each file, report: symbol count, key exports, test coverage status.")
+
    ```
 
 ### Phase B: Spec Compliance Review
@@ -702,22 +745,27 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 
 9. Produce a two-stage review report:
    ```
-   ## Review Report
 
-   ### Stage 1: Spec Compliance
-   - [ ] All plan tasks implemented
-   - [ ] Implementation matches plan specification
-   - [ ] No stale test violations
-   - [ ] Constitutional rules followed
+## Review Report
 
-   ### Stage 2: Code Quality
-   - [ ] Files are focused and well-structured
-   - [ ] Interfaces are clean
-   - [ ] No unnecessary complexity
-   - [ ] Positive framing throughout
+### Stage 1: Spec Compliance
 
-   ### Verdict
+- [ ] All plan tasks implemented
+- [ ] Implementation matches plan specification
+- [ ] No stale test violations
+- [ ] Constitutional rules followed
+
+### Stage 2: Code Quality
+
+- [ ] Files are focused and well-structured
+- [ ] Interfaces are clean
+- [ ] No unnecessary complexity
+- [ ] Positive framing throughout
+
+### Verdict
+
    PASS / FAIL with specific items to address
+
    ```
 
 10. If PASS: the implementation is complete. Proceed to integration.
@@ -728,7 +776,7 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
 After review+ passes:
 - The implementation is complete
 - Proceed to merge/PR decision (superpowers:finishing-a-development-branch)
-```
+````
 
 - [ ] **Step 2: Commit**
 
@@ -742,6 +790,7 @@ git commit -m "feat: add review+ skill template wrapping superpowers:code-review
 ### Task 7: Skill Template Validation Tests
 
 **Files:**
+
 - Create: `tests/skills/skill-definitions.test.ts`
 
 - [ ] **Step 1: Write the validation tests**

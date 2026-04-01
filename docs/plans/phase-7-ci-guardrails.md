@@ -1,6 +1,8 @@
 # Phase 7: CI Guardrails
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add CI guardrails for documentation quality, link integrity, and coverage gates. Inspired by bjcoombs' agentic-patterns PR #2.
 
@@ -31,6 +33,7 @@ tests/
 ### Task 1: Markdown Lint Configuration
 
 **Files:**
+
 - Create: `.markdownlint-cli2.jsonc`
 - Create: `.github/workflows/docs.yml`
 
@@ -142,6 +145,7 @@ git commit -m "ci: add markdown lint and link integrity CI guardrails"
 ### Task 2: Coverage Gate
 
 **Files:**
+
 - Create: `.github/workflows/coverage.yml`
 
 - [ ] **Step 1: Create coverage workflow**

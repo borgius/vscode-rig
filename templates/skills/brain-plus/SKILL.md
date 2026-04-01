@@ -22,6 +22,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
 ### Phase A: Harvest Context
 
 1. Invoke the scout agent to map the current codebase:
+
    ```
    Agent(subagent_type="scout", prompt="Map the codebase structure for [feature area]. Focus on: existing patterns, related modules, test infrastructure, and entry points relevant to [feature].")
    ```
@@ -36,22 +37,22 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
 
 ### Phase B: Design (delegate to superpowers:brainstorming)
 
-4. Invoke `superpowers:brainstorming` with the enriched context.
+1. Invoke `superpowers:brainstorming` with the enriched context.
 
-5. During brainstorming, add these stack-first considerations:
+2. During brainstorming, add these stack-first considerations:
    - What Docker services does this feature need?
    - What are the full-loop assertions? (primary + second-order + third-order effects)
    - What test utilities need to exist before implementation?
    - Which components are protected from mocking?
 
-6. Use positive framing in all design guidance:
+3. Use positive framing in all design guidance:
    - "Use real database connections in tests" (not "don't mock the database")
    - "Write assertions that verify observable behavior" (not "don't test implementation details")
    - "Show command output before claiming done" (not "don't say tests pass without evidence")
 
 ### Phase C: Validate
 
-7. Confirm the design addresses:
+1. Confirm the design addresses:
    - [ ] Feature purpose and scope
    - [ ] Affected modules identified
    - [ ] Testing strategy defined
@@ -66,4 +67,5 @@ Return the validated design with testing strategy to feed into `plan+`.
 ## Skill Chain
 
 After completing brain+, the next step is:
+
 - Invoke `/plan+` to create the implementation plan from this design

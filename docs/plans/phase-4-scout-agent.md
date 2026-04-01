@@ -1,10 +1,20 @@
 # Phase 4: Context Engineering - Scout Agent
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the scout agent and its supporting infrastructure. The scout agent runs before implementation to harvest context from the codebase using jcodemunch and rtk. It returns a structured CodebaseMap that feeds into the skill chain's brain+ and plan+ phases.
+**Goal:** Build the scout agent and its supporting infrastructure. The scout agent runs
+before implementation to harvest context from the codebase using jcodemunch and rtk.
+It returns a structured CodebaseMap that feeds into the skill chain's brain+ and plan+
+phases.
 
-**Architecture:** The scout is a Claude Code agent definition (`.claude/agents/scout.md`) plus supporting TypeScript modules that format jcodemunch output into the CodebaseMap structure and provide a session-scoped cache for scout results. The agent definition constrains the scout to jcodemunch + bash tools only (no file editing), uses `model: inherit` to respect whatever model the parent session is configured with (set via `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` env vars — not hardcoded to any provider), and has a 10-turn budget.
+**Architecture:** The scout is a Claude Code agent definition (`.claude/agents/scout.md`) plus
+supporting TypeScript modules that format jcodemunch output into the CodebaseMap structure
+and provide a session-scoped cache for scout results. The agent definition constrains the
+scout to jcodemunch + bash tools only (no file editing), uses `model: inherit` to respect
+whatever model the parent session is configured with (set via `LLM_BASE_URL`, `LLM_MODEL`,
+`LLM_API_KEY` env vars -- not hardcoded to any provider), and has a 10-turn budget.
 
 **Tech Stack:** TypeScript, vitest, jcodemunch MCP tools, rtk
 
@@ -35,6 +45,7 @@ tests/
 ### Task 1: CodebaseMap Formatter
 
 **Files:**
+
 - Create: `src/scout/mapper.ts`
 - Create: `tests/scout/mapper.test.ts`
 
@@ -317,6 +328,7 @@ git commit -m "feat: add CodebaseMap formatter for jcodemunch output"
 ### Task 2: Cross-Directory Indexing
 
 **Files:**
+
 - Create: `src/scout/cross-repo.ts`
 - Create: `tests/scout/cross-repo.test.ts`
 
@@ -507,6 +519,7 @@ git commit -m "feat: add cross-directory indexing for external repo references"
 ### Task 3: Scout Result Cache
 
 **Files:**
+
 - Create: `src/scout/scout-cache.ts`
 - Create: `tests/scout/scout-cache.test.ts`
 
@@ -654,6 +667,7 @@ git commit -m "feat: add scout result cache with TTL-based staleness"
 ### Task 4: Scout Agent Definition
 
 **Files:**
+
 - Create: `templates/agents/scout.md`
 - Create: `tests/scout/agent-definition.test.ts`
 
@@ -778,36 +792,46 @@ If a package.json or requirements.txt exists, read it to identify:
 Format your findings as a CodebaseMap:
 
 ```
+
 ## CodebaseMap
 
 ### Structure
+
 [Summary of directory layout — 2-3 sentences]
 
 ### Entry Points
+
 - [List of main entry files]
 
 ### Key Exports
+
 - [Symbol name] ([kind]) — [file:line] — [summary]
 - ...
 
 ### Dependencies
+
 - [List of key dependencies]
 
 ### Languages
+
 - [Language]: [file count]
 
 ### Symbols
+
 - Functions: [count]
 - Classes: [count]
 - Types: [count]
+
 ```
 
 ## When to Index New Directories
 
 If the user references a directory outside the current project, index it first:
 ```
+
 Call index_folder with the referenced path
 Then proceed with steps 1-5 on the newly indexed repo
+
 ```
 
 ## What NOT to Do
