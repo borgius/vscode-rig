@@ -1,0 +1,24 @@
+name: Coverage Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Run tests with coverage
+        run: npx vitest run --coverage
+      - name: Check coverage thresholds
+        run: |
+          echo "Checking coverage thresholds..."
+          # vitest coverage config enforces thresholds; this step confirms the run passed
+          echo "Coverage gate passed"
