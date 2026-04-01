@@ -98,6 +98,41 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 
   // Update settings.json with hook registrations
   updateSettingsJson(claudeDir, projectName);
+
+  // Update .gitignore with rig-managed section
+  updateGitignore(projectDir);
+}
+
+const GITIGNORE_MARKER_START = '# --- rig-managed (do not edit below) ---';
+const GITIGNORE_MARKER_END = '# --- end rig-managed ---';
+const GITIGNORE_ENTRIES = [
+  '.harness.yaml.local',
+  '*.session-cache.json',
+];
+
+function updateGitignore(projectDir: string): void {
+  const gitignorePath = join(projectDir, '.gitignore');
+  let content = '';
+
+  if (existsSync(gitignorePath)) {
+    content = readFileSync(gitignorePath, 'utf-8');
+  }
+
+  // Check if rig-managed section already exists
+  if (content.includes(GITIGNORE_MARKER_START)) {
+    return;
+  }
+
+  // Append rig-managed section
+  const section = [
+    '',
+    GITIGNORE_MARKER_START,
+    ...GITIGNORE_ENTRIES.map(e => e),
+    GITIGNORE_MARKER_END,
+    '',
+  ].join('\n');
+
+  writeFileSync(gitignorePath, content + section);
 }
 
 function isRigGenerated(filePath: string): boolean {

@@ -381,4 +381,35 @@ console.log('stale old hook');
       expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
     });
   });
+
+  describe('gitignore management', () => {
+    it('creates .gitignore with rig-managed section when none exists', async () => {
+      await initCommand(tempDir, { force: false });
+      const gitignore = readFileSync(join(tempDir, '.gitignore'), 'utf-8');
+      expect(gitignore).toContain('rig-managed');
+      expect(gitignore).toContain('.harness.yaml.local');
+      expect(gitignore).toContain('*.session-cache.json');
+    });
+
+    it('does not duplicate rig-managed section on re-init', async () => {
+      await initCommand(tempDir, { force: false });
+      await initCommand(tempDir, { force: false });
+      const gitignore = readFileSync(join(tempDir, '.gitignore'), 'utf-8');
+      const matches = gitignore.match(/rig-managed/g);
+      expect(matches).toHaveLength(2); // opening + closing marker
+    });
+
+    it('preserves user entries in .gitignore', async () => {
+      await initCommand(tempDir, { force: false });
+      const gitignorePath = join(tempDir, '.gitignore');
+      const original = readFileSync(gitignorePath, 'utf-8');
+      // Prepend a user entry before the rig section
+      writeFileSync(gitignorePath, 'node_modules/\n' + original);
+
+      await initCommand(tempDir, { force: false });
+      const after = readFileSync(gitignorePath, 'utf-8');
+      expect(after).toContain('node_modules/');
+      expect(after).toContain('.harness.yaml.local');
+    });
+  });
 });
