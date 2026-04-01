@@ -140,9 +140,7 @@ rig init
 
 This wires the same guardrails that rig installs for consumers — the tool router
 intercepts shell commands, the enforcement pipeline runs after edits, and
-`/savings` reports token usage for the session. Specs are deleted after
-implementation; check `git log -- docs/specs/` for the `brain+` -> `plan+`
--> `tdd+` -> `verify+` -> `review+` skill chain history.
+`/savings` reports token usage for the session.
 
 ## Related projects
 
