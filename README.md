@@ -62,16 +62,18 @@ Four layers, one config file. See [docs/architecture.md](docs/architecture.md) f
 Rig uses `.harness.yaml` in your project root:
 
 ```yaml
-enforcement:
-  staleTests:
-    level: advise        # block | advise | silent
-    gracePeriod: 3
-  testScope:
-    level: advise
+rules:
+  stale_tests:
+    enforcement: advise        # block | advise | silent
+    grace_period: 0
+  test_scope:
+    enforcement: advise
+    allowed_unscoped: [vitest watch, jest --watch]
   constitutional:
-    level: advise
-  zeroDefect:
-    level: advise
+    no_mocks: block
+    evidence_only: block
+  zero_defect:
+    tolerance: strict
 ```
 
 Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warning), or `silent` (logs only).
@@ -94,9 +96,10 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
 .claude/
   settings.json          # Hook registrations
   hooks/
-    pre-tool-use.ts      # Tool router
-    post-tool-use.ts     # Enforcement pipeline
-    session-start.ts     # Auto-indexing
+    scripts/
+      pre-tool-use.ts    # Tool router
+      post-tool-use.ts   # Enforcement pipeline
+      session-start.ts   # Auto-indexing
   skills/
     brain-plus/          # brain+ skill
     plan-plus/           # plan+ skill

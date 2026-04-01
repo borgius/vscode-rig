@@ -28,12 +28,12 @@ Supporting: `src/config.ts` (YAML config), `src/session/` (environment detection
 
 All types in `src/types.ts`. Important ones:
 
-- `IntentType` -- file_read, text_search, file_discovery, file_modify
+- `IntentType` -- file_read, text_search, file_discovery, file_modify, symbol_search, pass_through
 - `EnforcementLevel` -- block, advise, silent
-- `Resolution` -- redirect, advise, block, allow
-- `ToolRule` -- match pattern + resolutions per environment
-- `CodebaseMap` -- languages, symbols, entryPoints, keyExports, dependencies
-- `HarnessConfig` -- enforcement rules with levels and grace periods
+- `Resolution` -- allow, advise, block
+- `ToolRule` -- match pattern + resolutions per environment priority
+- `CodebaseMap` -- structure, entryPoints, keyExports, dependencies, languages, symbols
+- `HarnessConfig` -- nested rules with enforcement levels
 
 ## Conventions
 

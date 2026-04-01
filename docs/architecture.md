@@ -69,19 +69,21 @@ PostToolUse Hook (handlePostToolUse)
 +------------------+
 | checkStaleTests   |  Source edited without test update?
 +------------------+
-| checkTestScope    |  Running full suite during tdd+ phase?
-+------------------+
-| checkConstitutional| Mocks in test files? Claims without evidence?
+| checkConstitutional| Mocks in test files?
 +------------------+
 | checkZeroDefect   |  Test output shows failures?
 +------------------+
      |
-Each check returns EnforcementResult: { level, message }
+Each check returns a violation message or null
      |
-getEffectiveEnforcement() -> most severe level wins
+Combined violations joined as advisory output
      |
 HookResult: { decision, reason }
 ```
+
+> **Note:** `checkTestScope` exists in `src/enforcement/test-scope.ts` but is not
+> yet wired into the pipeline. It redirects full-suite runs to scoped tests during
+> `tdd+` phase when implemented.
 
 ### Enforcement levels
 
@@ -104,7 +106,7 @@ During `tdd+` phase, running the full test suite (e.g., `npm test`) is redirecte
 
 ### Constitutional rules
 
-Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`, etc.) in test files. Also checks for claims without evidence in commit messages.
+Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`, etc.) in test file content during edits.
 
 ### Zero-defect check
 
@@ -121,19 +123,18 @@ Skills are ordered workflow stages. The `SkillPhaseTracker` enforces valid trans
 ```
 brain+ -> plan+ -> tdd+ -> verify+ -> review+
    |        |       |        |          |
-   |        |       |        |          +-- requires verify+ visit
+   |        |       |        |          +-- accessible from any phase
    |        |       |        +-- requires tdd+ visit
-   |        |       +-- requires plan+ visit
-   |        +-- no prerequisite (entry point for planning)
-   +-- no prerequisite (entry point for ideation)
+   |        |       +-- free transition
+   |        +-- free transition
+   +-- free transition
 ```
 
 **Phase transition rules:**
 
-- `plan+` requires prior `brain+` visit
-- `tdd+` requires prior `plan+` visit
-- `verify+` requires prior `tdd+` visit
-- `review+` requires prior `verify+` visit
+- `review+` is accessible from any phase (no prerequisite)
+- `verify+` requires a prior `tdd+` visit
+- All other phases (`brain+`, `plan+`, `tdd+`) allow free transitions
 
 Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are SKILL.md files with YAML frontmatter.
 
@@ -153,11 +154,12 @@ ensureIndexed(directory) -> jcodemunch auto-index
 buildCodebaseMap(index) -> CodebaseMap
      |
 CodebaseMap: {
-  languages: Map<string, number>,
-  symbols: SymbolSummary[],
+  structure: { path, type, symbolCount? }[],
   entryPoints: string[],
-  keyExports: string[],
-  dependencies: string[]
+  keyExports: SymbolSummary[],
+  dependencies: string[],
+  languages: Record<string, number>,
+  symbols: { functions, classes, types }
 }
      |
 Formatted as structured context for the agent

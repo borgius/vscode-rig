@@ -81,7 +81,7 @@ That's it. The `init` command generates hooks, skills, agents, and config into y
 └─────────────────────────────────────────────┘
 ```
 
-Four layers, one config file. See [docs/architecture.md](docs/architecture.md) for the full design.
+Four layers, one config file. See [docs/architecture.md](../../docs/architecture.md) for the full design.
 
 ## Configuration
 
@@ -627,7 +627,7 @@ Then remove hook registrations from `.claude/settings.json`. The `init` command 
 
 ## Next steps
 
-- Read [docs/architecture.md](architecture.md) for the full system design
+- Read [docs/architecture.md](../architecture.md) for the full system design
 - Check `docs/retrospectives/` for design decisions and GStack comparison notes
 
 ```

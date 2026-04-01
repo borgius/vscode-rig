@@ -32,9 +32,9 @@ This generates:
 
 | Path | Purpose |
 | ---- | ------- |
-| `.claude/hooks/pre-tool-use.ts` | Tool router -- redirects grep/find/cat to better tools |
-| `.claude/hooks/post-tool-use.ts` | Enforcement -- stale tests, scope, constitutional, zero-defect |
-| `.claude/hooks/session-start.ts` | Auto-indexes your project on session start |
+| `.claude/hooks/scripts/pre-tool-use.ts` | Tool router -- redirects grep/find/cat to better tools |
+| `.claude/hooks/scripts/post-tool-use.ts` | Enforcement -- stale tests, constitutional, zero-defect |
+| `.claude/hooks/scripts/session-start.ts` | Auto-indexes your project on session start |
 | `.claude/skills/brain-plus/` | Ideation skill |
 | `.claude/skills/plan-plus/` | Planning skill |
 | `.claude/skills/tdd-plus/` | Test-driven development skill |
@@ -74,16 +74,18 @@ Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. Yo
 Edit `.harness.yaml` to adjust enforcement levels:
 
 ```yaml
-enforcement:
-  staleTests:
-    level: advise        # Change to "block" to reject edits without tests
-    gracePeriod: 3       # Turns before flagging
-  testScope:
-    level: advise
+rules:
+  stale_tests:
+    enforcement: advise        # Change to "block" to reject edits without tests
+    grace_period: 0            # Turns before flagging
+  test_scope:
+    enforcement: advise
+    allowed_unscoped: [vitest watch, jest --watch]
   constitutional:
-    level: advise
-  zeroDefect:
-    level: advise
+    no_mocks: block
+    evidence_only: block
+  zero_defect:
+    tolerance: strict
 ```
 
 **Levels:**
@@ -106,14 +108,13 @@ When Claude tries to run a shell command like `grep -r "pattern" src/`, the pre-
 
 ### PostToolUse: Enforcement Pipeline
 
-After each tool use, the post-tool-use hook runs four checks:
+After each tool use, the post-tool-use hook runs three checks:
 
 1. **Stale tests** -- Did you edit source files without updating tests?
-2. **Test scope** -- Are you running the full suite when you should be running scoped tests?
-3. **Constitutional** -- Are there mocks in test files? Claims without evidence?
-4. **Zero defect** -- Do the test results show failures?
+2. **Constitutional** -- Are there mocks in test files?
+3. **Zero defect** -- Do the test results show failures?
 
-Each check returns an enforcement level. The most severe level determines the hook result.
+Each check returns a violation message or null. All violations are combined as advisory output.
 
 ### Session Start: Auto-indexing
 
