@@ -1,0 +1,51 @@
+{
+  "config": {
+    "default": true,
+    "MD001": true,   // heading-increment
+    "MD003": { "style": "atx" },  // heading style
+    "MD009": { "br_spaces": 2 },  // trailing spaces
+    "MD010": true,   // hard tabs
+    "MD012": true,   // multiple-consecutive-blank-lines
+    "MD013": { "line_length": 200, "code_blocks": false, "tables": false },
+    "MD014": true,   // commands-show-output
+    "MD018": true,   // no-missing-space-atx
+    "MD022": true,   // blanks-around-headings
+    "MD023": true,   // heading-start-left
+    "MD024": { "siblings_only": true },  // no-duplicate-heading
+    "MD025": true,   // single-title
+    "MD026": true,   // no-trailing-punctuation-in-heading
+    "MD027": true,   // no-multiple-space-blockquote
+    "MD028": true,   // no-blanks-blockquote
+    "MD029": { "style": "ordered" },  // ol-prefix
+    "MD030": true,   // list-marker-space
+    "MD031": true,   // blanks-around-fences
+    "MD032": true,   // blanks-around-lists
+    "MD033": false,  // no-inline-html (allow in skill templates)
+    "MD034": false,  // no-bare-urls (allow in skill templates)
+    "MD035": true,   // hr-style
+    "MD036": true,   // no-emphasis-as-heading
+    "MD037": true,   // no-space-in-emphasis
+    "MD038": false,  // no-space-in-code (allow in templates)
+    "MD039": true,   // no-space-in-links
+    "MD040": false,  // no-language-code (allow in templates)
+    "MD041": { "line_number": 1 },  // first-line-heading (YAML frontmatter ok)
+    "MD042": true,   // no-empty-links
+    "MD045": true,   // no-alt-text (images need alt)
+    "MD046": { "style": "fenced" },  // code style
+    "MD047": true,   // single-trailing-newline
+    "MD048": { "style": "backtick" },  // code-fence-style
+    "MD049": true,   // emphasis-style
+    "MD050": true,   // strong-style
+    "MD051": true,   // link-fragments
+    "MD052": true,   // reference-links-images
+    "MD053": true,   // link-image-reference-definitions
+    "MD054": true,   // link-image-style
+    "MD055": true,   // table-pipe-style
+    "MD056": true    // table-column-count
+  },
+  "ignores": [
+    "node_modules/",
+    "dist/",
+    "coverage/"
+  ]
+}
