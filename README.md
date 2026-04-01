@@ -9,8 +9,8 @@ Rig installs guardrails into a Claude Code project:
 - **Tool Router** -- intercepts shell commands via PreToolUse hooks, redirects `grep`/`find`/`cat`
   to rtk or jcodemunch when available; advises on native Read/Grep/Glob when
   jcodemunch is indexed; blocks `rtk cat` on code files
-- **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (no mocks), and zero-defect status
-- **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`
+- **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (no mocks), and zero-defect status (with pre-existing failure classification)
+- **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
 - **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection
 
 Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patterns) L2 and L3 patterns.
@@ -84,6 +84,7 @@ rules:
     evidence_only: block
   zero_defect:
     tolerance: strict
+    unrelated_errors: silent     # silent|advise|block — how to handle pre-existing failures
   tool_routing:
     native_read: advise        # advise jcodemunch for Read on code files
     native_grep: advise        # advise jcodemunch for Grep
@@ -103,8 +104,9 @@ Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warn
 | `verify+` | Installation verification | `superpowers:code-reviewer` |
 | `review+` | Code review | `superpowers:code-reviewer` |
 | `savings` | Session token savings report | -- |
+| `investigate` | Systematic debugging | `superpowers:systematic-debugging` |
 
-Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `savings` skill is standalone (no phase prerequisite).
+Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `savings` and `investigate` skills are standalone (no phase prerequisite).
 
 ## What gets installed
 
@@ -124,6 +126,7 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
     review-plus/         # review+ skill
     verify-harness/      # Installation verifier
     savings/             # Session savings report
+    investigate/         # Systematic debugging skill
   agents/
     scout.md             # Cross-repo scout agent
 ```

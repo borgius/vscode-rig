@@ -119,7 +119,9 @@ Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`,
 
 ### Zero-defect check
 
-Parses test output (vitest, jest, pytest patterns) for failure indicators. Classifies as pass, fail, or unknown.
+Parses test output (vitest, jest, pytest patterns) for failure indicators. Classifies as pass, fail,
+or unknown. Supports pre-existing failure classification via `git diff` — failures in untouched
+files are reported separately from regressions based on `zero_defect.unrelated_errors` config.
 
 **Files:** `src/enforcement/file-tracker.ts`, `src/enforcement/stale-test.ts`, `src/enforcement/test-scope.ts`, `src/enforcement/constitutional.ts`, `src/enforcement/zero-defect.ts`, `src/enforcement/post-tool-use.ts`
 
@@ -269,4 +271,3 @@ Key design decisions:
 - No mode-aware enforcement (same thresholds regardless of workflow phase)
 - No multi-agent specialist review pattern (single review+ pass)
 - No REPO_MODE awareness (solo vs collaborative)
-- No pre-existing failure classification (git-diff-based)

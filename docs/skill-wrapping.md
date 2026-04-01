@@ -44,6 +44,7 @@ brain+                           superpowers:brainstorming
 | `test-driven-development` | RED-GREEN-REFACTOR | No-mock enforcement, stale test detection, scoped runs |
 | `verification-before-completion` | Completeness check | Full suite unlocked, spec drift detection, evidence standards |
 | `requesting-code-review` | Code quality review | Two-stage review (spec + quality), constitutional checklist |
+| `systematic-debugging` | Structured debugging | Scout-harvested context, no phase prerequisite |
 
 Without wrapping, superpowers gives you generic process discipline. With
 wrapping, every phase automatically carries your project's non-negotiables --
@@ -229,10 +230,14 @@ just `git push` and hope.
 
 ## Scenario 6: Wrapping unwrapped superpowers skills
 
-Rig wraps 5 of 14 superpowers skills. The remaining 9 are available for
+Rig wraps 6 of 14 superpowers skills. The remaining 8 are available for
 wrapping with project-specific context:
 
 ### debug+ (wraps `superpowers:systematic-debugging`)
+
+> Note: The built-in `/investigate` skill already wraps `superpowers:systematic-debugging`
+> with scout context harvesting. Use `debug+` only if you need additional project-specific
+> overlay beyond what `/investigate` provides.
 
 ```markdown
 ## Phase A: Gather Project Context

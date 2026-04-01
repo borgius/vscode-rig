@@ -75,9 +75,12 @@ Skills are invoked as slash commands in Claude Code:
 /verify+   -> Verify the implementation works
 /review+   -> Review code quality
 /savings   -> Report token savings from rtk/jcodemunch this session
+/investigate -> Systematic debugging with codebase context
 ```
 
-Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. You can't run `/verify+` until you've visited `/tdd+`. `/savings` has no prerequisites and works from any phase.
+Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. You can't run
+`/verify+` until you've visited `/tdd+`. `/savings` and `/investigate` have no prerequisites
+and work from any phase.
 
 ## Configure enforcement
 
@@ -96,6 +99,7 @@ rules:
     evidence_only: block
   zero_defect:
     tolerance: strict
+    unrelated_errors: silent     # silent|advise|block — how to handle pre-existing failures
 ```
 
 **Levels:**
