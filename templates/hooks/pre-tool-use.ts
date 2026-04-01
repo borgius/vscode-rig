@@ -20,7 +20,13 @@ const { loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js'));
 const cache = new SessionCache();
 
 loadConfig(resolve(process.cwd(), '.harness.yaml')).then((config: any) => {
-  const input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+  let input: any = {};
+  try {
+    input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+  } catch {
+    // Malformed input — allow the tool call through
+    process.exit(0);
+  }
   const result = handlePreToolUse(input.tool_name, input.tool_input, cache, config);
 
   if (result) {
@@ -28,7 +34,9 @@ loadConfig(resolve(process.cwd(), '.harness.yaml')).then((config: any) => {
     if (result.startsWith('[BLOCK]')) {
       process.exit(2); // block
     }
-    // advise: print warning but allow
   }
   process.exit(0); // allow
+}).catch(() => {
+  // Config load failed — allow the tool call through
+  process.exit(0);
 });

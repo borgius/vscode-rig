@@ -20,4 +20,7 @@ const cwd = process.cwd();
 handleSessionStart(cwd, cache).then((output: string) => {
   console.error(output);
   process.exit(0);
+}).catch(() => {
+  // Session init failed — don't block the session
+  process.exit(0);
 });

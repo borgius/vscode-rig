@@ -208,6 +208,30 @@ describe('initCommand', () => {
     expect(content).toContain('process.exit(0)');
   });
 
+  it('generates hook scripts with error handling for malformed input', async () => {
+    await initCommand(tempDir, { force: false });
+
+    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts']) {
+      const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
+      // Must have try/catch around JSON.parse
+      expect(content).toContain('JSON.parse');
+      expect(content).toMatch(/try\s*\{[\s\S]*?JSON\.parse/);
+      // Must catch config load failures
+      expect(content).toMatch(/\.catch/);
+    }
+  });
+
+  it('generates session-start hook with error handling', async () => {
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(join(tempDir, '.claude', 'hooks', 'scripts', 'session-start.ts'), 'utf-8');
+    // Must catch handleSessionStart failures
+    expect(content).toMatch(/\.catch/);
+    // Catch block must exit 0 (don't block the session)
+    expect(content).toMatch(/catch.*\n.*process\.exit\(0\)/s);
+  });
+
   it('prunes old-format hooks from .claude/hooks/ on re-init', async () => {
     // Simulate old layout: hooks directly in .claude/hooks/ (pre-scripts layout)
     await initCommand(tempDir, { force: false });
