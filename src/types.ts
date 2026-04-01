@@ -74,6 +74,7 @@ export interface SessionCacheFile {
   metricsBaseline: MetricsBaseline | null;
   metricCounters: { rtkCalls: number; jmCalls: number };
   toolsWarned: boolean;
+  changedFiles: string[];
 }
 
 // ── Config Types ──

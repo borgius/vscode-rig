@@ -50,7 +50,8 @@ export function handlePostToolUse(
       // Check if this was a test run
       const isTestCommand = /vitest|jest|pytest|mocha/.test(command);
       if (isTestCommand) {
-        const zeroDefect = checkZeroDefect(output, config);
+        const changedFiles = cache.getChangedFiles();
+        const zeroDefect = checkZeroDefect(output, config, changedFiles.length > 0 ? changedFiles : undefined);
         if (zeroDefect) violations.push(zeroDefect);
       }
     }

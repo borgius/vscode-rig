@@ -17,6 +17,7 @@ export class SessionCache {
   private currentPhase: string | null = null;
   private metricsBaseline: MetricsBaseline | undefined;
   private metricCounters = { rtkCalls: 0, jmCalls: 0 };
+  private changedFiles: string[] = [];
   private toolsWarned = false;
 
   constructor(cwd?: string) {
@@ -81,6 +82,15 @@ export class SessionCache {
     this.save();
   }
 
+  getChangedFiles(): string[] {
+    return [...this.changedFiles];
+  }
+
+  setChangedFiles(files: string[]): void {
+    this.changedFiles = files;
+    this.save();
+  }
+
   getToolsWarned(): boolean {
     return this.toolsWarned;
   }
@@ -97,6 +107,7 @@ export class SessionCache {
     this.metricsBaseline = undefined;
     this.metricCounters = { rtkCalls: 0, jmCalls: 0 };
     this.toolsWarned = false;
+    this.changedFiles = [];
     this.save();
   }
 
@@ -113,6 +124,7 @@ export class SessionCache {
       metricsBaseline: this.metricsBaseline ?? null,
       metricCounters: { ...this.metricCounters },
       toolsWarned: this.toolsWarned,
+      changedFiles: [...this.changedFiles],
     };
   }
 
@@ -145,6 +157,7 @@ export class SessionCache {
       this.metricsBaseline = data.metricsBaseline ?? undefined;
       this.metricCounters = data.metricCounters ?? { rtkCalls: 0, jmCalls: 0 };
       this.toolsWarned = data.toolsWarned ?? false;
+      this.changedFiles = data.changedFiles ?? [];
     } catch {
       // Corrupt or unreadable file — start fresh
     }

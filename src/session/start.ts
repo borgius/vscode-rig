@@ -16,6 +16,16 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
   cache.setMetricsBaseline(baseline);
 
+  // Capture changed files for failure classification
+  try {
+    const diff = execSync('git diff --name-only HEAD', { encoding: 'utf-8' }).trim();
+    if (diff) {
+      cache.setChangedFiles(diff.split('\n').filter(Boolean));
+    }
+  } catch {
+    // Not a git repo or no commits — skip
+  }
+
   const lines = [
     '[rig] Session initialized',
     `  rtk: ${env.rtkAvailable ? `available (${env.rtkPath})` : 'not found'}`,
