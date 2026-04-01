@@ -6,7 +6,7 @@ Agent harness that enforces tool routing, skill chains, and multi-agent discipli
 
 Rig installs guardrails into a Claude Code project:
 
-- **Tool Router** -- intercepts shell commands via PreToolUse hooks, redirects `grep`/`find`/`cat` to rtk or jcodemunch when available
+- **Tool Router** -- intercepts shell commands via PreToolUse hooks, redirects `grep`/`find`/`cat` to rtk or jcodemunch when available; advises on native Read/Grep/Glob usage when jcodemunch is indexed; blocks `rtk cat` on code files
 - **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (no mocks), and zero-defect status
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`
 - **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection
@@ -82,6 +82,11 @@ rules:
     evidence_only: block
   zero_defect:
     tolerance: strict
+  tool_routing:
+    native_read: advise        # advise jcodemunch for Read on code files
+    native_grep: advise        # advise jcodemunch for Grep
+    native_glob: advise        # advise jcodemunch for Glob on code patterns
+    rtk_cat_code: block        # block rtk cat on code files
 ```
 
 Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warning), or `silent` (logs only).

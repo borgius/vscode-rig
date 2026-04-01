@@ -115,4 +115,76 @@ describe('handleSessionStart', () => {
     const output = await handleSessionStart('/home/user/test-project', cache);
     expect(output).not.toContain('using-git-worktrees');
   });
+
+  it('warns when rtk is not installed', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('WARNING');
+    expect(output).toContain('rtk');
+    expect(output).toContain('install');
+  });
+
+  it('warns when jcodemunch is not installed', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('WARNING');
+    expect(output).toContain('jcodemunch');
+    expect(output).toContain('install');
+  });
+
+  it('warns when both tools are not installed', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'git branch --show-current') return 'feat/something';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('rtk');
+    expect(output).toContain('jcodemunch');
+    // Should contain two warnings
+    const warningCount = (output.match(/WARNING/g) ?? []).length;
+    expect(warningCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not warn when both tools are available', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).not.toContain('WARNING');
+  });
+
+  it('suppresses warning on second call', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'git branch --show-current') return 'feat/something';
+      return '';
+    });
+
+    // First call — should warn
+    const output1 = await handleSessionStart('/home/user/test-project', cache);
+    expect(output1).toContain('WARNING');
+
+    // Second call — warning suppressed
+    const output2 = await handleSessionStart('/home/user/test-project', cache);
+    expect(output2).not.toContain('WARNING');
+  });
 });

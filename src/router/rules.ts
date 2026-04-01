@@ -1,6 +1,18 @@
 import type { ToolRule } from '../types.js';
 import { classifyIntent } from './intent.js';
 
+const CODE_FILE_EXTENSIONS = [
+  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
+  '.py', '.go', '.rs', '.java', '.kt', '.kts', '.scala',
+  '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',
+  '.rb', '.swift',
+];
+
+export function isCodeFile(filePath: string): boolean {
+  const ext = filePath.includes('.') ? '.' + filePath.split('.').pop() : '';
+  return ext !== '' && CODE_FILE_EXTENSIONS.includes(ext);
+}
+
 /**
  * Default routing rules — ported and evolved from damage-control-guardrails.
  *
@@ -9,6 +21,69 @@ import { classifyIntent } from './intent.js';
  */
 export function getDefaultRules(): ToolRule[] {
   return [
+    // ── Native Read Advisory (code files only, no targeted re-read) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        if (tool !== 'Read') return false;
+        const filePath = args.file_path as string | undefined;
+        if (!filePath || !isCodeFile(filePath)) return false;
+        if (args.offset != null || args.limit != null) return false;
+        return true;
+      },
+      intent: 'native_read',
+      resolutions: {
+        jcodemunch: { action: 'advise', tool: 'jcodemunch get_file_outline or get_symbol', reason: 'For code files, get_file_outline returns structure with signatures (80-85% fewer tokens than full file read)' },
+        fallback: { action: 'allow' },
+      },
+      enforcement: 'advise',
+    },
+
+    // ── Native Grep Advisory (suggest jcodemunch when indexed) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        return tool === 'Grep';
+      },
+      intent: 'native_grep',
+      resolutions: {
+        jcodemunch: { action: 'advise', tool: 'jcodemunch search_text', reason: 'jcodemunch provides indexed, token-efficient search with context lines (80-85% fewer tokens)' },
+        fallback: { action: 'allow' },
+      },
+      enforcement: 'advise',
+    },
+
+    // ── Native Glob Advisory (code file patterns only) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        if (tool !== 'Glob') return false;
+        const pattern = args.pattern as string | undefined;
+        if (!pattern) return false;
+        return CODE_FILE_EXTENSIONS.some(ext => pattern.includes(ext));
+      },
+      intent: 'native_glob',
+      resolutions: {
+        jcodemunch: { action: 'advise', tool: 'jcodemunch get_file_tree', reason: 'jcodemunch provides cached, semantic file listing with symbol counts (80% fewer tokens)' },
+        fallback: { action: 'allow' },
+      },
+      enforcement: 'advise',
+    },
+
+    // ── rtk cat on code files (close the bypass) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        if (tool !== 'Bash') return false;
+        const command = args.command as string | undefined;
+        if (!command) return false;
+        const rtkCatMatch = command.match(/^rtk\s+cat\s+(\S+)/);
+        if (!rtkCatMatch) return false;
+        return isCodeFile(rtkCatMatch[1]);
+      },
+      intent: 'rtk_cat_code',
+      resolutions: {
+        _: { action: 'block', reason: 'rtk cat on code files wastes tokens. Use jcodemunch get_file_outline for structure, get_symbol_source for definitions.' },
+      },
+      enforcement: 'block',
+    },
+
     // ── Text Search ──
     {
       match: (tool: string, args: Record<string, unknown>) => {

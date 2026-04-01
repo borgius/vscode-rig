@@ -37,6 +37,17 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push(suggestion);
   }
 
+  // One-time warning for missing tools
+  if (!cache.getToolsWarned()) {
+    if (!env.rtkAvailable) {
+      lines.push('[WARNING] rtk is not installed. Install for 60-90% token savings on dev operations: https://github.com/franklywatson/rtk');
+    }
+    if (!env.jcodemunchAvailable) {
+      lines.push('[WARNING] jcodemunch is not installed. Install for indexed code search: https://github.com/franklywatson/jcodemunch');
+    }
+    cache.setToolsWarned(true);
+  }
+
   return lines.join('\n');
 }
 

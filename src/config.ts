@@ -17,6 +17,11 @@ export const DEFAULT_CONFIG: HarnessConfig = {
       sed_i: 'block',
       cat: 'advise',
       broad_scan: 'block',
+      native_read: 'advise',
+      native_grep: 'advise',
+      native_glob: 'advise',
+      rtk_cat_code: 'block',
+      read_line_threshold: 100,
     },
     constitutional: {
       no_mocks: 'block',

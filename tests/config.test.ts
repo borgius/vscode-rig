@@ -18,6 +18,14 @@ describe('config', () => {
       expect(DEFAULT_CONFIG.rules.test_scope).toBeDefined();
       expect(DEFAULT_CONFIG.rules.test_scope.enforcement).toBe('advise');
     });
+
+    it('has native tool advisory config keys', () => {
+      expect(DEFAULT_CONFIG.rules.tool_routing.native_read).toBe('advise');
+      expect(DEFAULT_CONFIG.rules.tool_routing.native_grep).toBe('advise');
+      expect(DEFAULT_CONFIG.rules.tool_routing.native_glob).toBe('advise');
+      expect(DEFAULT_CONFIG.rules.tool_routing.rtk_cat_code).toBe('block');
+      expect(DEFAULT_CONFIG.rules.tool_routing.read_line_threshold).toBe(100);
+    });
   });
 
   describe('loadConfig', () => {

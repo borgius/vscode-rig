@@ -46,16 +46,22 @@ HookResult: { decision: "block"|"allow", reason? }
 
 | Intent | Matches | Resolution |
 | ------ | ------- | ---------- |
-| `text_search` | `grep`, `rg` | rtk or jcodemunch `search_text` |
-| `file_discovery` | `find`, `fd` | jcodemunch `get_file_tree` |
-| `file_read` | `cat`, `head`, `tail` | rtk or jcodemunch `get_symbol` |
-| `file_modify` | `sed -i`, `awk >` | Block, redirect to Edit tool |
+| `native_read` | `Read` tool on code files (no offset/limit) | jcodemunch `get_file_outline` or `get_symbol` |
+| `native_grep` | `Grep` tool | jcodemunch `search_text` |
+| `native_glob` | `Glob` tool on code file patterns | jcodemunch `get_file_tree` |
+| `rtk_cat_code` | `rtk cat` on code files | Block, redirect to jcodemunch |
+| `text_search` | Bash `grep`, `rg` | rtk or jcodemunch `search_text` |
+| `file_discovery` | Bash `find`, `fd` | jcodemunch `get_file_tree` |
+| `file_read` | Bash `cat`, `head`, `tail` | rtk or jcodemunch `get_symbol` |
+| `file_modify` | Bash `sed -i`, `awk >` | Block, redirect to Edit tool |
 
 ### Priority chain
 
-`rtk` -> `jcodemunch` -> `claudeTool` -> `fallback` -> `_` (wildcard) -> allow
+`_` (wildcard) -> `rtk` -> `jcodemunch` -> `claudeTool` -> `fallback` -> allow
 
-The resolver checks each priority level. First match wins. If nothing matches, the command is allowed.
+The resolver checks each priority level. First match wins. The wildcard `_` always wins if present. If nothing matches, the command is allowed.
+
+Native tool rules (Read, Grep, Glob) are placed before broader intent rules in the rule array, so `findMatchingRule` returns the native-specific rule first. This prevents circular advice where the router would suggest "use Grep" when the agent is already on the Grep tool.
 
 ---
 
@@ -195,9 +201,11 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 `detectEnvironment()` checks for rtk, jcodemunch, and other tools via injectable
 `ExecFn`. `SessionCache` with 30-min TTL persists to `/tmp/rig-session-{cwd-hash}.json`
 for cross-process state sharing between hook invocations. Environment detection
-results, edited file tracking, phase, metrics baseline, and tool call counters all
-persist. `handleSessionStart()` auto-indexes the project and captures a metrics
-baseline on first session.
+results, edited file tracking, phase, metrics baseline, tool call counters, and a
+`toolsWarned` flag all persist. `handleSessionStart()` auto-indexes the project,
+captures a metrics baseline on first session, and emits a one-time warning if rtk
+or jcodemunch are not installed (suppressed for the rest of the session via the
+`toolsWarned` cache flag).
 
 ### CLI (`src/cli/`)
 

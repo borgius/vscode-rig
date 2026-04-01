@@ -6,7 +6,11 @@ export type IntentType =
   | 'file_discovery'
   | 'file_modify'
   | 'symbol_search'
-  | 'pass_through';
+  | 'pass_through'
+  | 'native_read'
+  | 'native_grep'
+  | 'native_glob'
+  | 'rtk_cat_code';
 
 // ── Resolution Types ──
 
@@ -69,6 +73,7 @@ export interface SessionCacheFile {
   currentPhase: string | null;
   metricsBaseline: MetricsBaseline | null;
   metricCounters: { rtkCalls: number; jmCalls: number };
+  toolsWarned: boolean;
 }
 
 // ── Config Types ──
@@ -80,6 +85,11 @@ export interface ToolRoutingRules {
   sed_i?: EnforcementLevel;
   cat?: EnforcementLevel;
   broad_scan?: EnforcementLevel;
+  native_read?: EnforcementLevel;
+  native_grep?: EnforcementLevel;
+  native_glob?: EnforcementLevel;
+  rtk_cat_code?: EnforcementLevel;
+  read_line_threshold?: number;
 }
 
 export interface ConstitutionalRules {

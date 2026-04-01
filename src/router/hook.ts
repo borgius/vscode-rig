@@ -44,6 +44,7 @@ export function handlePreToolUse(
   const enforcementLevel = getEffectiveEnforcement(match.intent, config, match.enforcement);
 
   if (resolution.action === 'advise') {
+    if (enforcementLevel === 'silent') return null;
     const prefix = enforcementLevel === 'block' ? '[BLOCK]' : '[ADVISE]';
     return [
       `${prefix} Tool Router: ${match.intent} detected`,
@@ -65,16 +66,29 @@ export function handlePreToolUse(
   return null;
 }
 
+const INTENT_CONFIG_KEYS: Record<string, string> = {
+  text_search: 'grep',
+  file_discovery: 'find',
+  file_read: 'cat',
+  file_modify: 'sed_i',
+  native_read: 'native_read',
+  native_grep: 'native_grep',
+  native_glob: 'native_glob',
+  rtk_cat_code: 'rtk_cat_code',
+};
+
 function getEffectiveEnforcement(
   intent: string,
   config: HarnessConfig,
   ruleDefault: string,
 ): string {
-  // Check config for intent-specific override
   const configRules = config.rules as Record<string, Record<string, unknown>>;
   const toolRouting = configRules.tool_routing;
-  if (toolRouting && typeof toolRouting[intent] === 'string') {
-    return toolRouting[intent] as string;
+  if (toolRouting) {
+    const configKey = INTENT_CONFIG_KEYS[intent] ?? intent;
+    if (typeof toolRouting[configKey] === 'string') {
+      return toolRouting[configKey] as string;
+    }
   }
   return ruleDefault;
 }
