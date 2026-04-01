@@ -88,11 +88,11 @@ describe('SessionCache', () => {
 
   it('stores and increments metric counters', () => {
     const cache = new SessionCache();
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
     cache.incrementMetricCounter('rtkCalls');
     cache.incrementMetricCounter('rtkCalls');
     cache.incrementMetricCounter('jmCalls');
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 2, jmCalls: 1 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 2, jmCalls: 1, efficientCalls: 0 });
   });
 });
 
@@ -128,7 +128,7 @@ describe('SessionCache (file-backed)', () => {
     expect(cache.getEnvironment()).toBeUndefined();
     expect(cache.getEditedFiles('source')).toEqual([]);
     expect(cache.getCurrentPhase()).toBeNull();
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
   });
 
   it('saves and round-trips all fields', () => {
@@ -154,7 +154,7 @@ describe('SessionCache (file-backed)', () => {
     expect(cache2.getEditedFiles('test')).toEqual(['tests/foo.test.ts']);
     expect(cache2.getCurrentPhase()).toBe('plan+');
     expect(cache2.getMetricsBaseline()!.totalSaved).toBe(50000);
-    expect(cache2.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0 });
+    expect(cache2.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0 });
   });
 
   it('clears stale environment on load', () => {
@@ -203,6 +203,6 @@ describe('SessionCache (file-backed)', () => {
     expect(parsed.editedFiles).toEqual({});
     expect(parsed.currentPhase).toBe('tdd+');
     expect(parsed.metricsBaseline).toBeNull();
-    expect(parsed.metricCounters).toEqual({ rtkCalls: 0, jmCalls: 0 });
+    expect(parsed.metricCounters).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
   });
 });
