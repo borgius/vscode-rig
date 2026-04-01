@@ -115,7 +115,7 @@ During `tdd+` phase, running the full test suite (e.g., `npm test`) is redirecte
 
 ### Constitutional rules
 
-Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`, etc.) in test file content during edits.
+Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`, etc.) in test file content during edits. All constitutional rules are configurable via `.harness.yaml` -- set `no_mocks: silent` to disable no-mock enforcement, or `evidence_only: silent` to disable evidence-only enforcement. Active rules are emitted in session-start output so skill templates can reference them dynamically instead of hardcoding assumptions.
 
 ### Zero-defect check
 
@@ -147,7 +147,7 @@ brain+ -> plan+ -> tdd+ -> verify+ -> review+
 - `verify+` requires a prior `tdd+` visit
 - All other phases (`brain+`, `plan+`, `tdd+`) allow free transitions
 
-Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are SKILL.md files with YAML frontmatter.
+Each skill wraps a `superpowers:*` skill with enforcement overlays. Skills are SKILL.md files with YAML frontmatter. Templates reference active enforcement rules from session-start context rather than hardcoding constitutional assumptions -- this keeps template prose in sync with `.harness.yaml` configuration.
 
 **Files:** `src/skills/phase-tracker.ts`, `templates/skills/`
 
@@ -208,9 +208,10 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 for cross-process state sharing between hook invocations. Environment detection
 results, edited file tracking, phase, metrics baseline, tool call counters, and a
 `toolsWarned` flag all persist. `handleSessionStart()` auto-indexes the project,
-captures a metrics baseline on first session, and emits a one-time warning if rtk
-or jcodemunch are not installed (suppressed for the rest of the session via the
-`toolsWarned` cache flag).
+captures a metrics baseline on first session, emits active enforcement rules from
+`.harness.yaml` (so skill templates can reference them dynamically), and emits a
+one-time warning if rtk or jcodemunch are not installed (suppressed for the rest
+of the session via the `toolsWarned` cache flag).
 
 ### CLI (`src/cli/`)
 

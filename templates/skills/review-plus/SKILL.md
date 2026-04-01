@@ -41,8 +41,8 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
    - For each changed source file, verify a corresponding test file was also changed
    - Flag any source edits without test updates as stale test violations
 
-3. Check constitutional compliance:
-   - [ ] No protected components are mocked in any test file
+3. Check enforcement compliance (see active enforcement rules from session-start output):
+   - [ ] Active enforcement rules followed in all test and source files
    - [ ] All claims of success are backed by command output
    - [ ] Full-loop assertions present where applicable
    - [ ] No conditional test assertions (`if (condition) assert(...)`)
@@ -71,7 +71,7 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
    - [ ] All plan tasks implemented
    - [ ] Implementation matches plan specification
    - [ ] No stale test violations
-   - [ ] Constitutional rules followed
+   - [ ] Active enforcement rules followed (see session-start output)
 
    ### Stage 2: Code Quality
    - [ ] Files are focused and well-structured

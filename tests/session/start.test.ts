@@ -187,4 +187,75 @@ describe('handleSessionStart', () => {
     const output2 = await handleSessionStart('/home/user/test-project', cache);
     expect(output2).not.toContain('WARNING');
   });
+
+  it('emits active enforcement rules when rules are not all silent', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    // Default config has no_mocks: block, which should appear in active rules
+    expect(output).toContain('Active enforcement');
+    expect(output).toContain('no_mocks');
+  });
+
+  it('omits active enforcement line when all constitutional rules are silent', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    // Create a test config with all silent constitutional rules
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const configDir = '/tmp/rig-test-config-' + process.pid;
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(join(configDir, '.harness.yaml'), [
+      'rules:',
+      '  constitutional:',
+      '    no_mocks: silent',
+      '    evidence_only: silent',
+      '    full_accounting: silent',
+    ].join('\n'));
+
+    const output = await handleSessionStart(configDir, cache);
+    expect(output).not.toContain('Active enforcement');
+
+    rmSync(configDir, { recursive: true });
+  });
+
+  it('includes only non-silent rules in active enforcement', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    // Create a test config with mixed levels
+    const { writeFileSync, mkdirSync, rmSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const configDir = '/tmp/rig-test-config-' + process.pid + '-mixed';
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(join(configDir, '.harness.yaml'), [
+      'rules:',
+      '  constitutional:',
+      '    no_mocks: block',
+      '    evidence_only: silent',
+      '    full_accounting: advise',
+    ].join('\n'));
+
+    const output = await handleSessionStart(configDir, cache);
+    expect(output).toContain('Active enforcement');
+    expect(output).toContain('no_mocks (block)');
+    expect(output).toContain('full_accounting (advise)');
+    expect(output).not.toContain('evidence_only');
+
+    rmSync(configDir, { recursive: true });
+  });
 });

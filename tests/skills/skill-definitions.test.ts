@@ -77,5 +77,11 @@ describe('skill template validation', () => {
       expect(body).toContain('BLOCKED');
       expect(body).toContain('NEEDS_CONTEXT');
     });
+
+    it('does not hardcode constitutional enforcement language', () => {
+      expect(body).not.toContain('never mock');
+      expect(body).not.toContain('Constitutional no-mock rules are enforced');
+      expect(body).not.toContain('no_mocks');
+    });
   });
 });

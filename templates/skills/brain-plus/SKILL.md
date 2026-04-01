@@ -17,7 +17,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
 
 1. **Scout context** — automatically harvests codebase context
 2. **Stack-first design** — considers Docker, test infrastructure, and full-loop verification
-3. **Constitutional awareness** — loads project rules from CLAUDE.md
+3. **Constitutional awareness** — loads active enforcement rules from session context
 
 ## Procedure
 
@@ -29,13 +29,13 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    Agent(subagent_type="scout", prompt="Map the codebase structure for [feature area]. Focus on: existing patterns, related modules, test infrastructure, and entry points relevant to [feature].")
    ```
 
-2. Read the project's CLAUDE.md for constitutional rules.
+2. Read the project's CLAUDE.md for project-specific rules.
 
 3. Identify:
    - Existing patterns this feature should follow
    - Test infrastructure available (vitest, pytest, stack tests)
    - Modules that will be affected
-   - Components that must NOT be mocked (constitutional rules)
+   - Active enforcement rules from session context (see session-start output)
 
 ### Phase B: Design (delegate to superpowers:brainstorming)
 
@@ -45,7 +45,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    - What Docker services does this feature need?
    - What are the full-loop assertions? (primary + second-order + third-order effects)
    - What test utilities need to exist before implementation?
-   - Which components are protected from mocking?
+   - Which components are protected from mocking (see active enforcement rules)?
 
 3. Use positive framing in all design guidance:
    - "Use real database connections in tests" (not "don't mock the database")
@@ -58,8 +58,8 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    - [ ] Feature purpose and scope
    - [ ] Affected modules identified
    - [ ] Testing strategy defined
-   - [ ] Constitutional rules acknowledged
-   - [ ] No mocks for protected components
+   - [ ] Active enforcement rules acknowledged (see session-start output)
+   - [ ] Protected components identified per enforcement rules
    - [ ] Stack test user journey defined (if applicable)
 
 ## Output

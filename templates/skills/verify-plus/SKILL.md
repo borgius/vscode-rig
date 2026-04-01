@@ -74,8 +74,8 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
    ### Spec Drift
    - [No deviations / List deviations with reasons]
 
-   ### Constitutional Compliance
-   - [ ] No protected components mocked
+   ### Enforcement Compliance
+   - [ ] Active enforcement rules followed (see session-start output)
    - [ ] Evidence shown for all claims
    - [ ] All source changes have test coverage
    ```

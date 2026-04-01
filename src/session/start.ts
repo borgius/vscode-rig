@@ -1,9 +1,10 @@
 import { execSync } from 'node:child_process';
-import { basename } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { SessionCache } from './cache.js';
-import type { Environment } from '../types.js';
+import type { Environment, HarnessConfig } from '../types.js';
 import { checkWorktreeSuggestion } from './worktree.js';
 import { captureMetricsBaseline } from './metrics.js';
+import { loadConfig, DEFAULT_CONFIG } from '../config.js';
 
 /**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
@@ -42,6 +43,14 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
 
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);
 
+  // Emit active enforcement rules from config
+  const configPath = join(resolve(cwd), '.harness.yaml');
+  const config = await loadConfig(configPath);
+  const activeRules = formatActiveRules(config);
+  if (activeRules) {
+    lines.push(activeRules);
+  }
+
   const suggestion = checkWorktreeSuggestion(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
   if (suggestion) {
     lines.push(suggestion);
@@ -59,6 +68,22 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   }
 
   return lines.join('\n');
+}
+
+function formatActiveRules(config: HarnessConfig): string | null {
+  const active: string[] = [];
+
+  const constitutional = config.rules.constitutional;
+  if (constitutional) {
+    for (const [rule, level] of Object.entries(constitutional)) {
+      if (level && level !== 'silent') {
+        active.push(`${rule} (${level})`);
+      }
+    }
+  }
+
+  if (active.length === 0) return null;
+  return `  Active enforcement: ${active.join(', ')}`;
 }
 
 async function detectAndIndex(cwd: string): Promise<Environment> {

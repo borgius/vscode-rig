@@ -15,7 +15,7 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
 
 - Full test suite runs are redirected (use scoped tests only)
 - Stale test warnings fire when source edits lack test updates
-- Constitutional no-mock rules are enforced
+- Active enforcement rules from session context are enforced (see session-start output)
 
 ## Procedure
 
@@ -69,7 +69,7 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
    - [ ] Test was written first and shown to fail
    - [ ] Implementation makes the test pass
    - [ ] Scoped test run passes (not full suite)
-   - [ ] No constitutional rules violated
+   - [ ] Active enforcement rules followed (see session-start output)
    - [ ] Commit made with descriptive message
 
 2. Proceed to next task or exit tdd+ phase when all plan tasks complete.

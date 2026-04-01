@@ -92,7 +92,7 @@ rules:
     rtk_cat_code: block        # block rtk cat on code files
 ```
 
-Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warning), or `silent` (logs only).
+Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warning), or `silent` (logs only). Active enforcement rules are emitted at session start and referenced dynamically by skill templates — set `no_mocks: silent` to disable no-mock enforcement entirely.
 
 ## Skill chain
 
