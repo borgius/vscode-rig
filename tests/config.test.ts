@@ -22,7 +22,7 @@ describe('config', () => {
 
   describe('loadConfig', () => {
     it('returns default config when file does not exist', async () => {
-      const config = await loadConfig('/nonexistent/path/.harness-conf.yaml');
+      const config = await loadConfig('/nonexistent/path/.harness.yaml');
       expect(config).toEqual(DEFAULT_CONFIG);
     });
 

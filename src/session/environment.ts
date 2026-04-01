@@ -2,9 +2,19 @@ import { execSync } from 'node:child_process';
 import { basename } from 'node:path';
 import type { Environment } from '../types.js';
 
-export async function detectEnvironment(cwd: string): Promise<Environment> {
-  const rtkResult = detectRtk();
-  const jmResult = detectJcodemunch(cwd);
+export interface ExecFn {
+  (command: string, options?: { encoding?: string; timeout?: number }): string;
+}
+
+const defaultExec: ExecFn = (cmd, opts) =>
+  execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string;
+
+export async function detectEnvironment(
+  cwd: string,
+  exec: ExecFn = defaultExec,
+): Promise<Environment> {
+  const rtkResult = detectRtk(exec);
+  const jmResult = detectJcodemunch(cwd, exec);
 
   return {
     rtkAvailable: rtkResult.available,
@@ -17,29 +27,29 @@ export async function detectEnvironment(cwd: string): Promise<Environment> {
   };
 }
 
-function detectRtk(): { available: boolean; path: string | null } {
+function detectRtk(exec: ExecFn): { available: boolean; path: string | null } {
   try {
-    const path = execSync('which rtk', { encoding: 'utf-8' }).trim();
+    const path = exec('which rtk').trim();
     return { available: true, path };
   } catch {
     return { available: false, path: null };
   }
 }
 
-function detectJcodemunch(cwd: string): {
+function detectJcodemunch(cwd: string, exec: ExecFn): {
   available: boolean;
   cwdIndexed: boolean;
   cwdRepo: string | null;
   knownRepos: string[];
 } {
   try {
-    execSync('which jcodemunch', { encoding: 'utf-8' });
+    exec('which jcodemunch');
   } catch {
     return { available: false, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
   }
 
   try {
-    const raw = execSync('jcodemunch list_repos', { encoding: 'utf-8' }).trim();
+    const raw = exec('jcodemunch list_repos').trim();
     const parsed = JSON.parse(raw);
     const repos: string[] = parsed.repos ?? [];
     const folderName = basename(cwd);
