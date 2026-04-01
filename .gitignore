@@ -4,6 +4,7 @@ coverage/
 *.js.map
 *.d.ts.map
 .harness.local.yaml
+.rig-session.json
 
 # rig-generated files (installed, not source)
 .harness.yaml

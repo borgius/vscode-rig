@@ -3,7 +3,7 @@ import { basename } from 'node:path';
 import { SessionCache } from './cache.js';
 import type { Environment } from '../types.js';
 import { checkWorktreeSuggestion } from './worktree.js';
-import { captureMetricsBaseline } from './metrics.js';
+import { captureMetricsBaseline, writeSessionMetrics } from './metrics.js';
 
 /**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
@@ -15,6 +15,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
 
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
   cache.setMetricsBaseline(baseline);
+  writeSessionMetrics(cwd, { baseline, counters: { rtkCalls: 0, jmCalls: 0 } });
 
   const lines = [
     '[rig] Session initialized',

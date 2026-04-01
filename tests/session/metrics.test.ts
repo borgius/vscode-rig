@@ -1,5 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { captureMetricsBaseline, incrementMetric, formatSavingsReport } from '../../src/session/metrics.js';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { readFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import {
+  captureMetricsBaseline,
+  incrementMetric,
+  formatSavingsReport,
+  writeSessionMetrics,
+  readSessionMetrics,
+  incrementSessionCounter,
+  sessionFilePath,
+} from '../../src/session/metrics.js';
 import type { MetricsBaseline } from '../../src/types.js';
 
 function makeExec(results: Record<string, string | Error>) {
@@ -82,5 +93,54 @@ describe('formatSavingsReport', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
     const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0 });
     expect(report).toContain('no token savings');
+  });
+});
+
+describe('session file persistence', () => {
+  let testDir: string;
+
+  beforeEach(() => {
+    testDir = join(tmpdir(), `rig-metrics-test-${Date.now()}`);
+  });
+
+  afterEach(() => {
+    try { rmSync(testDir, { recursive: true, force: true }); } catch {}
+  });
+
+  it('writes and reads session metrics', () => {
+    const baseline: MetricsBaseline = { totalSaved: 5000000, capturedAt: Date.now() };
+    writeSessionMetrics(testDir, { baseline, counters: { rtkCalls: 3, jmCalls: 7 } });
+
+    const data = readSessionMetrics(testDir);
+    expect(data).not.toBeNull();
+    expect(data!.baseline.totalSaved).toBe(5000000);
+    expect(data!.counters.rtkCalls).toBe(3);
+    expect(data!.counters.jmCalls).toBe(7);
+  });
+
+  it('returns null when file does not exist', () => {
+    expect(readSessionMetrics(testDir)).toBeNull();
+  });
+
+  it('increments session counters', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    writeSessionMetrics(testDir, { baseline, counters: { rtkCalls: 0, jmCalls: 0 } });
+
+    incrementSessionCounter(testDir, 'rtkCalls');
+    incrementSessionCounter(testDir, 'rtkCalls');
+    incrementSessionCounter(testDir, 'jmCalls');
+
+    const data = readSessionMetrics(testDir);
+    expect(data!.counters.rtkCalls).toBe(2);
+    expect(data!.counters.jmCalls).toBe(1);
+  });
+
+  it('creates file on first increment if missing', () => {
+    incrementSessionCounter(testDir, 'rtkCalls');
+
+    const data = readSessionMetrics(testDir);
+    expect(data).not.toBeNull();
+    expect(data!.counters.rtkCalls).toBe(1);
+    expect(data!.counters.jmCalls).toBe(0);
   });
 });
