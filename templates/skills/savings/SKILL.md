@@ -29,15 +29,15 @@ With session data (baseline + delta available):
 
 ```
 [rig] Session Savings
-  rtk: 6.4M saved (42 calls, +340K this session)
-  jcodemunch: 28 queries
+  rtk: X.XM saved (N calls, +XK this session)
+  jcodemunch: N queries
 ```
 
 Without session data (no cache file found):
 
 ```
 [rig] Session Savings (all-time)
-  rtk: 6.4M saved (3114 commands, 82.2% avg savings)
+  rtk: X.XM saved (N commands, XX.X% avg savings)
 ```
 
 If rtk is not installed:
