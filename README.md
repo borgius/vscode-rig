@@ -117,8 +117,9 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
 
 - [Claude Code](https://claude.ai/code) CLI
 - Node.js 18+
-- Optional: [rtk](https://github.com/franklywatson/rtk) for token-optimized command proxy
-- Optional: [jcodemunch](https://github.com/franklywatson/jcodemunch) MCP server for indexed code search
+- [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
+- [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
+- [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server (strongly recommended; powers the scout agent and tool router fallback)
 
 ## Development
 
