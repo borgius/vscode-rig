@@ -57,6 +57,11 @@ export interface Environment {
   detectedAt: number;
 }
 
+export interface MetricsBaseline {
+  totalSaved: number;
+  capturedAt: number;
+}
+
 // ── Config Types ──
 
 export interface ToolRoutingRules {

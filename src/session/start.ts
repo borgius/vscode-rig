@@ -2,6 +2,8 @@ import { execSync } from 'node:child_process';
 import { basename } from 'node:path';
 import { SessionCache } from './cache.js';
 import type { Environment } from '../types.js';
+import { checkWorktreeSuggestion } from './worktree.js';
+import { captureMetricsBaseline } from './metrics.js';
 
 /**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
@@ -10,6 +12,9 @@ import type { Environment } from '../types.js';
 export async function handleSessionStart(cwd: string, cache: SessionCache): Promise<string> {
   const env = await detectAndIndex(cwd);
   cache.setEnvironment(env);
+
+  const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  cache.setMetricsBaseline(baseline);
 
   const lines = [
     '[rig] Session initialized',
@@ -26,6 +31,11 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   }
 
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);
+
+  const suggestion = checkWorktreeSuggestion(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  if (suggestion) {
+    lines.push(suggestion);
+  }
 
   return lines.join('\n');
 }

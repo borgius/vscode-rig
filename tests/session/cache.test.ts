@@ -75,4 +75,22 @@ describe('SessionCache', () => {
     expect(cache.getEditedFiles('source')).toEqual([]);
     expect(cache.getCurrentPhase()).toBeNull();
   });
+
+  it('stores and retrieves metrics baseline', () => {
+    const cache = new SessionCache();
+    expect(cache.getMetricsBaseline()).toBeUndefined();
+    cache.setMetricsBaseline({ totalSaved: 1000000, capturedAt: Date.now() });
+    const baseline = cache.getMetricsBaseline();
+    expect(baseline).toBeDefined();
+    expect(baseline!.totalSaved).toBe(1000000);
+  });
+
+  it('stores and increments metric counters', () => {
+    const cache = new SessionCache();
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0 });
+    cache.incrementMetricCounter('rtkCalls');
+    cache.incrementMetricCounter('rtkCalls');
+    cache.incrementMetricCounter('jmCalls');
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 2, jmCalls: 1 });
+  });
 });

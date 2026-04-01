@@ -91,4 +91,28 @@ describe('handleSessionStart', () => {
     expect(output).toContain('jcodemunch');
     expect(output).toContain('indexed');
   });
+
+  it('includes worktree suggestion when on master', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'git branch --show-current') return 'master';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('using-git-worktrees');
+  });
+
+  it('omits worktree suggestion when on feature branch', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'git branch --show-current') return 'feat/something';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).not.toContain('using-git-worktrees');
+  });
 });
