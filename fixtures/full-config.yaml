@@ -1,0 +1,29 @@
+rules:
+  tool_routing:
+    grep: block
+    find: advise
+    glob: advise
+    sed_i: block
+    cat: advise
+    broad_scan: block
+  constitutional:
+    no_mocks: block
+    evidence_only: block
+    full_accounting: advise
+  test_integrity:
+    conditional_assert: block
+    skip_without_reason: advise
+    empty_test: block
+  stale_tests:
+    enforcement: advise
+    grace_period: 0
+  test_scope:
+    enforcement: advise
+    allowed_unscoped:
+      - "vitest watch"
+      - "jest --watch"
+  zero_defect:
+    tolerance: strict
+    unrelated_errors: block
+  enforcement:
+    default_level: advise

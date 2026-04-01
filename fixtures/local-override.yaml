@@ -1,0 +1,5 @@
+rules:
+  tool_routing:
+    grep: advise
+  stale_tests:
+    enforcement: block
