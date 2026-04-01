@@ -13,10 +13,21 @@ import { join, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
-const { handlePostToolUse } = require(join('{{RIG_DIST_PATH}}', 'enforcement', 'post-tool-use.js'));
-const { FileTracker } = require(join('{{RIG_DIST_PATH}}', 'enforcement', 'file-tracker.js'));
-const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
-const { loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js'));
+
+let handlePostToolUse: any;
+let FileTracker: any;
+let SessionCache: any;
+let loadConfig: any;
+
+try {
+  ({ handlePostToolUse } = require(join('{{RIG_DIST_PATH}}', 'enforcement', 'post-tool-use.js')));
+  ({ FileTracker } = require(join('{{RIG_DIST_PATH}}', 'enforcement', 'file-tracker.js')));
+  ({ SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js')));
+  ({ loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js')));
+} catch {
+  // rig dist not available — exit cleanly
+  process.exit(0);
+}
 
 const cwd = process.cwd();
 const cache = new SessionCache(cwd);

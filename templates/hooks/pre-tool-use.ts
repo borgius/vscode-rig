@@ -14,9 +14,19 @@ import { join, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
-const { handlePreToolUse } = require(join('{{RIG_DIST_PATH}}', 'router', 'hook.js'));
-const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
-const { loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js'));
+
+let handlePreToolUse: any;
+let SessionCache: any;
+let loadConfig: any;
+
+try {
+  ({ handlePreToolUse } = require(join('{{RIG_DIST_PATH}}', 'router', 'hook.js')));
+  ({ SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js')));
+  ({ loadConfig } = require(join('{{RIG_DIST_PATH}}', 'config.js')));
+} catch {
+  // rig dist not available — allow the tool call through
+  process.exit(0);
+}
 
 const cwd = process.cwd();
 const cache = new SessionCache(cwd);

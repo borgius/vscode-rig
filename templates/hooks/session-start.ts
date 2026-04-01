@@ -12,8 +12,17 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
-const { handleSessionStart } = require(join('{{RIG_DIST_PATH}}', 'session', 'start.js'));
-const { SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js'));
+
+let handleSessionStart: any;
+let SessionCache: any;
+
+try {
+  ({ handleSessionStart } = require(join('{{RIG_DIST_PATH}}', 'session', 'start.js')));
+  ({ SessionCache } = require(join('{{RIG_DIST_PATH}}', 'session', 'cache.js')));
+} catch {
+  // rig dist not available — don't block the session
+  process.exit(0);
+}
 
 const cwd = process.cwd();
 const cache = new SessionCache(cwd);
