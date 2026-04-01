@@ -64,9 +64,11 @@ export class FileTracker {
     );
 
     return this.sourceEdits.filter(edit => {
-      // Grace period: gracePeriod=0 means no grace (immediately stale).
-      // gracePeriod=N means the edit is exempt for N turns after the edit turn.
-      if (gracePeriod > 0 && (currentTurn - edit.turn) <= gracePeriod) return false;
+      // A source edit is exempt during the turn it was made (user hasn't had
+      // a chance to write the test yet). gracePeriod adds extra turns of
+      // immunity after the edit turn. gracePeriod=0 means stale on the next
+      // turn; gracePeriod=1 means stale after 1 additional turn, etc.
+      if (currentTurn - edit.turn <= gracePeriod) return false;
 
       const baseName = extractBaseName(edit.file);
       // Check if any test edit covers this source file

@@ -24,6 +24,7 @@ describe('checkStaleTests', () => {
     tracker.recordEdit('src/router/resolver.ts');
     tracker.recordEdit('src/router/rules.ts');
     tracker.recordEdit('tests/router/resolver.test.ts');
+    tracker.nextTurn();
     const result = checkStaleTests(tracker, config);
     expect(result).not.toBeNull();
     expect(result).toContain('STALE TEST WARNING');
@@ -34,12 +35,14 @@ describe('checkStaleTests', () => {
   it('includes enforcement level from config', () => {
     config.rules.stale_tests = { enforcement: 'block', grace_period: 0 };
     tracker.recordEdit('src/router/rules.ts');
+    tracker.nextTurn();
     const result = checkStaleTests(tracker, config);
     expect(result).toContain('[BLOCK]');
   });
 
   it('shows advise level by default', () => {
     tracker.recordEdit('src/router/rules.ts');
+    tracker.nextTurn();
     const result = checkStaleTests(tracker, config);
     expect(result).toContain('[ADVISE]');
   });

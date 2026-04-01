@@ -69,6 +69,8 @@ describe('FileTracker', () => {
       tracker.recordEdit('src/router/resolver.ts');
       tracker.recordEdit('src/router/rules.ts');
       tracker.recordEdit('tests/router/resolver.test.ts');
+      // Advance turn so source edits are no longer in their creation turn
+      tracker.nextTurn();
       // resolver.ts has a test, rules.ts does not
       const stale = tracker.getStaleSources();
       expect(stale.map(s => s.file)).toContain('src/router/rules.ts');
@@ -78,6 +80,7 @@ describe('FileTracker', () => {
     it('matches source to test by name convention', () => {
       tracker.recordEdit('src/enforcement/zero-defect.ts');
       tracker.recordEdit('tests/enforcement/zero-defect.test.ts');
+      tracker.nextTurn();
       const stale = tracker.getStaleSources();
       expect(stale.map(s => s.file)).not.toContain('src/enforcement/zero-defect.ts');
     });
@@ -85,6 +88,7 @@ describe('FileTracker', () => {
     it('matches source to test by path component', () => {
       tracker.recordEdit('src/router/hook.ts');
       tracker.recordEdit('tests/router/hook.test.ts');
+      tracker.nextTurn();
       const stale = tracker.getStaleSources();
       expect(stale).toEqual([]);
     });
