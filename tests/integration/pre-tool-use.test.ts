@@ -6,6 +6,8 @@ import { initCommand } from '../../src/cli/init.js';
 import { runHook } from '../helpers/hook-runner.js';
 
 describe('PreToolUse hook E2E', () => {
+  // npx tsx may need to install on first run in CI
+  const HOOK_TIMEOUT = 30_000;
   let tempDir: string;
   let hookPath: string;
 
@@ -15,7 +17,7 @@ describe('PreToolUse hook E2E', () => {
     await initCommand(tempDir, { force: false });
     hookPath = join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts');
     expect(existsSync(hookPath)).toBe(true);
-  });
+  }, HOOK_TIMEOUT);
 
   afterAll(() => {
     rmSync(tempDir, { recursive: true, force: true });

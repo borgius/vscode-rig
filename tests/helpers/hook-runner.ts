@@ -32,7 +32,12 @@ export function runHook(
     child.stderr?.on('data', (data: Buffer) => { stderr += data.toString(); });
 
     child.on('close', (code) => {
-      resolve({ stdout, stderr, exitCode: code ?? 1 });
+      // Filter npm warnings (e.g., "npm warn exec The following package was not found...")
+      const filteredStderr = stderr
+        .split('\n')
+        .filter(line => !line.startsWith('npm warn'))
+        .join('\n');
+      resolve({ stdout, stderr: filteredStderr, exitCode: code ?? 1 });
     });
 
     child.on('error', (err) => {
