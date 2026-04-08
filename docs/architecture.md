@@ -116,11 +116,11 @@ During `tdd+` phase, running the full test suite (e.g., `npm test`) is redirecte
 ### Constitutional rules
 
 Regex-based detection of mocking patterns (`jest.mock`, `vi.mock`, `sinon.stub`, etc.) in
-test file content during edits. All constitutional rules are configurable via
-`.harness.yaml` -- set `no_mocks: silent` to disable no-mock enforcement, or
-`evidence_only: silent` to disable evidence-only enforcement. Active rules are
-emitted in session-start output so skill templates can reference them dynamically
-instead of hardcoding assumptions.
+stack/E2E test files only. Unit test mocks are permitted for isolation.
+All constitutional rules are configurable via `.harness.yaml` -- set `no_mocks: silent`
+to disable no-mock enforcement, or `evidence_only: silent` to disable evidence-only
+enforcement. Active rules are emitted in session-start output so skill templates can
+reference them dynamically instead of hardcoding assumptions.
 
 ### Zero-defect check
 

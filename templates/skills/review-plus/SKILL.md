@@ -42,7 +42,7 @@ Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed
    - Flag any source edits without test updates as stale test violations
 
 3. Check enforcement compliance (see active enforcement rules from session-start output):
-   - [ ] Active enforcement rules followed in all test and source files
+   - [ ] Active enforcement rules followed in all test and source files (real dependencies in stack/E2E tests; mocks appropriate in unit tests)
    - [ ] All claims of success are backed by command output
    - [ ] Full-loop assertions present where applicable
    - [ ] No conditional test assertions (`if (condition) assert(...)`)

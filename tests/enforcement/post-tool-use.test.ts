@@ -55,11 +55,11 @@ describe('handlePostToolUse', () => {
     expect(result).toContain('ZERO-DEFECT');
   });
 
-  it('checks constitutional on test file edits', () => {
+  it('checks constitutional on stack test file edits', () => {
     const result = handlePostToolUse(
       'Edit',
       {
-        file_path: 'tests/router/resolver.test.ts',
+        file_path: 'tests/router/resolver.stack.test.ts',
         new_string: "jest.mock('../src/router/resolver.js');",
       },
       tracker,
@@ -71,11 +71,11 @@ describe('handlePostToolUse', () => {
   });
 
   it('combines multiple violations into single output', () => {
-    // Edit a test file with a mock
+    // Edit a stack test file with a mock
     const result = handlePostToolUse(
       'Edit',
       {
-        file_path: 'tests/router/resolver.test.ts',
+        file_path: 'tests/router/resolver.stack.test.ts',
         new_string: "vi.mock('../src/config.js');",
       },
       tracker,

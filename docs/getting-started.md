@@ -95,7 +95,7 @@ rules:
     enforcement: advise
     allowed_unscoped: [vitest watch, jest --watch]
   constitutional:
-    no_mocks: block             # Set to "silent" to disable no-mock enforcement
+    no_mocks: advise             # Set to "block" for strict, "silent" to disable
     evidence_only: block
     full_accounting: advise
   zero_defect:
@@ -126,7 +126,7 @@ When Claude tries to run a shell command like `grep -r "pattern" src/`, the pre-
 After each tool use, the post-tool-use hook runs three checks:
 
 1. **Stale tests** -- Did you edit source files without updating tests?
-2. **Constitutional** -- Are there mocks in test files? (configurable — set `no_mocks: silent` to disable)
+2. **Constitutional** -- Are there mocks in stack/E2E test files? (mocks are appropriate in unit tests; configurable — set `no_mocks: silent` to disable)
 3. **Zero defect** -- Do the test results show failures?
 
 Each check returns a violation message or null. All violations are combined as advisory output.

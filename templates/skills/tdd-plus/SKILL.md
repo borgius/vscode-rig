@@ -1,6 +1,6 @@
 ---
 name: tdd+
-description: "Invoke AFTER plan+ is approved. Wraps superpowers:test-driven-development with full-loop assertions, no-mock enforcement, zero-defect, stale test detection, and scoped test runs. Implements plan tasks with RED-GREEN-REFACTOR discipline."
+description: "Invoke AFTER plan+ is approved. Wraps superpowers:test-driven-development with full-loop assertions, real-dependency enforcement for stack tests, zero-defect, stale test detection, and scoped test runs. Implements plan tasks with RED-GREEN-REFACTOR discipline."
 argument-hint: "[plan file path or task range]"
 user-invocable: true
 ---
@@ -15,7 +15,7 @@ Wraps `superpowers:test-driven-development`. Requires superpowers to be installe
 
 - Full test suite runs are redirected (use scoped tests only)
 - Stale test warnings fire when source edits lack test updates
-- Active enforcement rules from session context are enforced (see session-start output)
+- Active enforcement rules from session context are enforced (see session-start output; real dependencies in stack/E2E tests by default)
 
 ## Procedure
 

@@ -10,6 +10,7 @@ describe('config', () => {
     it('has all rule categories with sensible defaults', () => {
       expect(DEFAULT_CONFIG.rules.enforcement).toBeDefined();
       expect(DEFAULT_CONFIG.rules.enforcement.default_level).toBe('advise');
+      expect(DEFAULT_CONFIG.rules.constitutional.no_mocks).toBe('advise');
       expect(DEFAULT_CONFIG.rules.tool_routing).toBeDefined();
       expect(DEFAULT_CONFIG.rules.tool_routing.grep).toBe('block');
       expect(DEFAULT_CONFIG.rules.tool_routing.sed_i).toBe('block');

@@ -35,7 +35,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    - Existing patterns this feature should follow
    - Test infrastructure available (vitest, pytest, stack tests)
    - Modules that will be affected
-   - Active enforcement rules from session context (see session-start output)
+   - Active enforcement rules from session context (see session-start output; real dependencies in stack/E2E tests by default)
 
 ### Phase B: Design (delegate to superpowers:brainstorming)
 
@@ -59,7 +59,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    - [ ] Affected modules identified
    - [ ] Testing strategy defined
    - [ ] Active enforcement rules acknowledged (see session-start output)
-   - [ ] Protected components identified per enforcement rules
+   - [ ] Protected components identified per enforcement rules (real dependencies in stack/E2E tests; mocks appropriate in unit tests)
    - [ ] Stack test user journey defined (if applicable)
 
 ## Output

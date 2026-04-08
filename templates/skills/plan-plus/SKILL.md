@@ -26,14 +26,18 @@ This skill runs after `brain+` has produced a validated design. It creates the i
    ```
    ## Constitutional Rules for This Plan
    [List active enforcement rules from session-start output — these are configurable via .harness.yaml]
+   - Use real [database/payment/logger] connections in stack/E2E tests — mocks are appropriate in unit tests
+   - Show command output before claiming done
+   - Every source file change requires corresponding test changes
+   - Full-loop assertions: verify primary + second-order + third-order effects
    ```
 
 3. Identify the mock policy for this plan based on active enforcement rules:
 
    ```
    ## Mock Policy
-   Protected components: [list from active enforcement rules]
-   Allowed: [external third-party services not yet containerized]
+   Stack/E2E (real deps): [list from active enforcement rules]
+   Unit tests (mocks ok): [all components] / External without sandbox: [third-party services]
    ```
 
 ### Phase B: Create Plan (delegate to superpowers:writing-plans)

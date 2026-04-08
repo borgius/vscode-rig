@@ -9,7 +9,7 @@ Rig installs guardrails into a Claude Code project:
 - **Tool Router** -- intercepts shell commands via PreToolUse hooks, redirects `grep`/`find`/`cat`
   to rtk or jcodemunch when available; advises on native Read/Grep/Glob when
   jcodemunch is indexed; blocks `rtk cat` on code files
-- **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (no mocks), and zero-defect status (with pre-existing failure classification)
+- **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (real dependencies in stack/E2E tests), and zero-defect status (with pre-existing failure classification)
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
 - **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection
 
@@ -80,7 +80,7 @@ rules:
     enforcement: advise
     allowed_unscoped: [vitest watch, jest --watch]
   constitutional:
-    no_mocks: block
+    no_mocks: advise
     evidence_only: block
   zero_defect:
     tolerance: strict

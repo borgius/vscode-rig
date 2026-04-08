@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG: HarnessConfig = {
       read_line_threshold: 100,
     },
     constitutional: {
-      no_mocks: 'block',
+      no_mocks: 'advise',
       evidence_only: 'block',
       full_accounting: 'advise',
     },

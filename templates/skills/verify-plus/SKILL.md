@@ -75,7 +75,7 @@ Wraps `superpowers:verification-before-completion`. Requires superpowers to be i
    - [No deviations / List deviations with reasons]
 
    ### Enforcement Compliance
-   - [ ] Active enforcement rules followed (see session-start output)
+   - [ ] Active enforcement rules followed (see session-start output; real dependencies in stack/E2E tests by default)
    - [ ] Evidence shown for all claims
    - [ ] All source changes have test coverage
    ```
