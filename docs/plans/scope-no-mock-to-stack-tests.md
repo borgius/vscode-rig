@@ -2,7 +2,11 @@
 
 ## Context
 
-The agentic-patterns repo (commit ae7d68a) reframed its constitutional rule from a blanket "never mock core system components" to "real dependencies in E2E/integration and stack tests — mocks are appropriate in unit tests for isolation." Rig's enforcement has not followed this change. The `checkConstitutional()` function blocks mocks in ALL test files regardless of type, and all skill templates use unscoped negative language.
+The agentic-patterns repo (commit ae7d68a) reframed its constitutional rule from a blanket
+"never mock core system components" to "real dependencies in E2E/integration and stack tests
+— mocks are appropriate in unit tests for isolation." Rig's enforcement has not followed this
+change. The `checkConstitutional()` function blocks mocks in ALL test files regardless of type,
+and all skill templates use unscoped negative language.
 
 This plan scopes the no-mock rule to stack/E2E tests only, changes the default from `block` to `advise`, and updates all language to positive framing. Zero-defect tolerance remains unchanged.
 
@@ -68,7 +72,8 @@ Allowed: mocks in unit test files for isolation
 **Test strategy:** Verify template renders correctly
 **Mock check:** No protected components involved
 
-- [ ] Line 28: `- Use real [database/payment/logger] connections — never mock protected components` → `- Use real [database/payment/logger] connections in stack/E2E tests — mocks are appropriate in unit tests`
+- [ ] Line 28: `- Use real [database/payment/logger] connections — never mock protected components`
+  → `- Use real [database/payment/logger] connections in stack/E2E tests — mocks appropriate in unit tests`
 - [ ] Line 38: `Protected (never mock): [list from constitutional rules]` → `Stack/E2E (real deps): [list from constitutional rules]`
 - [ ] Line 39: `Allowed: [external third-party services not yet containerized]` → `Unit tests (mocks ok): [all components] / External without sandbox: [third-party services]`
 
