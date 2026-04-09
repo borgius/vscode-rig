@@ -381,7 +381,7 @@ console.log('stale old hook');
       expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
     });
 
-    it('resolves absolute npx path for hook commands', async () => {
+    it('resolves absolute npx path with PATH prefix for hook commands', async () => {
       const claudeDir = join(tempDir, '.claude');
       mkdirSync(claudeDir, { recursive: true });
       writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
@@ -396,6 +396,7 @@ console.log('stale old hook');
       const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
       for (const event of ['PreToolUse', 'PostToolUse', 'SessionStart']) {
         const command = settings.hooks[event][0].hooks[0].command;
+        expect(command).toContain('PATH="/home/user/.nvm/versions/node/v20.0.0/bin:$PATH"');
         expect(command).toContain('/home/user/.nvm/versions/node/v20.0.0/bin/npx tsx');
         expect(command).toContain('.claude/hooks/scripts/');
       }
@@ -428,7 +429,7 @@ console.log('stale old hook');
       const exec2: ExecFn = (cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
-        if (cmd === 'command -v npx') return '/new/npx\n';
+        if (cmd === 'command -v npx') return '/new/bin/npx\n';
         return '';
       };
       await initCommand(tempDir, { force: false, exec: exec2 });
@@ -436,8 +437,9 @@ console.log('stale old hook');
       const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
       // Should have updated to new path, not duplicated
       expect(settings.hooks.PreToolUse.length).toBe(1);
-      expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('/new/npx tsx');
-      expect(settings.hooks.PreToolUse[0].hooks[0].command).not.toContain('/old/npx');
+      expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('/new/bin/npx tsx');
+      expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('PATH="/new/bin:$PATH"');
+      expect(settings.hooks.PreToolUse[0].hooks[0].command).not.toContain('/old/');
     });
   });
 

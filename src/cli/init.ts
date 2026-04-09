@@ -178,7 +178,10 @@ function resolveNpxPath(exec?: ExecFn): string {
     execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string);
   try {
     const npxPath = runExec('command -v npx').trim();
-    return npxPath ? `${npxPath} tsx` : 'npx tsx';
+    if (!npxPath) return 'npx tsx';
+    const nodeBinDir = npxPath.replace(/\/npx$/, '');
+    // Prepend node bin dir to PATH so npx/tsx can find node in restricted shells
+    return `PATH="${nodeBinDir}:$PATH" ${npxPath} tsx`;
   } catch {
     return 'npx tsx';
   }
