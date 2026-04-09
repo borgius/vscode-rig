@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { mkdirSync, existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -97,7 +98,8 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   }
 
   // Update settings.json with hook registrations
-  updateSettingsJson(claudeDir, projectName);
+  const npxCommand = resolveNpxPath(options.exec);
+  updateSettingsJson(claudeDir, projectName, npxCommand);
 
   // Update .gitignore with rig-managed section
   updateGitignore(projectDir);
@@ -171,7 +173,18 @@ function copyUserTemplate(
   writeFileSync(dest, renderTemplate(content, context));
 }
 
-function updateSettingsJson(claudeDir: string, projectName: string): void {
+function resolveNpxPath(exec?: ExecFn): string {
+  const runExec: ExecFn = exec ?? ((cmd, opts) =>
+    execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string);
+  try {
+    const npxPath = runExec('command -v npx').trim();
+    return npxPath ? `${npxPath} tsx` : 'npx tsx';
+  } catch {
+    return 'npx tsx';
+  }
+}
+
+function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: string): void {
   const settingsPath = join(claudeDir, 'settings.json');
   let settings: Record<string, unknown> = {};
 
@@ -196,7 +209,7 @@ function updateSettingsJson(claudeDir: string, projectName: string): void {
       hooks[event] = [];
     }
     const entries = hooks[event] as Array<Record<string, unknown>>;
-    const command = `npx tsx .claude/hooks/scripts/${script}`;
+    const command = `${npxCommand} .claude/hooks/scripts/${script}`;
 
     // Remove old-format entries (flat matcher+command without nested hooks array)
     let i = entries.length;
@@ -214,18 +227,27 @@ function updateSettingsJson(claudeDir: string, projectName: string): void {
       }
     }
 
-    // Check if new-format entry already exists
-    const exists = entries.some(
-      e =>
-        typeof e === 'object' &&
-        e !== null &&
-        'hooks' in e &&
-        Array.isArray((e as Record<string, unknown>).hooks) &&
-        ((e as Record<string, unknown>).hooks as Array<Record<string, string>>).some(
-          h => h.command?.includes(script),
-        ),
-    );
-    if (!exists) {
+    // Find existing new-format entry and update command, or add new
+    let updated = false;
+    for (const entry of entries) {
+      if (
+        typeof entry === 'object' &&
+        entry !== null &&
+        'hooks' in entry &&
+        Array.isArray((entry as Record<string, unknown>).hooks)
+      ) {
+        const hookEntries = (entry as Record<string, unknown>).hooks as Array<Record<string, string>>;
+        for (const h of hookEntries) {
+          if (typeof h === 'object' && h.command?.includes(script)) {
+            h.command = command;
+            updated = true;
+            break;
+          }
+        }
+      }
+      if (updated) break;
+    }
+    if (!updated) {
       entries.push({
         matcher: '',
         hooks: [{ type: 'command', command }],

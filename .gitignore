@@ -11,3 +11,8 @@ coverage/
 .claude/hooks/
 .claude/skills/
 .claude/agents/scout.md
+
+# --- rig-managed (do not edit below) ---
+.harness.yaml.local
+*.session-cache.json
+# --- end rig-managed ---
