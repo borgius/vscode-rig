@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import { basename, join, resolve } from 'node:path';
 import { SessionCache } from './cache.js';
 import type { Environment, HarnessConfig } from '../types.js';
+import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
 import { checkWorktreeSuggestion } from './worktree.js';
 import { captureMetricsBaseline } from './metrics.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config.js';
@@ -87,67 +88,49 @@ function formatActiveRules(config: HarnessConfig): string | null {
 }
 
 async function detectAndIndex(cwd: string): Promise<Environment> {
-  // Detect rtk
-  let rtkAvailable = false;
-  let rtkPath: string | null = null;
-  try {
-    rtkPath = execSync('which rtk', { encoding: 'utf-8' }).trim();
-    rtkAvailable = true;
-  } catch {
-    // rtk not found
-  }
+  const env = await detectEnvironment(cwd);
 
-  // Detect jcodemunch
-  let jcodemunchAvailable = false;
-  let jcodemunchCwdIndexed = false;
-  let jcodemunchCwdRepo: string | null = null;
-  let jcodemunchKnownRepos: string[] = [];
-
-  try {
-    execSync('which jcodemunch', { encoding: 'utf-8' });
-    jcodemunchAvailable = true;
-
-    // Check existing indexes
-    const raw = execSync('jcodemunch list_repos', { encoding: 'utf-8' }).trim();
-    const parsed = JSON.parse(raw);
-    jcodemunchKnownRepos = parsed.repos ?? [];
-
-    const folderName = basename(cwd);
-    const match = jcodemunchKnownRepos.find(r => r.endsWith(folderName)) ?? null;
-
-    if (match) {
-      jcodemunchCwdIndexed = true;
-      jcodemunchCwdRepo = match;
-    } else {
-      // Auto-index CWD
+  // Auto-index if jcodemunch is available but CWD isn't indexed
+  if (env.jcodemunchAvailable && !env.jcodemunchCwdIndexed) {
+    // Try CLI auto-index first (only works when jcodemunch CLI binary is installed)
+    try {
+      execSync('which jcodemunch', { encoding: 'utf-8' });
+      const indexResult = execSync(
+        `jcodemunch index_folder --path "${cwd}"`,
+        { encoding: 'utf-8', timeout: 60_000 },
+      ).trim();
+      const parsedResult = JSON.parse(indexResult);
+      if (parsedResult.success) {
+        env.jcodemunchCwdIndexed = true;
+        env.jcodemunchCwdRepo = parsedResult.repo ?? env.jcodemunchCwdRepo;
+        if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
+          env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
+        }
+      }
+    } catch {
+      // CLI not available — try MCP auto-index via JSON-RPC
       try {
-        const indexResult = execSync(
-          `jcodemunch index_folder --path "${cwd}"`,
-          { encoding: 'utf-8', timeout: 60_000 },
-        ).trim();
-        const parsedResult = JSON.parse(indexResult);
-        if (parsedResult.success) {
-          jcodemunchCwdIndexed = true;
-          jcodemunchCwdRepo = parsedResult.repo ?? null;
-          if (jcodemunchCwdRepo && !jcodemunchKnownRepos.includes(jcodemunchCwdRepo)) {
-            jcodemunchKnownRepos.push(jcodemunchCwdRepo);
+        const mcpPath = execSync('which jcodemunch-mcp', { encoding: 'utf-8' }).trim();
+        if (mcpPath) {
+          const execFn = (cmd: string, opts?: { encoding?: string; timeout?: number }) =>
+            execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string;
+          const text = callJcodemunchMcpTool(mcpPath, 'index_folder', { path: cwd }, execFn);
+          if (text) {
+            const parsedResult = JSON.parse(text);
+            if (parsedResult.success) {
+              env.jcodemunchCwdIndexed = true;
+              env.jcodemunchCwdRepo = parsedResult.repo ?? env.jcodemunchCwdRepo;
+              if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
+                env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
+              }
+            }
           }
         }
       } catch {
-        // Auto-index failed — continue without indexing
+        // MCP auto-index failed — agent can index via MCP directly
       }
     }
-  } catch {
-    // jcodemunch not found
   }
 
-  return {
-    rtkAvailable,
-    rtkPath,
-    jcodemunchAvailable,
-    jcodemunchCwdIndexed,
-    jcodemunchCwdRepo,
-    jcodemunchKnownRepos,
-    detectedAt: Date.now(),
-  };
+  return env;
 }

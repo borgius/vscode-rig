@@ -118,6 +118,33 @@ function queryJcodemunchMcp(mcpPath: string, exec: ExecFn): string | null {
   }
 }
 
+/**
+ * Call a jcodemunch MCP tool via JSON-RPC stdio protocol.
+ * Returns the parsed text content of the result, or null on failure.
+ */
+export function callJcodemunchMcpTool(mcpPath: string, toolName: string, args: Record<string, string>, exec: ExecFn): string | null {
+  const init = '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}';
+  const ready = '{"jsonrpc":"2.0","method":"notifications/initialized"}';
+  const call = JSON.stringify({
+    jsonrpc: '2.0',
+    method: 'tools/call',
+    params: { name: toolName, arguments: args },
+    id: 2,
+  });
+
+  const cmd = `printf '%s\\n' '${init}' '${ready}' '${call}' | '${mcpPath}' 2>/dev/null`;
+  try {
+    const output = exec(cmd, { timeout: 60_000 });
+    const lines = output.trim().split('\n');
+    const responseLine = lines.find(l => l.includes('"id":2'));
+    if (!responseLine) return null;
+    const rpcResponse = JSON.parse(responseLine);
+    return rpcResponse?.result?.content?.[0]?.text ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveJcodemunchRepos(cwd: string, repos: string[]): {
   available: boolean;
   cwdIndexed: boolean;
