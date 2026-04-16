@@ -10,7 +10,8 @@ export type IntentType =
   | 'native_read'
   | 'native_grep'
   | 'native_glob'
-  | 'rtk_cat_code';
+  | 'rtk_cat_code'
+  | 'cwd_path_expand';
 
 // ── Resolution Types ──
 
@@ -90,6 +91,7 @@ export interface ToolRoutingRules {
   native_grep?: EnforcementLevel;
   native_glob?: EnforcementLevel;
   rtk_cat_code?: EnforcementLevel;
+  cwd_path_expand?: EnforcementLevel;
   read_line_threshold?: number;
 }
 

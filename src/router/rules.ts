@@ -19,7 +19,7 @@ export function isCodeFile(filePath: string): boolean {
  * Priority resolution for each rule: rtk > jcodemunch > claudeTool > fallback
  * Enforcement: block | advise | silent (configurable per-rule in .harness.yaml)
  */
-export function getDefaultRules(): ToolRule[] {
+export function getDefaultRules(cwd?: string): ToolRule[] {
   return [
     // ── Native Read Advisory (code files only, no targeted re-read) ──
     {
@@ -139,6 +139,25 @@ export function getDefaultRules(): ToolRule[] {
         _: { action: 'block', reason: 'Use Claude Edit tool for file modifications — validates exact matches before applying changes. Never use sed -i or awk redirects.' },
       },
       enforcement: 'block',
+    },
+
+    // ── CWD Path Expansion (fully-qualified CWD paths in commands) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        if (tool !== 'Bash') return false;
+        const command = args.command as string | undefined;
+        if (!command || !cwd) return false;
+        return command.startsWith(cwd + '/');
+      },
+      intent: 'cwd_path_expand',
+      resolutions: {
+        _: {
+          action: 'advise',
+          tool: './ (relative path)',
+          reason: 'Use ./ instead of fully-qualified CWD path — shorter, saves tokens, more portable',
+        },
+      },
+      enforcement: 'advise',
     },
   ];
 }

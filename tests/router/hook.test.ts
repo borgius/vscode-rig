@@ -164,4 +164,28 @@ describe('handlePreToolUse', () => {
     expect(result).not.toBeNull();
     expect(result).toContain('BLOCK');
   });
+
+  // cwd_path_expand tests
+  it('advises when Bash command starts with fully-qualified CWD path', () => {
+    cache.setEnvironment(makeEnv());
+    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
+    expect(result).not.toBeNull();
+    expect(result).toContain('ADVISE');
+    expect(result).toContain('./.venv/bin/pip');
+  });
+
+  it('cwd_path_expand respects silent enforcement', () => {
+    config.rules.tool_routing!.cwd_path_expand = 'silent';
+    cache.setEnvironment(makeEnv());
+    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
+    expect(result).toBeNull();
+  });
+
+  it('cwd_path_expand respects block enforcement', () => {
+    config.rules.tool_routing!.cwd_path_expand = 'block';
+    cache.setEnvironment(makeEnv());
+    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
+    expect(result).not.toBeNull();
+    expect(result).toContain('BLOCK');
+  });
 });

@@ -20,8 +20,10 @@ export function handlePreToolUse(
   args: Record<string, unknown>,
   cache: SessionCache,
   config: HarnessConfig,
+  cwd?: string,
 ): string | null {
-  const rules = getDefaultRules();
+  const effectiveCwd = cwd ?? process.cwd();
+  const rules = getDefaultRules(effectiveCwd);
   const match = findMatchingRule(tool, args, rules);
 
   if (!match) return null; // No matching rule = pass through
@@ -46,6 +48,19 @@ export function handlePreToolUse(
   if (resolution.action === 'advise') {
     if (enforcementLevel === 'silent') return null;
     const prefix = enforcementLevel === 'block' ? '[BLOCK]' : '[ADVISE]';
+
+    // Dynamic message for cwd_path_expand: show the actual ./ suggestion
+    if (match.intent === 'cwd_path_expand' && tool === 'Bash') {
+      const command = args.command as string;
+      const relativePart = command.slice(effectiveCwd.length + 1);
+      const binary = relativePart.split(/\s+/)[0];
+      return [
+        `${prefix} Tool Router: fully-qualified CWD path detected`,
+        `advise: use ./${binary} instead of ${command.split(/\s+/)[0]}`,
+        `Shorter, saves tokens, more portable.`,
+      ].join('\n');
+    }
+
     return [
       `${prefix} Tool Router: ${match.intent} detected`,
       `advise: use ${resolution.tool} — ${resolution.reason}`,
@@ -75,6 +90,7 @@ const INTENT_CONFIG_KEYS: Record<string, string> = {
   native_grep: 'native_grep',
   native_glob: 'native_glob',
   rtk_cat_code: 'rtk_cat_code',
+  cwd_path_expand: 'cwd_path_expand',
 };
 
 function getEffectiveEnforcement(

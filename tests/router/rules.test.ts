@@ -10,6 +10,7 @@ describe('getDefaultRules', () => {
     expect(intents).toContain('file_discovery');
     expect(intents).toContain('file_read');
     expect(intents).toContain('file_modify');
+    expect(intents).toContain('cwd_path_expand');
   });
 
   it('file_modify rules always block sed -i', () => {
@@ -221,5 +222,57 @@ describe('native tool rules', () => {
     // Bash grep should still match text_search
     const bashGrepMatch = findMatchingRule('Bash', { command: 'grep -r pattern .' }, rules);
     expect(bashGrepMatch!.intent).toBe('text_search');
+  });
+});
+
+describe('cwd_path_expand rule', () => {
+  const cwd = '/home/user/projects/my-app';
+
+  it('matches Bash command starting with fully-qualified CWD path', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, rules);
+    expect(match).toBeDefined();
+    expect(match!.intent).toBe('cwd_path_expand');
+  });
+
+  it('does not match Bash command starting with different path', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: '/home/user/projects/other-app/.venv/bin/pip install pytest' }, rules);
+    expect(match).toBeUndefined();
+  });
+
+  it('does not match non-Bash tools', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Read', { file_path: '/home/user/projects/my-app/src/main.py' }, rules);
+    // Should match native_read, not cwd_path_expand
+    expect(match).toBeDefined();
+    expect(match!.intent).not.toBe('cwd_path_expand');
+  });
+
+  it('does not match bare command name', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: 'pip install pytest' }, rules);
+    expect(match).toBeUndefined();
+  });
+
+  it('does not match relative ./path', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: './.venv/bin/pip install pytest' }, rules);
+    expect(match).toBeUndefined();
+  });
+
+  it('matches nested path within CWD', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: '/home/user/projects/my-app/subdir/bin/python -m pytest' }, rules);
+    expect(match).toBeDefined();
+    expect(match!.intent).toBe('cwd_path_expand');
+  });
+
+  it('uses wildcard resolution (no environment dependency)', () => {
+    const rules = getDefaultRules(cwd);
+    const rule = rules.find(r => r.intent === 'cwd_path_expand');
+    expect(rule).toBeDefined();
+    expect(rule!.resolutions._).toBeDefined();
+    expect(rule!.enforcement).toBe('advise');
   });
 });
