@@ -27,20 +27,25 @@ try {
 
 const cwd = process.cwd();
 
-// Parse stdin to extract session_id for cache isolation
-let input: any = {};
 try {
-  input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+  // Parse stdin to extract session_id for cache isolation
+  let input: any = {};
+  try {
+    input = JSON.parse(readFileSync(0, 'utf-8') || '{}');
+  } catch {
+    // No stdin or malformed — proceed without session isolation
+  }
+
+  const cache = new SessionCache(cwd, input.session_id);
+
+  handleSessionStart(cwd, cache).then((output: string) => {
+    console.error(output);
+    process.exit(0);
+  }).catch(() => {
+    // Session init failed — don't block the session
+    process.exit(0);
+  });
 } catch {
-  // No stdin or malformed — proceed without session isolation
+  // Uncaught synchronous error — don't block the session
+  process.exit(0);
 }
-
-const cache = new SessionCache(cwd, input.session_id);
-
-handleSessionStart(cwd, cache).then((output: string) => {
-  console.error(output);
-  process.exit(0);
-}).catch(() => {
-  // Session init failed — don't block the session
-  process.exit(0);
-});

@@ -34,7 +34,7 @@ const cwd = process.cwd();
 // Parse stdin first to extract session_id for cache isolation
 let input: any = {};
 try {
-  input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+  input = JSON.parse(readFileSync(0, 'utf-8') || '{}');
 } catch {
   // Malformed input — exit cleanly
   process.exit(0);
