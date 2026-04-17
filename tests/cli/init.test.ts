@@ -185,8 +185,8 @@ describe('initCommand', () => {
       expect(content).not.toContain('SessionCache.load()');
       expect(content).not.toContain('FileTracker.load()');
       expect(content).not.toContain('cache.save()');
-      // Must use constructors with cwd
-      expect(content).toContain('new SessionCache(cwd)');
+      // Must use constructors with cwd and session_id
+      expect(content).toContain('new SessionCache(cwd, input.session_id)');
     }
   });
 

@@ -57,6 +57,15 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push(suggestion);
   }
 
+  // Subagent delegation instructions — main agent passes these to spawned agents
+  if (env.jcodemunchAvailable) {
+    lines.push('[rig] When spawning subagents (Explore, Plan, etc.), include this instruction:');
+    lines.push('  Prefer jcodemunch MCP tools over Bash find/grep/cat for token savings:');
+    lines.push('  - mcp__jcodemunch__search_text instead of grep/rg');
+    lines.push('  - mcp__jcodemunch__get_file_tree instead of find/fd');
+    lines.push('  - mcp__jcodemunch__get_file_outline instead of cat/head on code files');
+  }
+
   // One-time warning for missing tools
   if (!cache.getToolsWarned()) {
     if (!env.rtkAvailable) {

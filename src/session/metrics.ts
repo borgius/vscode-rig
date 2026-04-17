@@ -42,10 +42,22 @@ function isCodeFile(filePath: string): boolean {
   return /\.(ts|tsx|js|jsx|py|rs|go|java|rb|php|c|cpp|h|cs|swift|kt)$/i.test(filePath);
 }
 
+export interface JcodemunchSessionStats {
+  session_tokens_saved: number;
+  session_calls: number;
+  total_tokens_saved?: number;
+  tool_breakdown?: Record<string, number>;
+  result_cache?: {
+    hit_rate: number;
+    total_hits: number;
+  };
+}
+
 export function formatSavingsReport(
   baseline: MetricsBaseline,
   currentSaved: number,
   counters: { rtkCalls: number; jmCalls: number; efficientCalls: number },
+  jmStats?: JcodemunchSessionStats | null,
 ): string {
   const delta = currentSaved - baseline.totalSaved;
   const lines: string[] = ['[rig] Session Savings'];
@@ -58,8 +70,13 @@ export function formatSavingsReport(
     lines.push(`  rtk: no token savings this session`);
   }
 
-  if (counters.jmCalls > 0) {
-    lines.push(`  jcodemunch: ${counters.jmCalls} queries`);
+  if (jmStats && jmStats.session_calls > 0) {
+    const saved = formatTokens(jmStats.session_tokens_saved);
+    const totalStr = jmStats.total_tokens_saved ? formatTokens(jmStats.total_tokens_saved) : '';
+    const totalSuffix = totalStr ? `, ${totalStr} total all-time` : '';
+    lines.push(`  jcodemunch: ${saved} saved (${jmStats.session_calls} queries${totalSuffix})`);
+  } else if (jmStats) {
+    lines.push(`  jcodemunch: available (no queries this session)`);
   }
 
   if (counters.efficientCalls > 0) {

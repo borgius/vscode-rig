@@ -5,13 +5,15 @@ import type { Environment, MetricsBaseline, SessionCacheFile } from '../types.js
 
 const ENV_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-export function sessionCachePath(cwd: string): string {
-  const hash = createHash('sha256').update(cwd).digest('hex').slice(0, 12);
+export function sessionCachePath(cwd: string, sessionId?: string): string {
+  const input = sessionId ? `${cwd}:${sessionId}` : cwd;
+  const hash = createHash('sha256').update(input).digest('hex').slice(0, 12);
   return join('/tmp', `rig-session-${hash}.json`);
 }
 
 export class SessionCache {
   private cwd: string | undefined;
+  private sessionId: string | undefined;
   private environment: Environment | undefined;
   private editedFiles: Map<string, Set<string>> = new Map();
   private currentPhase: string | null = null;
@@ -20,8 +22,9 @@ export class SessionCache {
   private changedFiles: string[] = [];
   private toolsWarned = false;
 
-  constructor(cwd?: string) {
+  constructor(cwd?: string, sessionId?: string) {
     this.cwd = cwd;
+    this.sessionId = sessionId;
     if (cwd) {
       this.load();
     }
@@ -130,7 +133,7 @@ export class SessionCache {
 
   private load(): void {
     if (!this.cwd) return;
-    const path = sessionCachePath(this.cwd);
+    const path = sessionCachePath(this.cwd, this.sessionId);
     try {
       if (!existsSync(path)) return;
       const raw = readFileSync(path, 'utf-8');
@@ -165,7 +168,7 @@ export class SessionCache {
 
   private save(): void {
     if (!this.cwd) return;
-    const path = sessionCachePath(this.cwd);
+    const path = sessionCachePath(this.cwd, this.sessionId);
     try {
       writeFileSync(path, JSON.stringify(this.serialize(), null, 2) + '\n', 'utf-8');
     } catch {

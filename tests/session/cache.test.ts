@@ -121,6 +121,40 @@ describe('SessionCache (file-backed)', () => {
     expect(sessionCachePath('/other/path')).not.toBe(path);
   });
 
+  it('isolates cache paths by session_id', () => {
+    const pathA = sessionCachePath(testCwd, 'session-aaa');
+    const pathB = sessionCachePath(testCwd, 'session-bbb');
+    const pathNoSession = sessionCachePath(testCwd);
+    // All three should be different
+    expect(pathA).not.toBe(pathB);
+    expect(pathA).not.toBe(pathNoSession);
+    expect(pathB).not.toBe(pathNoSession);
+    // Same session_id produces same path
+    expect(sessionCachePath(testCwd, 'session-aaa')).toBe(pathA);
+  });
+
+  it('isolates concurrent sessions in same project', () => {
+    const sessionIdA = 'aaaaaaaa-1111-1111-1111-111111111111';
+    const sessionIdB = 'bbbbbbbb-2222-2222-2222-222222222222';
+
+    const cacheA = new SessionCache(testCwd, sessionIdA);
+    const cacheB = new SessionCache(testCwd, sessionIdB);
+
+    cacheA.setPhase('tdd+');
+    cacheA.incrementMetricCounter('rtkCalls');
+
+    // cacheB should not see cacheA's state
+    expect(cacheB.getCurrentPhase()).toBeNull();
+    expect(cacheB.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+
+    // cacheA should retain its state
+    expect(cacheA.getCurrentPhase()).toBe('tdd+');
+    expect(cacheA.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0 });
+
+    trackPath(sessionCachePath(testCwd, sessionIdA));
+    trackPath(sessionCachePath(testCwd, sessionIdB));
+  });
+
   it('loads fresh cache when no file exists', () => {
     const path = sessionCachePath(testCwd);
     if (existsSync(path)) { unlinkSync(path); }

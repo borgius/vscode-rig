@@ -10,6 +10,7 @@
  */
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 
@@ -25,7 +26,16 @@ try {
 }
 
 const cwd = process.cwd();
-const cache = new SessionCache(cwd);
+
+// Parse stdin to extract session_id for cache isolation
+let input: any = {};
+try {
+  input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+} catch {
+  // No stdin or malformed — proceed without session isolation
+}
+
+const cache = new SessionCache(cwd, input.session_id);
 
 handleSessionStart(cwd, cache).then((output: string) => {
   console.error(output);

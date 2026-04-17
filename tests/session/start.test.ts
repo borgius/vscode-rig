@@ -171,6 +171,33 @@ describe('handleSessionStart', () => {
     expect(output).not.toContain('WARNING');
   });
 
+  it('emits subagent delegation instructions when jcodemunch available', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('When spawning subagents');
+    expect(output).toContain('mcp__jcodemunch__search_text');
+    expect(output).toContain('mcp__jcodemunch__get_file_tree');
+    expect(output).toContain('mcp__jcodemunch__get_file_outline');
+  });
+
+  it('omits subagent delegation instructions when jcodemunch unavailable', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).not.toContain('When spawning subagents');
+    expect(output).not.toContain('mcp__jcodemunch__');
+  });
+
   it('suppresses warning on second call', async () => {
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd === 'which rtk') throw new Error('not found');

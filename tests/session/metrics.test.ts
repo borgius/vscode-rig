@@ -88,23 +88,46 @@ describe('incrementMetric', () => {
 });
 
 describe('formatSavingsReport', () => {
-  it('formats report with token delta and call counts', () => {
+  it('formats report with token delta, call counts, and jcodemunch stats', () => {
     const baseline: MetricsBaseline = { totalSaved: 5000000, capturedAt: Date.now() - 3600000 };
     const currentSaved = 5340000;
-    const counters = { rtkCalls: 42, jmCalls: 28 };
+    const counters = { rtkCalls: 42, jmCalls: 0, efficientCalls: 0 };
+    const jmStats = { session_tokens_saved: 85000, session_calls: 23, total_tokens_saved: 150000000 };
 
-    const report = formatSavingsReport(baseline, currentSaved, counters);
+    const report = formatSavingsReport(baseline, currentSaved, counters, jmStats);
     expect(report).toContain('[rig] Session Savings');
     expect(report).toContain('rtk:');
     expect(report).toContain('340K');
     expect(report).toContain('42 calls');
     expect(report).toContain('jcodemunch:');
-    expect(report).toContain('28 queries');
+    expect(report).toContain('85K saved');
+    expect(report).toContain('23 queries');
+    expect(report).toContain('150.0M total all-time');
   });
 
   it('shows no savings when delta is zero', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
-    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0 });
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
     expect(report).toContain('no token savings');
+  });
+
+  it('shows jcodemunch available with no queries', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const jmStats = { session_tokens_saved: 0, session_calls: 0 };
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 }, jmStats);
+    expect(report).toContain('jcodemunch');
+    expect(report).toContain('no queries this session');
+  });
+
+  it('omits jcodemunch line when stats not provided', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    expect(report).not.toContain('jcodemunch');
+  });
+
+  it('omits jcodemunch line when stats are null', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 }, null);
+    expect(report).not.toContain('jcodemunch');
   });
 });

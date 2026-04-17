@@ -29,16 +29,19 @@ try {
 }
 
 const cwd = process.cwd();
-const cache = new SessionCache(cwd);
+
+// Parse stdin first to extract session_id for cache isolation
+let input: any = {};
+try {
+  input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
+} catch {
+  // Malformed input — allow the tool call through
+  process.exit(0);
+}
+
+const cache = new SessionCache(cwd, input.session_id);
 
 loadConfig(resolve(cwd, '.harness.yaml')).then((config: any) => {
-  let input: any = {};
-  try {
-    input = JSON.parse(readFileSync('/dev/stdin', 'utf-8') || '{}');
-  } catch {
-    // Malformed input — allow the tool call through
-    process.exit(0);
-  }
   const result = handlePreToolUse(input.tool_name, input.tool_input, cache, config);
 
   if (result) {
