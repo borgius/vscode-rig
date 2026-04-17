@@ -34,7 +34,7 @@ describe('SessionCache', () => {
   });
 
   it('reports environment as stale after TTL expires', () => {
-    const env = makeEnv({ detectedAt: Date.now() - 31 * 60 * 1000 }); // 31 min ago
+    const env = makeEnv({ detectedAt: Date.now() - 5 * 60 * 60 * 1000 }); // 5 hours ago (> 4h TTL)
     cache.setEnvironment(env);
     expect(cache.isEnvironmentStale()).toBe(true);
   });
@@ -193,7 +193,7 @@ describe('SessionCache (file-backed)', () => {
 
   it('clears stale environment on load', () => {
     const cache = new SessionCache(testCwd);
-    cache.setEnvironment(makeEnv({ detectedAt: Date.now() - 31 * 60 * 1000 }));
+    cache.setEnvironment(makeEnv({ detectedAt: Date.now() - 5 * 60 * 60 * 1000 }));
     const path = sessionCachePath(testCwd);
     trackPath(path);
 

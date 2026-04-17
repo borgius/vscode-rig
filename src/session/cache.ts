@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Environment, MetricsBaseline, SessionCacheFile } from '../types.js';
 
-const ENV_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const ENV_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export function sessionCachePath(cwd: string, sessionId?: string): string {
   const input = sessionId ? `${cwd}:${sessionId}` : cwd;

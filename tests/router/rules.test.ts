@@ -35,11 +35,13 @@ describe('getDefaultRules', () => {
     expect(findRule!.resolutions.jcodemunch).toBeDefined();
   });
 
-  it('file_read rules have rtk resolution', () => {
+  it('file_read rules advise rtk cat when rtk available', () => {
     const rules = getDefaultRules();
     const catRule = rules.find(r => r.intent === 'file_read');
     expect(catRule).toBeDefined();
-    expect(catRule!.resolutions.rtk).toBeDefined();
+    const rtkRes = catRule!.resolutions.rtk as { action: string; tool: string };
+    expect(rtkRes.action).toBe('advise');
+    expect(rtkRes.tool).toBe('rtk cat');
   });
 });
 

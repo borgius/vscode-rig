@@ -121,8 +121,8 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       },
       intent: 'file_read',
       resolutions: {
-        rtk: { action: 'allow' },
-        jcodemunch: { action: 'allow' },
+        rtk: { action: 'advise', tool: 'rtk cat', reason: 'rtk provides filtered, token-optimized file reading (60-90% savings)' },
+        jcodemunch: { action: 'advise', tool: 'jcodemunch get_file_content', reason: 'jcodemunch provides cached, token-efficient file content (80-85% savings)' },
         claudeTool: { action: 'advise', tool: 'Read', reason: 'Use Claude Read tool instead of cat/head — cleaner output, no artifacts' },
         fallback: { action: 'allow' },
       },
