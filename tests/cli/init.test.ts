@@ -411,7 +411,9 @@ console.log('stale old hook');
 
       const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
       const command = settings.hooks.PreToolUse[0].hooks[0].command;
-      expect(command).toBe('npx tsx .claude/hooks/scripts/pre-tool-use.ts');
+      expect(command).toContain('npx tsx');
+      expect(command).toContain('/.claude/hooks/scripts/pre-tool-use.ts');
+      expect(command).not.toMatch(/^npx tsx \.\//); // must be absolute
     });
 
     it('updates hook commands on re-init when npx path changes', async () => {

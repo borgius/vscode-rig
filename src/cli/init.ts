@@ -212,7 +212,8 @@ function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: 
       hooks[event] = [];
     }
     const entries = hooks[event] as Array<Record<string, unknown>>;
-    const command = `${npxCommand} .claude/hooks/scripts/${script}`;
+    const hookScriptPath = join(claudeDir, 'hooks', 'scripts', script);
+    const command = `${npxCommand} ${hookScriptPath}`;
 
     // Remove old-format entries (flat matcher+command without nested hooks array)
     let i = entries.length;
