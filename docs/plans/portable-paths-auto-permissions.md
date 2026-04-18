@@ -44,7 +44,9 @@ Instead of:
 <npxCommand> /abs/path/to/project/.claude/hooks/scripts/<script>
 ```
 
-The `claudeDir` parameter currently passed to `updateSettingsJson` is only used to build the absolute hook script path. After this change, we only need the relative `.claude/hooks/scripts/<script>` portion prefixed with `${CLAUDE_PROJECT_DIR}`.
+The `claudeDir` parameter currently passed to `updateSettingsJson` is only used to
+build the absolute hook script path. After this change, we only need the relative
+`.claude/hooks/scripts/<script>` portion prefixed with `${CLAUDE_PROJECT_DIR}`.
 
 Update `updateSettingsJson` signature: remove `claudeDir` parameter, no longer needed. Pass nothing project-specific — the function builds `${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/<script>` directly.
 
@@ -124,6 +126,7 @@ If user has manually removed a deny entry, re-init will re-add it. This is inten
 **Evidence:** All 33+ init tests pass with new `${CLAUDE_PROJECT_DIR}` format
 
 Tests that need updates:
+
 - `updates settings.json with hook registrations` — no change needed (checks structure, not path format)
 - `writes hook entries in correct Claude Code format` — already checks `.claude/hooks/scripts/` which still appears in the command
 - `resolves absolute npx path with PATH prefix` — update: should NOT contain FQ temp dir path, SHOULD contain `${CLAUDE_PROJECT_DIR}`
