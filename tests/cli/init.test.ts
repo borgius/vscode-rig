@@ -398,7 +398,9 @@ console.log('stale old hook');
         const command = settings.hooks[event][0].hooks[0].command;
         expect(command).toContain('PATH="/home/user/.nvm/versions/node/v20.0.0/bin:$PATH"');
         expect(command).toContain('/home/user/.nvm/versions/node/v20.0.0/bin/npx tsx');
-        expect(command).toContain('.claude/hooks/scripts/');
+        // Uses CLAUDE_PROJECT_DIR instead of FQ path
+        expect(command).toContain('${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/');
+        expect(command).not.toContain(tempDir);
       }
     });
 
@@ -412,8 +414,8 @@ console.log('stale old hook');
       const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
       const command = settings.hooks.PreToolUse[0].hooks[0].command;
       expect(command).toContain('npx tsx');
-      expect(command).toContain('/.claude/hooks/scripts/pre-tool-use.ts');
-      expect(command).not.toMatch(/^npx tsx \.\//); // must be absolute
+      expect(command).toContain('${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/pre-tool-use.ts');
+      expect(command).not.toContain(tempDir);
     });
 
     it('updates hook commands on re-init when npx path changes', async () => {
@@ -473,6 +475,117 @@ console.log('stale old hook');
       const after = readFileSync(gitignorePath, 'utf-8');
       expect(after).toContain('node_modules/');
       expect(after).toContain('.harness.yaml.local');
+    });
+  });
+
+  describe('permissions', () => {
+    it('adds rtk permission when rtk is available', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = (cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/local/bin/rtk\n';
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'command -v npx') return '/usr/bin/npx\n';
+        return '';
+      };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      expect(settings.permissions.allow).toContain('Bash(rtk:*)');
+    });
+
+    it('omits rtk permission when rtk is not available', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = (cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'command -v npx') return '/usr/bin/npx\n';
+        return '';
+      };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      expect(settings.permissions.allow).not.toContain('Bash(rtk:*)');
+    });
+
+    it('adds jcodemunch MCP permission', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = (cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'command -v npx') return '/usr/bin/npx\n';
+        return '';
+      };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      expect(settings.permissions.allow).toContain('mcp__jcodemunch__*');
+    });
+
+    it('adds secret file deny list', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = () => { throw new Error('not found'); };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      const deny = settings.permissions.deny;
+      expect(deny).toContain('Read(**/secrets/**)');
+      expect(deny).toContain('Read(**/credentials/**)');
+      expect(deny).toContain('Read(**/*.pem)');
+      expect(deny).toContain('Read(**/*.key)');
+      expect(deny).toContain('Edit(**/secrets/**)');
+      expect(deny).toContain('Edit(**/credentials/**)');
+      expect(deny).toContain('Edit(**/*.pem)');
+      expect(deny).toContain('Edit(**/*.key)');
+      expect(deny).toContain('Write(**/secrets/**)');
+      expect(deny).toContain('Write(**/credentials/**)');
+      expect(deny).toContain('Write(**/*.pem)');
+      expect(deny).toContain('Write(**/*.key)');
+    });
+
+    it('does not duplicate permission entries on re-init', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = (cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/local/bin/rtk\n';
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'command -v npx') return '/usr/bin/npx\n';
+        return '';
+      };
+      await initCommand(tempDir, { force: false, exec });
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      const rtkCount = settings.permissions.allow.filter((p: string) => p === 'Bash(rtk:*)').length;
+      expect(rtkCount).toBe(1);
+      const jmCount = settings.permissions.allow.filter((p: string) => p === 'mcp__jcodemunch__*').length;
+      expect(jmCount).toBe(1);
+      const denyCount = settings.permissions.deny.filter((p: string) => p === 'Read(**/secrets/**)').length;
+      expect(denyCount).toBe(1);
+    });
+
+    it('preserves existing user permissions on re-init', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({
+        permissions: { allow: ['Bash(git status:*)'], deny: ['Bash(rm *)'] },
+      }));
+      const exec: ExecFn = () => { throw new Error('not found'); };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      expect(settings.permissions.allow).toContain('Bash(git status:*)');
+      expect(settings.permissions.allow).toContain('mcp__jcodemunch__*');
+      expect(settings.permissions.deny).toContain('Bash(rm *)');
+      expect(settings.permissions.deny).toContain('Read(**/secrets/**)');
     });
   });
 });

@@ -28,8 +28,10 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     RIG_DIST_PATH: rigDistPath,
   };
 
+  let rtkAvailable = false;
   try {
     const env = await detectEnvironment(projectDir, options.exec);
+    rtkAvailable = env.rtkAvailable;
     if (env.rtkAvailable && env.rtkPath) {
       renderContext.RTK_PATH = env.rtkPath;
     }
@@ -99,7 +101,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 
   // Update settings.json with hook registrations
   const npxCommand = resolveNpxPath(options.exec);
-  updateSettingsJson(claudeDir, projectName, npxCommand);
+  updateSettingsJson(claudeDir, npxCommand, rtkAvailable);
 
   // Update .gitignore with rig-managed section
   updateGitignore(projectDir);
@@ -187,7 +189,22 @@ function resolveNpxPath(exec?: ExecFn): string {
   }
 }
 
-function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: string): void {
+const SECRET_DENY_LIST = [
+  'Read(**/secrets/**)',
+  'Read(**/credentials/**)',
+  'Read(**/*.pem)',
+  'Read(**/*.key)',
+  'Edit(**/secrets/**)',
+  'Edit(**/credentials/**)',
+  'Edit(**/*.pem)',
+  'Edit(**/*.key)',
+  'Write(**/secrets/**)',
+  'Write(**/credentials/**)',
+  'Write(**/*.pem)',
+  'Write(**/*.key)',
+];
+
+function updateSettingsJson(claudeDir: string, npxCommand: string, rtkAvailable: boolean): void {
   const settingsPath = join(claudeDir, 'settings.json');
   let settings: Record<string, unknown> = {};
 
@@ -195,12 +212,13 @@ function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: 
     settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
   }
 
+  // ── Hooks ──
+
   if (!settings.hooks || typeof settings.hooks !== 'object') {
     settings.hooks = {};
   }
   const hooks = settings.hooks as Record<string, unknown[]>;
 
-  // Register hooks if not already present
   const hookRegistrations: Record<string, string> = {
     PreToolUse: 'pre-tool-use.ts',
     PostToolUse: 'post-tool-use.ts',
@@ -212,7 +230,7 @@ function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: 
       hooks[event] = [];
     }
     const entries = hooks[event] as Array<Record<string, unknown>>;
-    const hookScriptPath = join(claudeDir, 'hooks', 'scripts', script);
+    const hookScriptPath = `\${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/${script}`;
     const command = `${npxCommand} ${hookScriptPath}`;
 
     // Remove old-format entries (flat matcher+command without nested hooks array)
@@ -256,6 +274,32 @@ function updateSettingsJson(claudeDir: string, projectName: string, npxCommand: 
         matcher: '',
         hooks: [{ type: 'command', command }],
       });
+    }
+  }
+
+  // ── Permissions ──
+
+  if (!settings.permissions || typeof settings.permissions !== 'object') {
+    settings.permissions = { allow: [], deny: [] };
+  }
+  const permissions = settings.permissions as { allow: string[]; deny: string[] };
+  if (!Array.isArray(permissions.allow)) permissions.allow = [];
+  if (!Array.isArray(permissions.deny)) permissions.deny = [];
+
+  // Auto-allow: jcodemunch MCP tools (always safe — read-only search)
+  if (!permissions.allow.includes('mcp__jcodemunch__*')) {
+    permissions.allow.push('mcp__jcodemunch__*');
+  }
+
+  // Auto-allow: rtk binary (only when detected)
+  if (rtkAvailable && !permissions.allow.includes('Bash(rtk:*)')) {
+    permissions.allow.push('Bash(rtk:*)');
+  }
+
+  // Default deny: secret file patterns
+  for (const entry of SECRET_DENY_LIST) {
+    if (!permissions.deny.includes(entry)) {
+      permissions.deny.push(entry);
     }
   }
 
