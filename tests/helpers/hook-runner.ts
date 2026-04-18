@@ -19,10 +19,13 @@ export function runHook(
   cwd: string,
 ): Promise<HookResult> {
   return new Promise((resolve, reject) => {
+    // Strip V8 coverage env vars to prevent coverage instrumentation
+    // from interfering with subprocess exit codes
+    const { NODE_V8_COVERAGE, ...cleanEnv } = process.env;
     const child = spawn('npx', ['tsx', hookScriptPath], {
       cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env: cleanEnv,
     });
 
     let stdout = '';
