@@ -163,15 +163,16 @@ describe('initCommand', () => {
     expect(existsSync(join(tempDir, '.claude', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
   });
 
-  it('generates hook scripts that import via createRequire from rig dist', async () => {
+  it('generates hook scripts that import from rig dist via dynamic import()', async () => {
     await initCommand(tempDir, { force: false });
 
     const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
-      // Should use createRequire + require() with rig dist path, not bare imports
-      expect(content).toContain('createRequire');
-      expect(content).toContain("require(join(");
+      // Should use dynamic import() for ESM compatibility across Node versions
+      expect(content).toMatch(/await import\(/);
+      // Should NOT use createRequire (breaks with ESM in some Node versions)
+      expect(content).not.toContain('createRequire');
     }
   });
 
@@ -272,7 +273,7 @@ console.log('stale old hook');
     await initCommand(tempDir, { force: false });
 
     const content = readFileSync(hookPath, 'utf-8');
-    expect(content).toContain('createRequire');
+    expect(content).toContain('await import(');
     expect(content).toContain('@rig-generated');
     expect(content).not.toContain('stale old hook');
   });
