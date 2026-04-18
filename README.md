@@ -6,9 +6,9 @@ Agent harness that enforces tool routing, skill chains, and multi-agent discipli
 
 Rig installs guardrails into a Claude Code project:
 
-- **Tool Router** -- intercepts shell commands via PreToolUse hooks, redirects `grep`/`find`/`cat`
-  to rtk or jcodemunch when available; advises on native Read/Grep/Glob when
-  jcodemunch is indexed; blocks `rtk cat` on code files
+- **Tool Router** -- intercepts shell commands via PreToolUse hooks, transparently rewrites
+  `grep`/`find`/`cat`/`git` to rtk when available (using Claude Code's `updatedInput` protocol);
+  advises on native Read/Grep/Glob when jcodemunch is indexed; blocks `sed -i` and `rtk cat` on code files
 - **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (real dependencies in stack/E2E tests), and zero-defect status (with pre-existing failure classification)
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
 - **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection
@@ -43,7 +43,24 @@ rig init
 /verify-harness
 ```
 
-The `init` command generates hooks, skills, agents, and config into your project's `.claude/` directory.
+The `init` command generates hooks, skills, agents, config, and permissions into your
+project's `.claude/` directory. Hook commands use `${CLAUDE_PROJECT_DIR}` for portability
+across machines.
+
+### Auto-configured permissions
+
+`rig init` adds permission entries to `.claude/settings.json` so you don't get repeated
+permission prompts during normal usage:
+
+- **Allow** -- `Bash(rtk:*)` (when rtk is detected) and `mcp__jcodemunch__*` (always) are
+  auto-added to `permissions.allow`. Transparent command rewrites and jcodemunch searches
+  run without prompting.
+- **Deny** -- A built-in secret file deny list blocks Read, Edit, and Write on
+  `**/secrets/**`, `**/credentials/**`, `**/*.pem`, and `**/*.key`. This baseline is
+  always applied and re-applied on `rig init --force`.
+
+Existing user permissions are preserved on re-init. Entries are deduplicated
+automatically.
 
 ## Architecture
 
@@ -115,7 +132,7 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
 
 ```
 .claude/
-  settings.json          # Hook registrations
+  settings.json          # Hook registrations + permissions
   hooks/
     scripts/
       pre-tool-use.ts    # Tool router
