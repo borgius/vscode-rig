@@ -44,6 +44,21 @@ export const ENV_PRESETS: EnvPreset[] = [
       detectedAt: Date.now(),
     },
   },
+  // Most common production state: jcodemunch installed but CWD not indexed.
+  // Debug log showed 15/16 sessions in this state (session-start auto-index
+  // was skipped, or MCP server had disconnected and not yet reconnected).
+  {
+    name: 'jm_not_indexed',
+    env: {
+      rtkAvailable: false,
+      rtkPath: null,
+      jcodemunchAvailable: true,
+      jcodemunchCwdIndexed: false,
+      jcodemunchCwdRepo: null,
+      jcodemunchKnownRepos: [],
+      detectedAt: Date.now(),
+    },
+  },
   {
     name: 'neither',
     env: {
@@ -67,14 +82,15 @@ export interface ExpectedOutcome {
 
 export interface EvalScenario {
   id: string;
-  category: 'bash' | 'native' | 'edge';
+  category: 'bash' | 'native' | 'agent' | 'pipe' | 'edge';
   description: string;
   toolCall: { tool: string; args: Record<string, unknown> };
   expected: Record<string, ExpectedOutcome>; // keyed by env preset name
   cwd?: string; // for cwd_path_expand scenarios
 }
 
-// ── 15 baseline scenarios ──
+// ── Baseline scenarios ──
+// Organized by category. Each scenario runs against all 5 environment presets.
 
 export const ALL_SCENARIOS: EvalScenario[] = [
   // ── Bash commands (rtk territory) ──
@@ -88,6 +104,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'rtk cat' },
       rtk_only: { action: 'advise', tool: 'rtk cat' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
     },
   },
@@ -101,6 +118,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'rtk cat' },
       rtk_only: { action: 'advise', tool: 'rtk cat' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
     },
   },
@@ -114,6 +132,21 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'block', tool: 'rtk grep' },
       rtk_only: { action: 'block', tool: 'rtk grep' },
       jm_only: { action: 'block', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'block', tool: 'Grep' },
+      neither: { action: 'block', tool: 'Grep' },
+    },
+  },
+
+  {
+    id: 'bash_rg',
+    category: 'bash',
+    description: 'rg (ripgrep) via Bash',
+    toolCall: { tool: 'Bash', args: { command: 'rg "export.*function" .' } },
+    expected: {
+      full: { action: 'block', tool: 'rtk grep' },
+      rtk_only: { action: 'block', tool: 'rtk grep' },
+      jm_only: { action: 'block', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'block', tool: 'Grep' },
       neither: { action: 'block', tool: 'Grep' },
     },
   },
@@ -127,6 +160,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'rtk find' },
       rtk_only: { action: 'advise', tool: 'rtk find' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Glob' },
       neither: { action: 'advise', tool: 'Glob' },
     },
   },
@@ -140,7 +174,22 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'block' },
       rtk_only: { action: 'block' },
       jm_only: { action: 'block' },
+      jm_not_indexed: { action: 'block' },
       neither: { action: 'block' },
+    },
+  },
+
+  {
+    id: 'bash_git_status',
+    category: 'bash',
+    description: 'git status (pass-through)',
+    toolCall: { tool: 'Bash', args: { command: 'git status' } },
+    expected: {
+      full: { action: 'allow' },
+      rtk_only: { action: 'allow' },
+      jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
+      neither: { action: 'allow' },
     },
   },
 
@@ -155,6 +204,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'jcodemunch' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -168,6 +218,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'allow' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -181,6 +232,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'jcodemunch' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -194,6 +246,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'jcodemunch' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -201,13 +254,91 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'native_glob_noncode',
     category: 'native',
-    description: 'Glob with non-code pattern (still matches file_discovery)',
+    description: 'Glob with non-code pattern (matches file_discovery via TOOL_INTENT_MAP)',
     toolCall: { tool: 'Glob', args: { pattern: '*.md' } },
     expected: {
       full: { action: 'advise', tool: 'rtk find' },
       rtk_only: { action: 'advise', tool: 'rtk find' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Glob' },
       neither: { action: 'advise', tool: 'Glob' },
+    },
+  },
+
+  // ── Agent tool calls ──
+  // Debug log showed 48 file_discovery advisories from Agent/Explore subagents.
+
+  {
+    id: 'agent_explore',
+    category: 'agent',
+    description: 'Agent with Explore subagent (file_discovery)',
+    toolCall: { tool: 'Agent', args: { subagent_type: 'Explore', prompt: 'find auth files' } },
+    expected: {
+      full: { action: 'advise', tool: 'rtk find' },
+      rtk_only: { action: 'advise', tool: 'rtk find' },
+      jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Glob' },
+      neither: { action: 'advise', tool: 'Glob' },
+    },
+  },
+
+  {
+    id: 'agent_general',
+    category: 'agent',
+    description: 'Agent with general-purpose subagent (pass_through)',
+    toolCall: { tool: 'Agent', args: { subagent_type: 'general-purpose', prompt: 'fix the bug' } },
+    expected: {
+      full: { action: 'allow' },
+      rtk_only: { action: 'allow' },
+      jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
+      neither: { action: 'allow' },
+    },
+  },
+
+  // ── Pipe and compound commands ──
+  // After the pipe fix, only the first segment before | is classified.
+  // grep/find/cat after | is output filtering, not code search.
+
+  {
+    id: 'pipe_grep_output',
+    category: 'pipe',
+    description: 'piped grep as output filter (pass_through)',
+    toolCall: { tool: 'Bash', args: { command: 'docker compose build 2>&1 | grep -E "error|Error"' } },
+    expected: {
+      full: { action: 'allow' },
+      rtk_only: { action: 'allow' },
+      jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
+      neither: { action: 'allow' },
+    },
+  },
+
+  {
+    id: 'pipe_cat_grep',
+    category: 'pipe',
+    description: 'piped cat | grep (first segment = file_read)',
+    toolCall: { tool: 'Bash', args: { command: 'cat file | grep pattern' } },
+    expected: {
+      full: { action: 'advise', tool: 'rtk cat' },
+      rtk_only: { action: 'advise', tool: 'rtk cat' },
+      jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Read' },
+      neither: { action: 'advise', tool: 'Read' },
+    },
+  },
+
+  {
+    id: 'compound_grep_sed',
+    category: 'pipe',
+    description: 'compound grep ; sed -i (most restrictive = file_modify)',
+    toolCall: { tool: 'Bash', args: { command: "rg pattern . ; sed -i 's/a/b/g' f" } },
+    expected: {
+      full: { action: 'block' },
+      rtk_only: { action: 'block' },
+      jm_only: { action: 'block' },
+      jm_not_indexed: { action: 'block' },
+      neither: { action: 'block' },
     },
   },
 
@@ -222,6 +353,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'allow' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -235,6 +367,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'block' },
       rtk_only: { action: 'block' },
       jm_only: { action: 'block' },
+      jm_not_indexed: { action: 'block' },
       neither: { action: 'block' },
     },
   },
@@ -248,6 +381,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'allow' },
       rtk_only: { action: 'allow' },
       jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
@@ -261,6 +395,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: 'rtk cat' },
       rtk_only: { action: 'advise', tool: 'rtk cat' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
     },
   },
@@ -275,6 +410,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       full: { action: 'advise', tool: './' },
       rtk_only: { action: 'advise', tool: './' },
       jm_only: { action: 'advise', tool: './' },
+      jm_not_indexed: { action: 'advise', tool: './' },
       neither: { action: 'advise', tool: './' },
     },
   },

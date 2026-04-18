@@ -34,8 +34,8 @@ describe('Context Eval: routing effectiveness', () => {
         const parsedAction = actual
           ? actual.includes('[BLOCK]') ? 'block' : actual.includes('[ADVISE]') ? 'advise' : 'unknown'
           : 'allow';
-        const toolMatch = actual?.match(/advise: use (\S+)/i);
-        const parsedTool = toolMatch?.[1] ?? undefined;
+        const toolMatch = actual?.match(/advise: use (.+?) —/i) ?? actual?.match(/advise: use (\S+)/i);
+        const parsedTool = toolMatch?.[1]?.trim() ?? undefined;
 
         results.push({
           scenarioId: scenario.id,
