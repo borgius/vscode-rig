@@ -41,7 +41,12 @@ const TOOL_INTENT_MAP: Record<string, IntentType> = {
 };
 
 function classifyBashCommand(command: string): IntentType {
-  const segments = command.split(/&&|\|\||;|\|/);
+  // Only classify the first segment (before any pipe).
+  // grep/find/cat on the right side of | is output filtering, not code search.
+  const pipeIndex = command.indexOf('|');
+  const firstSegment = pipeIndex >= 0 ? command.slice(0, pipeIndex) : command;
+
+  const segments = firstSegment.split(/&&|\|\||;/);
   let highest: IntentType = 'pass_through';
 
   for (const segment of segments) {

@@ -60,9 +60,22 @@ describe('classifyIntent', () => {
       expect(classifyIntent('Bash', { command: "grep pattern file && sed -i 's/a/b/g' file" })).toBe('file_modify');
     });
 
-    it('classifies piped commands by most restrictive intent', () => {
-      // cat | grep: file_read (cat) + text_search (grep) -> text_search
-      expect(classifyIntent('Bash', { command: 'cat file | grep pattern' })).toBe('text_search');
+    it('classifies piped commands by first segment only', () => {
+      // cat | grep: only cat (file_read) is classified — grep is output filtering
+      expect(classifyIntent('Bash', { command: 'cat file | grep pattern' })).toBe('file_read');
+    });
+
+    it('classifies piped grep as pass_through (output filtering)', () => {
+      // docker build | grep Error: grep is right side of pipe, not code search
+      expect(classifyIntent('Bash', { command: 'docker compose build 2>&1 | grep -E "error|Error"' })).toBe('pass_through');
+    });
+
+    it('classifies standalone grep as text_search', () => {
+      expect(classifyIntent('Bash', { command: 'grep -r "TODO" src/' })).toBe('text_search');
+    });
+
+    it('classifies piped find as pass_through (output filtering)', () => {
+      expect(classifyIntent('Bash', { command: 'ls -la | find . -type f' })).toBe('pass_through');
     });
   });
 
