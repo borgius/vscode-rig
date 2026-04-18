@@ -24,6 +24,34 @@ export interface EvalReport {
   }>;
 }
 
+export interface ParsedResult {
+  action: string;
+  tool?: string;
+}
+
+/**
+ * Parse a hook result into a structured { action, tool? } form.
+ * Handles string output (advise/block), RewriteResult (rewrite), and null (allow).
+ */
+export function parseResult(result: string | import('../../src/types.js').RewriteResult | null): ParsedResult {
+  if (result === null) return { action: 'allow' };
+  if (typeof result === 'object' && result.type === 'rewrite') {
+    const firstWord = result.command.split(/\s+/)[0];
+    // "rtk grep ..." -> tool is "rtk grep"
+    const secondWord = result.command.split(/\s+/)[1];
+    const tool = secondWord ? `${firstWord} ${secondWord}` : firstWord;
+    return { action: 'rewrite', tool };
+  }
+  // String output
+  const str = result as string;
+  if (str.includes('[BLOCK]')) return { action: 'block' };
+  if (str.includes('[ADVISE]')) {
+    const match = str.match(/advise: use (.+?) —/i) ?? str.match(/advise: use (\S+)/i);
+    return { action: 'advise', tool: match?.[1]?.trim() };
+  }
+  return { action: 'unknown' };
+}
+
 /**
  * Score a single routing result against the expected outcome.
  *
@@ -33,45 +61,27 @@ export interface EvalReport {
  */
 export function scoreResult(
   expected: ExpectedOutcome,
-  actual: string | null,
+  result: string | import('../../src/types.js').RewriteResult | null,
 ): number {
-  const actualAction = parseAction(actual);
-  const actualTool = parseTool(actual);
+  const parsed = parseResult(result);
 
   if (expected.action === 'allow') {
-    return actual === null ? 1.0 : 0.0;
+    return parsed.action === 'allow' ? 1.0 : 0.0;
   }
 
-  // Expected advise or block — hook must return a string
-  if (actual === null) return 0.0;
+  if (parsed.action === 'allow') return 0.0;
 
-  const actionMatch = actualAction === expected.action;
+  const actionMatch = parsed.action === expected.action;
 
   if (!expected.tool) {
-    // No specific tool expected — just check action
     return actionMatch ? 1.0 : 0.0;
   }
 
-  const toolMatch = actualTool.includes(expected.tool.toLowerCase());
+  const toolMatch = (parsed.tool ?? '').toLowerCase().includes(expected.tool.toLowerCase());
 
   if (actionMatch && toolMatch) return 1.0;
   if (actionMatch) return 0.5;
   return 0.0;
-}
-
-/** Parse the action (advise/block) from hook output. */
-function parseAction(output: string | null): string {
-  if (!output) return 'allow';
-  if (output.includes('[BLOCK]')) return 'block';
-  if (output.includes('[ADVISE]')) return 'advise';
-  return 'unknown';
-}
-
-/** Parse the recommended tool from hook output. */
-function parseTool(output: string | null): string {
-  if (!output) return '';
-  const match = output.match(/advise: use (.+?) —/i) ?? output.match(/advise: use (\S+)/i);
-  return match ? match[1].trim().toLowerCase() : '';
 }
 
 /** Build a report from all eval results. */

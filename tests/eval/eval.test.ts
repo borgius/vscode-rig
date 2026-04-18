@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { handlePreToolUse } from '../../src/router/hook.js';
 import { SessionCache } from '../../src/session/cache.js';
 import { DEFAULT_CONFIG } from '../../src/config.js';
-import { ALL_SCENARIOS, ENV_PRESETS } from './scenarios.js';
-import { scoreResult, buildReport, type EvalResult } from './score.js';
+import { ALL_SCENARIOS, ENV_PRESETS, mockRtkRewrite } from './scenarios.js';
+import { scoreResult, buildReport, parseResult, type EvalResult } from './score.js';
 
 const MIN_OVERALL_SCORE = 0.7;
 
@@ -25,35 +25,30 @@ describe('Context Eval: routing effectiveness', () => {
           cache,
           config,
           scenario.cwd,
+          mockRtkRewrite,
         );
 
         const expected = scenario.expected[preset.name];
         const score = scoreResult(expected, actual);
         const pass = score >= 0.5;
 
-        const parsedAction = actual
-          ? actual.includes('[BLOCK]') ? 'block' : actual.includes('[ADVISE]') ? 'advise' : 'unknown'
-          : 'allow';
-        const toolMatch = actual?.match(/advise: use (.+?) —/i) ?? actual?.match(/advise: use (\S+)/i);
-        const parsedTool = toolMatch?.[1]?.trim() ?? undefined;
+        const parsed = parseResult(actual);
 
         results.push({
           scenarioId: scenario.id,
           environment: preset.name,
           category: scenario.category,
           expected,
-          actual: { action: parsedAction, tool: parsedTool },
+          actual: parsed.action === 'allow' ? null : { action: parsed.action, tool: parsed.tool },
           score,
           pass,
         });
 
         if (!pass) {
           const expectedStr = `${expected.action}${expected.tool ? ` → ${expected.tool}` : ''}`;
-          const actualStr = actual
-            ? `${parsedAction}${parsedTool ? ` → ${parsedTool}` : ''}`
-            : 'allow (no routing)';
+          const actualStr = `${parsed.action}${parsed.tool ? ` → ${parsed.tool}` : ''}`;
           expect.fail(
-            `Routing mismatch:\n  Expected: ${expectedStr}\n  Actual:   ${actualStr}\n  Hook output: ${actual ?? '(null)'}`,
+            `Routing mismatch:\n  Expected: ${expectedStr}\n  Actual:   ${actualStr}\n  Hook output: ${JSON.stringify(actual)}`,
           );
         }
 

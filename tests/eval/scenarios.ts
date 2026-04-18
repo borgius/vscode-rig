@@ -44,9 +44,6 @@ export const ENV_PRESETS: EnvPreset[] = [
       detectedAt: Date.now(),
     },
   },
-  // Most common production state: jcodemunch installed but CWD not indexed.
-  // Debug log showed 15/16 sessions in this state (session-start auto-index
-  // was skipped, or MCP server had disconnected and not yet reconnected).
   {
     name: 'jm_not_indexed',
     env: {
@@ -76,8 +73,8 @@ export const ENV_PRESETS: EnvPreset[] = [
 // ── Scenario types ──
 
 export interface ExpectedOutcome {
-  action: 'advise' | 'block' | 'allow';
-  tool?: string; // substring expected in the hook output
+  action: 'rewrite' | 'advise' | 'block' | 'allow';
+  tool?: string; // substring expected in the rewritten command or hook output
 }
 
 export interface EvalScenario {
@@ -89,20 +86,61 @@ export interface EvalScenario {
   cwd?: string; // for cwd_path_expand scenarios
 }
 
+// ── Mock rtk rewrite function ──
+// Simulates `rtk rewrite <command>` for eval tests.
+// Only rewrites commands that rtk's rules cover.
+
+export function mockRtkRewrite(rtkPath: string, args: string[]): string | null {
+  const command = args[1]; // args = ['rewrite', command]
+  if (!command) return null;
+
+  // cat/head/tail → rtk read
+  if (/^(cat|head|tail)\s+/.test(command)) {
+    return command.replace(/^(cat|head|tail)\s+/, 'rtk read ');
+  }
+
+  // grep/rg → rtk grep
+  if (/^(grep|rg)\s+/.test(command)) {
+    return command.replace(/^(grep|rg)\s+/, 'rtk grep ');
+  }
+
+  // find → rtk find
+  if (/^find\s+/.test(command)) {
+    return command.replace(/^find\s+/, 'rtk find ');
+  }
+
+  // ls → rtk ls
+  if (/^ls(\s|$)/.test(command)) {
+    return command.replace(/^ls\s*/, 'rtk ls ');
+  }
+
+  // git → rtk git
+  if (/^git\s+/.test(command)) {
+    return command.replace(/^git\s+/, 'rtk git ');
+  }
+
+  // gh → rtk gh
+  if (/^gh\s+/.test(command)) {
+    return command.replace(/^gh\s+/, 'rtk gh ');
+  }
+
+  // No rewrite for everything else (sed, npm, docker, echo, etc.)
+  return null;
+}
+
 // ── Baseline scenarios ──
-// Organized by category. Each scenario runs against all 5 environment presets.
 
 export const ALL_SCENARIOS: EvalScenario[] = [
-  // ── Bash commands (rtk territory) ──
+  // ── Bash commands: transparent rewrite when rtk available ──
 
   {
     id: 'bash_cat_code',
     category: 'bash',
-    description: 'cat a code file via Bash',
+    description: 'cat a code file via Bash — transparent rewrite to rtk read',
     toolCall: { tool: 'Bash', args: { command: 'cat src/router/resolver.ts' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk cat' },
-      rtk_only: { action: 'advise', tool: 'rtk cat' },
+      full: { action: 'rewrite', tool: 'rtk read' },
+      rtk_only: { action: 'rewrite', tool: 'rtk read' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
@@ -112,11 +150,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_head_code',
     category: 'bash',
-    description: 'head a code file via Bash',
+    description: 'head a code file via Bash — transparent rewrite to rtk read',
     toolCall: { tool: 'Bash', args: { command: 'head -20 package.json' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk cat' },
-      rtk_only: { action: 'advise', tool: 'rtk cat' },
+      full: { action: 'rewrite', tool: 'rtk read' },
+      rtk_only: { action: 'rewrite', tool: 'rtk read' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
@@ -126,11 +164,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_grep',
     category: 'bash',
-    description: 'grep via Bash',
+    description: 'grep via Bash — transparent rewrite to rtk grep',
     toolCall: { tool: 'Bash', args: { command: 'grep -r "TODO" src/' } },
     expected: {
-      full: { action: 'block', tool: 'rtk grep' },
-      rtk_only: { action: 'block', tool: 'rtk grep' },
+      full: { action: 'rewrite', tool: 'rtk grep' },
+      rtk_only: { action: 'rewrite', tool: 'rtk grep' },
       jm_only: { action: 'block', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'block', tool: 'Grep' },
       neither: { action: 'block', tool: 'Grep' },
@@ -140,11 +178,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_rg',
     category: 'bash',
-    description: 'rg (ripgrep) via Bash',
+    description: 'rg (ripgrep) via Bash — transparent rewrite to rtk grep',
     toolCall: { tool: 'Bash', args: { command: 'rg "export.*function" .' } },
     expected: {
-      full: { action: 'block', tool: 'rtk grep' },
-      rtk_only: { action: 'block', tool: 'rtk grep' },
+      full: { action: 'rewrite', tool: 'rtk grep' },
+      rtk_only: { action: 'rewrite', tool: 'rtk grep' },
       jm_only: { action: 'block', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'block', tool: 'Grep' },
       neither: { action: 'block', tool: 'Grep' },
@@ -154,11 +192,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_find',
     category: 'bash',
-    description: 'find via Bash',
+    description: 'find via Bash — transparent rewrite to rtk find',
     toolCall: { tool: 'Bash', args: { command: 'find . -name "*.ts"' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk find' },
-      rtk_only: { action: 'advise', tool: 'rtk find' },
+      full: { action: 'rewrite', tool: 'rtk find' },
+      rtk_only: { action: 'rewrite', tool: 'rtk find' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'advise', tool: 'Glob' },
       neither: { action: 'advise', tool: 'Glob' },
@@ -168,7 +206,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_sed_i',
     category: 'bash',
-    description: 'sed -i via Bash (destructive)',
+    description: 'sed -i via Bash — always blocked (resolution-level block)',
     toolCall: { tool: 'Bash', args: { command: "sed -i 's/foo/bar/' file.ts" } },
     expected: {
       full: { action: 'block' },
@@ -182,18 +220,18 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'bash_git_status',
     category: 'bash',
-    description: 'git status (pass-through)',
+    description: 'git status — transparent rewrite to rtk git status',
     toolCall: { tool: 'Bash', args: { command: 'git status' } },
     expected: {
-      full: { action: 'allow' },
-      rtk_only: { action: 'allow' },
+      full: { action: 'rewrite', tool: 'rtk git' },
+      rtk_only: { action: 'rewrite', tool: 'rtk git' },
       jm_only: { action: 'allow' },
       jm_not_indexed: { action: 'allow' },
       neither: { action: 'allow' },
     },
   },
 
-  // ── Native tools (jcodemunch territory) ──
+  // ── Native tools (no rewrite — these are Claude tools, not Bash) ──
 
   {
     id: 'native_read_code',
@@ -226,7 +264,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'native_grep',
     category: 'native',
-    description: 'Grep tool',
+    description: 'Grep tool — advise jcodemunch when indexed',
     toolCall: { tool: 'Grep', args: { pattern: 'function resolve' } },
     expected: {
       full: { action: 'advise', tool: 'jcodemunch' },
@@ -265,8 +303,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
     },
   },
 
-  // ── Agent tool calls ──
-  // Debug log showed 48 file_discovery advisories from Agent/Explore subagents.
+  // ── Agent tool calls (no Bash rewrite — Agent tool isn't Bash) ──
 
   {
     id: 'agent_explore',
@@ -297,13 +334,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   },
 
   // ── Pipe and compound commands ──
-  // After the pipe fix, only the first segment before | is classified.
-  // grep/find/cat after | is output filtering, not code search.
 
   {
     id: 'pipe_grep_output',
     category: 'pipe',
-    description: 'piped grep as output filter (pass_through)',
+    description: 'piped grep as output filter — rtk skips pipes, falls through to allow',
     toolCall: { tool: 'Bash', args: { command: 'docker compose build 2>&1 | grep -E "error|Error"' } },
     expected: {
       full: { action: 'allow' },
@@ -317,11 +352,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'pipe_cat_grep',
     category: 'pipe',
-    description: 'piped cat | grep (first segment = file_read)',
+    description: 'piped cat | grep — mock rewrites cat (first segment)',
     toolCall: { tool: 'Bash', args: { command: 'cat file | grep pattern' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk cat' },
-      rtk_only: { action: 'advise', tool: 'rtk cat' },
+      full: { action: 'rewrite', tool: 'rtk read' },
+      rtk_only: { action: 'rewrite', tool: 'rtk read' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
@@ -331,7 +366,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'compound_grep_sed',
     category: 'pipe',
-    description: 'compound grep ; sed -i (most restrictive = file_modify)',
+    description: 'compound grep ; sed -i — always blocked (file_modify)',
     toolCall: { tool: 'Bash', args: { command: "rg pattern . ; sed -i 's/a/b/g' f" } },
     expected: {
       full: { action: 'block' },
@@ -361,7 +396,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'edge_rtk_cat_code',
     category: 'edge',
-    description: 'rtk cat on code file (close the bypass)',
+    description: 'rtk cat on code file — blocked (resolution-level block)',
     toolCall: { tool: 'Bash', args: { command: 'rtk cat src/types.ts' } },
     expected: {
       full: { action: 'block' },
@@ -375,7 +410,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'edge_passthrough',
     category: 'edge',
-    description: 'npm test (pass-through)',
+    description: 'npm test — rtk has no rewrite rule, falls through to allow',
     toolCall: { tool: 'Bash', args: { command: 'npm test' } },
     expected: {
       full: { action: 'allow' },
@@ -389,11 +424,11 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'edge_cat_noncode',
     category: 'edge',
-    description: 'cat a non-code file via Bash',
+    description: 'cat a non-code file — transparent rewrite',
     toolCall: { tool: 'Bash', args: { command: 'cat /tmp/log.txt' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk cat' },
-      rtk_only: { action: 'advise', tool: 'rtk cat' },
+      full: { action: 'rewrite', tool: 'rtk read' },
+      rtk_only: { action: 'rewrite', tool: 'rtk read' },
       jm_only: { action: 'advise', tool: 'jcodemunch' },
       jm_not_indexed: { action: 'advise', tool: 'Read' },
       neither: { action: 'advise', tool: 'Read' },
@@ -403,7 +438,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'edge_cwd_path',
     category: 'edge',
-    description: 'Bash with fully-qualified CWD path',
+    description: 'Bash with fully-qualified CWD path — advise (not rewrite)',
     toolCall: { tool: 'Bash', args: { command: '/home/user/project/src/file.ts' } },
     cwd: '/home/user/project',
     expected: {

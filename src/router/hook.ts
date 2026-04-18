@@ -1,19 +1,60 @@
-import type { HarnessConfig } from '../types.js';
+import { execFileSync } from 'node:child_process';
+import type { HarnessConfig, RewriteResult } from '../types.js';
 import { SessionCache } from '../session/cache.js';
 import { findMatchingRule, getDefaultRules } from './rules.js';
 import { resolve } from './resolver.js';
 
-interface HookResult {
-  decision: 'block' | 'allow';
-  reason?: string;
+export type ExecRewriteFn = (rtkPath: string, args: string[]) => string | null;
+
+const defaultExecRewrite: ExecRewriteFn = (rtkPath: string, args: string[]): string | null => {
+  try {
+    const result = execFileSync(rtkPath, args, {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return result.trim() || null;
+  } catch {
+    // exit 1 = no rewrite, exit 2 = denied — both fall through to rig rules
+    return null;
+  }
+};
+
+/**
+ * Try to rewrite a Bash command using `rtk rewrite`.
+ * Returns the rewritten command or null if rtk can't/won't rewrite it.
+ */
+export function tryRtkRewrite(
+  command: string,
+  rtkPath: string,
+  execRewrite: ExecRewriteFn = defaultExecRewrite,
+): string | null {
+  const rewritten = execRewrite(rtkPath, ['rewrite', command]);
+  if (!rewritten || rewritten === command) return null;
+  return rewritten;
+}
+
+function defaultEnv() {
+  return {
+    rtkAvailable: false,
+    rtkPath: null,
+    jcodemunchAvailable: false,
+    jcodemunchCwdIndexed: false,
+    jcodemunchCwdRepo: null,
+    jcodemunchKnownRepos: [] as string[],
+    detectedAt: Date.now(),
+  };
 }
 
 /**
- * PreToolUse hook handler. Returns null to allow, or a string message
- * to advise/block the tool call.
+ * PreToolUse hook handler. Returns null to allow, a string to advise/block,
+ * or a RewriteResult to transparently rewrite the tool call.
  *
- * Claude Code hook protocol: stdout is shown to the agent.
- * Exit 0 = allow, Exit 2 = block.
+ * Flow:
+ * 1. Resolution-level blocks (file_modify, rtk_cat_code) — always block
+ * 2. Transparent rewrite via rtk for Bash commands when rtk available
+ * 3. Enforcement-level blocks (text_search with block enforcement) — block when rtk can't rewrite
+ * 4. Advises and allows for remaining rules
  */
 export function handlePreToolUse(
   tool: string,
@@ -21,60 +62,67 @@ export function handlePreToolUse(
   cache: SessionCache,
   config: HarnessConfig,
   cwd?: string,
-): string | null {
+  execRewrite?: ExecRewriteFn,
+): string | RewriteResult | null {
   const effectiveCwd = cwd ?? process.cwd();
   const rules = getDefaultRules(effectiveCwd);
   const match = findMatchingRule(tool, args, rules);
+  const env = cache.getEnvironment() ?? defaultEnv();
 
-  if (!match) return null; // No matching rule = pass through
-
-  const env = cache.getEnvironment() ?? {
-    rtkAvailable: false,
-    rtkPath: null,
-    jcodemunchAvailable: false,
-    jcodemunchCwdIndexed: false,
-    jcodemunchCwdRepo: null,
-    jcodemunchKnownRepos: [],
-    detectedAt: Date.now(),
-  };
-
-  const resolution = resolve(match, env);
-
-  if (resolution.action === 'allow') return null;
-
-  // Get effective enforcement level from config
-  const enforcementLevel = getEffectiveEnforcement(match.intent, config, match.enforcement);
-
-  if (resolution.action === 'advise') {
-    if (enforcementLevel === 'silent') return null;
-    const prefix = enforcementLevel === 'block' ? '[BLOCK]' : '[ADVISE]';
-
-    // Dynamic message for cwd_path_expand: show the actual ./ suggestion
-    if (match.intent === 'cwd_path_expand' && tool === 'Bash') {
-      const command = args.command as string;
-      const relativePart = command.slice(effectiveCwd.length + 1);
-      const binary = relativePart.split(/\s+/)[0];
+  // Step 1: Resolution-level blocks always win (file_modify, rtk_cat_code)
+  if (match) {
+    const resolution = resolve(match, env);
+    if (resolution.action === 'block') {
       return [
-        `${prefix} Tool Router: fully-qualified CWD path detected`,
-        `advise: use ./${binary} instead of ${command.split(/\s+/)[0]}`,
-        `Shorter, saves tokens, more portable.`,
+        `[BLOCK] Tool Router: ${match.intent} operation blocked`,
+        `Reason: ${resolution.reason}`,
+        'This operation is always blocked. Use the recommended alternative.',
       ].join('\n');
     }
+  }
 
+  // Step 2: Transparent rewrite via rtk for Bash commands
+  if (tool === 'Bash' && typeof args.command === 'string') {
+    if (env.rtkAvailable && env.rtkPath) {
+      const rewritten = tryRtkRewrite(args.command, env.rtkPath, execRewrite);
+      if (rewritten) {
+        return { type: 'rewrite', command: rewritten, original: args.command };
+      }
+    }
+  }
+
+  // Step 3: No match = pass through
+  if (!match) return null;
+
+  // Step 4: Enforcement-level blocks and advises
+  const resolution = resolve(match, env);
+  if (resolution.action === 'allow') return null;
+
+  const enforcementLevel = getEffectiveEnforcement(match.intent, config, match.enforcement);
+
+  if (enforcementLevel === 'silent') return null;
+
+  const prefix = enforcementLevel === 'block' ? '[BLOCK]' : '[ADVISE]';
+
+  // cwd_path_expand has special output format
+  if (match.intent === 'cwd_path_expand' && tool === 'Bash') {
+    const command = args.command as string;
+    const relativePart = command.slice(effectiveCwd.length + 1);
+    const binary = relativePart.split(/\s+/)[0];
+    return [
+      `${prefix} Tool Router: fully-qualified CWD path detected`,
+      `advise: use ./${binary} instead of ${command.split(/\s+/)[0]}`,
+      'Shorter, saves tokens, more portable.',
+    ].join('\n');
+  }
+
+  if (resolution.action === 'advise') {
     return [
       `${prefix} Tool Router: ${match.intent} detected`,
       `advise: use ${resolution.tool} — ${resolution.reason}`,
       enforcementLevel === 'block'
-        ? `This operation is blocked by .harness.yaml. Use the recommended tool instead.`
-        : `Consider using the recommended tool for better efficiency.`,
-    ].join('\n');
-  }
-
-  if (resolution.action === 'block') {
-    return [
-      `[BLOCK] Tool Router: ${match.intent} operation blocked`,
-      `Reason: ${resolution.reason}`,
-      `This operation is always blocked. Use the recommended alternative.`,
+        ? 'This operation is blocked by .harness.yaml. Use the recommended tool instead.'
+        : 'Consider using the recommended tool for better efficiency.',
     ].join('\n');
   }
 

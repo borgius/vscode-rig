@@ -44,7 +44,20 @@ const cache = new SessionCache(cwd, input.session_id);
 loadConfig(resolve(cwd, '.harness.yaml')).then((config: any) => {
   const result = handlePreToolUse(input.tool_name, input.tool_input, cache, config);
 
-  if (result) {
+  // Transparent rewrite: output JSON with updatedInput
+  if (result && typeof result === 'object' && result.type === 'rewrite') {
+    const output = JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        updatedInput: { command: result.command },
+      },
+    });
+    console.log(output);
+    process.exit(0);
+  }
+
+  // Advise or block: output plain text
+  if (result && typeof result === 'string') {
     console.error(result);
     if (result.startsWith('[BLOCK]')) {
       process.exit(2); // block

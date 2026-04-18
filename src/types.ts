@@ -13,6 +13,14 @@ export type IntentType =
   | 'rtk_cat_code'
   | 'cwd_path_expand';
 
+// ── Hook Result Types ──
+
+export interface RewriteResult {
+  type: 'rewrite';
+  command: string;
+  original: string;
+}
+
 // ── Resolution Types ──
 
 export type EnforcementLevel = 'block' | 'advise' | 'silent';
