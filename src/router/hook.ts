@@ -24,11 +24,18 @@ const defaultExecRewrite: ExecRewriteFn = (rtkPath: string, args: string[]): str
  * Try to rewrite a Bash command using `rtk rewrite`.
  * Returns the rewritten command or null if rtk can't/won't rewrite it.
  */
+const RTK_PREFIXES = ['git ', 'grep ', 'rg ', 'find ', 'fd ', 'cat ', 'head ', 'tail ', 'ls ', 'diff ', 'wc '];
+
 export function tryRtkRewrite(
   command: string,
   rtkPath: string,
   execRewrite: ExecRewriteFn = defaultExecRewrite,
 ): string | null {
+  // Only attempt rewrite for commands rtk is designed to handle
+  const binary = command.trimStart().split(/\s+/)[0] ?? '';
+  if (!RTK_PREFIXES.some(p => command.trimStart().startsWith(p)) && binary !== 'git') {
+    return null;
+  }
   const rewritten = execRewrite(rtkPath, ['rewrite', command]);
   if (!rewritten || rewritten === command) return null;
   return rewritten;

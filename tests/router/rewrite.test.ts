@@ -69,6 +69,11 @@ describe('tryRtkRewrite', () => {
     const result = tryRtkRewrite('npm test', '/usr/bin/rtk', mockRewriteSuccess);
     expect(result).toBeNull();
   });
+
+  it('does not rewrite python commands', () => {
+    const result = tryRtkRewrite('python -m pytest tests/ -m integration --tb=short', '/usr/bin/rtk', mockRewriteSuccess);
+    expect(result).toBeNull();
+  });
 });
 
 // ── handlePreToolUse with rtk rewrite ──
