@@ -279,14 +279,14 @@ describe('handlePreToolUse: rtk unavailable', () => {
     detectedAt: Date.now(),
   };
 
-  it('grep falls through to block jcodemunch when rtk unavailable (default config blocks text_search)', () => {
+  it('grep falls through to advise jcodemunch when rtk unavailable', () => {
     const cache = new SessionCache();
     cache.setEnvironment(ENV_NO_RTK);
     const result = handlePreToolUse(
       'Bash', { command: 'grep -r "TODO" src/' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
     );
     // rtk not available, so mockRewriteSuccess is never called
-    // Falls through to block about jcodemunch (default config has grep: 'block')
+    // Falls through to advise about jcodemunch (default config has grep: 'advise')
     expect(typeof result).toBe('string');
     expect(result).toContain('jcodemunch');
   });

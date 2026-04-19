@@ -77,8 +77,8 @@ describe('handlePreToolUse', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Bash', { command: 'grep -r pattern .' }, cache, config);
     expect(result).not.toBeNull();
-    // grep default enforcement is 'block'
-    expect(result).toContain('block');
+    // grep default enforcement is 'advise'
+    expect(result).toContain('ADVISE');
   });
 
   it('advises jcodemunch for native Read on code file when indexed', () => {

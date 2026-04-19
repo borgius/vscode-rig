@@ -11,7 +11,7 @@ import type {
 export const DEFAULT_CONFIG: HarnessConfig = {
   rules: {
     tool_routing: {
-      grep: 'block',
+      grep: 'advise',
       find: 'advise',
       glob: 'advise',
       sed_i: 'block',

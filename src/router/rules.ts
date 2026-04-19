@@ -96,7 +96,7 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
         claudeTool: { action: 'advise', tool: 'Grep', reason: 'Claude Grep tool is preferred over raw bash grep — structured output' },
         fallback: { action: 'allow' },
       },
-      enforcement: 'block',
+      enforcement: 'advise',
     },
 
     // ── File Discovery ──

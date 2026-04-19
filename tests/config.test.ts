@@ -12,7 +12,7 @@ describe('config', () => {
       expect(DEFAULT_CONFIG.rules.enforcement.default_level).toBe('advise');
       expect(DEFAULT_CONFIG.rules.constitutional.no_mocks).toBe('advise');
       expect(DEFAULT_CONFIG.rules.tool_routing).toBeDefined();
-      expect(DEFAULT_CONFIG.rules.tool_routing.grep).toBe('block');
+      expect(DEFAULT_CONFIG.rules.tool_routing.grep).toBe('advise');
       expect(DEFAULT_CONFIG.rules.tool_routing.sed_i).toBe('block');
       expect(DEFAULT_CONFIG.rules.stale_tests).toBeDefined();
       expect(DEFAULT_CONFIG.rules.stale_tests.enforcement).toBe('advise');
@@ -41,13 +41,13 @@ describe('config', () => {
       expect(config.rules.enforcement.default_level).toBe('advise');
       // Defaults still present for unspecified rules
       expect(config.rules.tool_routing).toBeDefined();
-      expect(config.rules.tool_routing.grep).toBe('block');
+      expect(config.rules.tool_routing.grep).toBe('advise');
     });
 
     it('loads a full config with all rules', async () => {
       const config = await loadConfig(resolve(FIXTURES, 'full-config.yaml'));
       expect(config.rules.tool_routing).toBeDefined();
-      expect(config.rules.tool_routing.grep).toBe('block');
+      expect(config.rules.tool_routing.grep).toBe('advise');
       expect(config.rules.constitutional).toBeDefined();
       expect(config.rules.constitutional.no_mocks).toBe('block');
       expect(config.rules.test_integrity).toBeDefined();

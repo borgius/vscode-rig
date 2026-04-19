@@ -169,9 +169,9 @@ export const ALL_SCENARIOS: EvalScenario[] = [
     expected: {
       full: { action: 'rewrite', tool: 'rtk grep' },
       rtk_only: { action: 'rewrite', tool: 'rtk grep' },
-      jm_only: { action: 'block', tool: 'jcodemunch' },
-      jm_not_indexed: { action: 'block', tool: 'Grep' },
-      neither: { action: 'block', tool: 'Grep' },
+      jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Grep' },
+      neither: { action: 'advise', tool: 'Grep' },
     },
   },
 
@@ -183,9 +183,9 @@ export const ALL_SCENARIOS: EvalScenario[] = [
     expected: {
       full: { action: 'rewrite', tool: 'rtk grep' },
       rtk_only: { action: 'rewrite', tool: 'rtk grep' },
-      jm_only: { action: 'block', tool: 'jcodemunch' },
-      jm_not_indexed: { action: 'block', tool: 'Grep' },
-      neither: { action: 'block', tool: 'Grep' },
+      jm_only: { action: 'advise', tool: 'jcodemunch' },
+      jm_not_indexed: { action: 'advise', tool: 'Grep' },
+      neither: { action: 'advise', tool: 'Grep' },
     },
   },
 
