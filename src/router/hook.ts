@@ -3,8 +3,15 @@ import type { HarnessConfig, RewriteResult } from '../types.js';
 import { SessionCache } from '../session/cache.js';
 import { findMatchingRule, getDefaultRules } from './rules.js';
 import { resolve } from './resolver.js';
+import { tryPythonRewrite } from './python-rewrite.js';
 
 export type ExecRewriteFn = (rtkPath: string, args: string[]) => string | null;
+export type ExistsCheckFn = (path: string) => boolean;
+
+export interface HookOptions {
+  execRewrite?: ExecRewriteFn;
+  existsCheck?: ExistsCheckFn;
+}
 
 const defaultExecRewrite: ExecRewriteFn = (rtkPath: string, args: string[]): string | null => {
   try {
@@ -69,9 +76,12 @@ export function handlePreToolUse(
   cache: SessionCache,
   config: HarnessConfig,
   cwd?: string,
-  execRewrite?: ExecRewriteFn,
+  options?: ExecRewriteFn | HookOptions,
 ): string | RewriteResult | null {
   const effectiveCwd = cwd ?? process.cwd();
+  const resolvedOptions: HookOptions = typeof options === 'function'
+    ? { execRewrite: options }
+    : options ?? {};
   const rules = getDefaultRules(effectiveCwd);
   const match = findMatchingRule(tool, args, rules);
   const env = cache.getEnvironment() ?? defaultEnv();
@@ -88,20 +98,31 @@ export function handlePreToolUse(
     }
   }
 
-  // Step 2: Transparent rewrite via rtk for Bash commands
+  // Step 2: Python environment rewrite for Bash commands
   if (tool === 'Bash' && typeof args.command === 'string') {
-    if (env.rtkAvailable && env.rtkPath) {
-      const rewritten = tryRtkRewrite(args.command, env.rtkPath, execRewrite);
+    const pythonEnv = cache.getPythonEnv();
+    if (pythonEnv) {
+      const rewritten = tryPythonRewrite(args.command, effectiveCwd, pythonEnv, resolvedOptions.existsCheck);
       if (rewritten) {
         return { type: 'rewrite', command: rewritten, original: args.command };
       }
     }
   }
 
-  // Step 3: No match = pass through
+  // Step 3: Transparent rewrite via rtk for Bash commands
+  if (tool === 'Bash' && typeof args.command === 'string') {
+    if (env.rtkAvailable && env.rtkPath) {
+      const rewritten = tryRtkRewrite(args.command, env.rtkPath, resolvedOptions.execRewrite);
+      if (rewritten) {
+        return { type: 'rewrite', command: rewritten, original: args.command };
+      }
+    }
+  }
+
+  // Step 4: No match = pass through
   if (!match) return null;
 
-  // Step 4: Enforcement-level blocks and advises
+  // Step 5: Enforcement-level blocks and advises
   const resolution = resolve(match, env);
   if (resolution.action === 'allow') return null;
 

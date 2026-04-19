@@ -43,6 +43,14 @@ describe('SkillPhaseTracker', () => {
     expect(tracker.canTransitionTo('review+')).toBe(true);
   });
 
+  it('allows debug+ from any phase with no prerequisite', () => {
+    expect(tracker.canTransitionTo('debug+')).toBe(true);
+    tracker.setPhase('brain+');
+    expect(tracker.canTransitionTo('debug+')).toBe(true);
+    tracker.setPhase('tdd+');
+    expect(tracker.canTransitionTo('debug+')).toBe(true);
+  });
+
   it('allows verify+ only after tdd+', () => {
     tracker.setPhase('brain+');
     expect(tracker.canTransitionTo('verify+')).toBe(false);
@@ -60,7 +68,7 @@ describe('SkillPhaseTracker', () => {
 
   it('returns all valid phases', () => {
     const phases = tracker.getAllPhases();
-    expect(phases).toEqual(['brain+', 'plan+', 'tdd+', 'verify+', 'review+']);
+    expect(phases).toEqual(['brain+', 'plan+', 'tdd+', 'verify+', 'review+', 'debug+']);
   });
 
   it('returns phase index for ordering', () => {
@@ -69,6 +77,7 @@ describe('SkillPhaseTracker', () => {
     expect(tracker.getPhaseIndex('tdd+')).toBe(2);
     expect(tracker.getPhaseIndex('verify+')).toBe(3);
     expect(tracker.getPhaseIndex('review+')).toBe(4);
+    expect(tracker.getPhaseIndex('debug+')).toBe(5);
     expect(tracker.getPhaseIndex('unknown')).toBe(-1);
   });
 

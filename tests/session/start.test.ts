@@ -32,6 +32,44 @@ describe('handleSessionStart', () => {
     expect(env!.jcodemunchAvailable).toBe(true);
   });
 
+  it('detects Python env and caches it', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'which uv') return '/usr/bin/uv\n';
+      return '';
+    });
+
+    await handleSessionStart('/home/user/test-project', cache);
+
+    const pyEnv = cache.getPythonEnv();
+    expect(pyEnv).toBeDefined();
+    expect(pyEnv!.uvAvailable).toBe(true);
+    expect(pyEnv!.uvPath).toBe('/usr/bin/uv');
+  });
+
+  it('detects Python env with .venv', async () => {
+    const { mkdirSync, rmSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const tmpDir = '/tmp/rig-test-pyenv-' + process.pid;
+    mkdirSync(join(tmpDir, '.venv', 'bin'), { recursive: true });
+
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') throw new Error('not found');
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      if (cmd === 'which uv') throw new Error('not found');
+      return '';
+    });
+
+    await handleSessionStart(tmpDir, cache);
+
+    const pyEnv = cache.getPythonEnv();
+    expect(pyEnv).toBeDefined();
+    expect(pyEnv!.venvPath).toBe(join(tmpDir, '.venv'));
+
+    rmSync(tmpDir, { recursive: true });
+  });
+
   it('auto-indexes CWD with jcodemunch when available but not indexed', async () => {
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd === 'which rtk') throw new Error('not found');

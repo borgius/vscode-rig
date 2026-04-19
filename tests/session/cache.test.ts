@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SessionCache, sessionCachePath } from '../../src/session/cache.js';
-import type { Environment, SessionCacheFile } from '../../src/types.js';
+import type { Environment, PythonEnv, SessionCacheFile } from '../../src/types.js';
 import { readFileSync, unlinkSync, existsSync } from 'node:fs';
 
 function makeEnv(overrides: Partial<Environment> = {}): Environment {
@@ -75,6 +75,19 @@ describe('SessionCache', () => {
     expect(cache.getEnvironment()).toBeUndefined();
     expect(cache.getEditedFiles('source')).toEqual([]);
     expect(cache.getCurrentPhase()).toBeNull();
+  });
+
+  it('stores and retrieves Python env', () => {
+    expect(cache.getPythonEnv()).toBeUndefined();
+    const pyEnv: PythonEnv = { venvPath: '/project/.venv', uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() };
+    cache.setPythonEnv(pyEnv);
+    expect(cache.getPythonEnv()).toEqual(pyEnv);
+  });
+
+  it('clears Python env on reset', () => {
+    cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
+    cache.reset();
+    expect(cache.getPythonEnv()).toBeUndefined();
   });
 
   it('stores and retrieves metrics baseline', () => {
@@ -173,6 +186,7 @@ describe('SessionCache (file-backed)', () => {
     cache.setPhase('plan+');
     cache.setMetricsBaseline({ totalSaved: 50000, capturedAt: Date.now() });
     cache.incrementMetricCounter('rtkCalls');
+    cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() });
 
     // Verify file was written
     const path = sessionCachePath(testCwd);
@@ -189,6 +203,9 @@ describe('SessionCache (file-backed)', () => {
     expect(cache2.getCurrentPhase()).toBe('plan+');
     expect(cache2.getMetricsBaseline()!.totalSaved).toBe(50000);
     expect(cache2.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0 });
+    expect(cache2.getPythonEnv()).toBeDefined();
+    expect(cache2.getPythonEnv()!.venvPath).toBe('/project/.venv');
+    expect(cache2.getPythonEnv()!.uvAvailable).toBe(true);
   });
 
   it('clears stale environment on load', () => {

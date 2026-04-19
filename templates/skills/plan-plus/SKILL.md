@@ -21,7 +21,13 @@ This skill runs after `brain+` has produced a validated design. It creates the i
 
 1. Read the design output from `brain+` (from the current session or saved spec).
 
-2. Load active enforcement rules from session context (see session-start output). If active enforcement rules are configured, add a **Constitutional Compliance** section to the plan:
+2. When you need to explore the codebase (verify file paths, check dependencies, find related modules), use the scout agent:
+
+   ```
+   Agent(subagent_type="scout", prompt="Map the codebase structure for [area]. Focus on: dependencies, test files, and related modules.")
+   ```
+
+3. Load active enforcement rules from session context (see session-start output). If active enforcement rules are configured, add a **Constitutional Compliance** section to the plan:
 
    ```
    ## Constitutional Rules for This Plan

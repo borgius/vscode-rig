@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Environment, MetricsBaseline, SessionCacheFile } from '../types.js';
+import type { Environment, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
 
 const ENV_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -21,6 +21,7 @@ export class SessionCache {
   private metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
   private changedFiles: string[] = [];
   private toolsWarned = false;
+  private pythonEnv: PythonEnv | undefined;
 
   constructor(cwd?: string, sessionId?: string) {
     this.cwd = cwd;
@@ -103,6 +104,15 @@ export class SessionCache {
     this.save();
   }
 
+  getPythonEnv(): PythonEnv | undefined {
+    return this.pythonEnv;
+  }
+
+  setPythonEnv(env: PythonEnv): void {
+    this.pythonEnv = env;
+    this.save();
+  }
+
   reset(): void {
     this.environment = undefined;
     this.editedFiles.clear();
@@ -111,6 +121,7 @@ export class SessionCache {
     this.metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
     this.toolsWarned = false;
     this.changedFiles = [];
+    this.pythonEnv = undefined;
     this.save();
   }
 
@@ -128,6 +139,7 @@ export class SessionCache {
       metricCounters: { ...this.metricCounters },
       toolsWarned: this.toolsWarned,
       changedFiles: [...this.changedFiles],
+      pythonEnv: this.pythonEnv ?? null,
     };
   }
 
@@ -161,6 +173,7 @@ export class SessionCache {
       this.metricCounters = data.metricCounters ?? { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 };
       this.toolsWarned = data.toolsWarned ?? false;
       this.changedFiles = data.changedFiles ?? [];
+      this.pythonEnv = data.pythonEnv ?? undefined;
     } catch {
       // Corrupt or unreadable file — start fresh
     }

@@ -1,4 +1,4 @@
-const PHASE_ORDER = ['brain+', 'plan+', 'tdd+', 'verify+', 'review+'] as const;
+const PHASE_ORDER = ['brain+', 'plan+', 'tdd+', 'verify+', 'review+', 'debug+'] as const;
 export type SkillPhase = (typeof PHASE_ORDER)[number];
 
 interface PhaseEntry {
@@ -20,8 +20,8 @@ export class SkillPhaseTracker {
   }
 
   canTransitionTo(target: SkillPhase): boolean {
-    // review+ is accessible from any phase
-    if (target === 'review+') return true;
+    // review+ and debug+ are accessible from any phase
+    if (target === 'review+' || target === 'debug+') return true;
 
     // verify+ requires tdd+ to have been visited
     if (target === 'verify+') {

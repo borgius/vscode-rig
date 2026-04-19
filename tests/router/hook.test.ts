@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handlePreToolUse } from '../../src/router/hook.js';
 import { SessionCache } from '../../src/session/cache.js';
-import type { Environment, HarnessConfig } from '../../src/types.js';
+import type { Environment, HarnessConfig, PythonEnv } from '../../src/types.js';
 import { DEFAULT_CONFIG } from '../../src/config.js';
 
 function makeEnv(overrides: Partial<Environment> = {}): Environment {
@@ -187,5 +187,62 @@ describe('handlePreToolUse', () => {
     const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
     expect(result).not.toBeNull();
     expect(result).toContain('BLOCK');
+  });
+
+  // Python environment rewrite tests
+  it('rewrites pytest command when venv available and .py file in args', () => {
+    cache.setEnvironment(makeEnv());
+    cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
+    const result = handlePreToolUse(
+      'Bash',
+      { command: 'pytest tests/test_foo.py -v' },
+      cache,
+      config,
+      '/project',
+      { existsCheck: (p) => p === '/project/.venv/bin/pytest' },
+    );
+    expect(result).not.toBeNull();
+    expect(result).toEqual({ type: 'rewrite', command: '/project/.venv/bin/pytest tests/test_foo.py -v', original: 'pytest tests/test_foo.py -v' });
+  });
+
+  it('rewrites to uv run when no venv but uv available and .py file in args', () => {
+    cache.setEnvironment(makeEnv());
+    cache.setPythonEnv({ venvPath: null, uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() });
+    const result = handlePreToolUse(
+      'Bash',
+      { command: 'pytest tests/test_foo.py -v' },
+      cache,
+      config,
+      '/project',
+      { existsCheck: () => false },
+    );
+    expect(result).not.toBeNull();
+    expect(result).toEqual({ type: 'rewrite', command: 'uv run pytest tests/test_foo.py -v', original: 'pytest tests/test_foo.py -v' });
+  });
+
+  it('does not rewrite when no .py file in command', () => {
+    cache.setEnvironment(makeEnv());
+    cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
+    const result = handlePreToolUse(
+      'Bash',
+      { command: 'pytest --version' },
+      cache,
+      config,
+      '/project',
+      { existsCheck: () => true },
+    );
+    expect(result).toBeNull();
+  });
+
+  it('does not rewrite when no python env cached', () => {
+    cache.setEnvironment(makeEnv());
+    const result = handlePreToolUse(
+      'Bash',
+      { command: 'pytest tests/test_foo.py -v' },
+      cache,
+      config,
+      '/project',
+    );
+    expect(result).toBeNull();
   });
 });

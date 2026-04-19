@@ -70,6 +70,13 @@ export interface Environment {
   detectedAt: number;
 }
 
+export interface PythonEnv {
+  venvPath: string | null;
+  uvAvailable: boolean;
+  uvPath: string | null;
+  detectedAt: number;
+}
+
 export interface MetricsBaseline {
   totalSaved: number;
   capturedAt: number;
@@ -84,6 +91,7 @@ export interface SessionCacheFile {
   metricCounters: { rtkCalls: number; jmCalls: number; efficientCalls: number };
   toolsWarned: boolean;
   changedFiles: string[];
+  pythonEnv: PythonEnv | null;
 }
 
 // ── Config Types ──

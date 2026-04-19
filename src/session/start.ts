@@ -3,6 +3,7 @@ import { basename, join, resolve } from 'node:path';
 import { SessionCache } from './cache.js';
 import type { Environment, HarnessConfig } from '../types.js';
 import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
+import { detectPythonEnv } from './python-env.js';
 import { checkWorktreeSuggestion } from './worktree.js';
 import { captureMetricsBaseline } from './metrics.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config.js';
@@ -14,6 +15,9 @@ import { loadConfig, DEFAULT_CONFIG } from '../config.js';
 export async function handleSessionStart(cwd: string, cache: SessionCache): Promise<string> {
   const env = await detectAndIndex(cwd);
   cache.setEnvironment(env);
+
+  const pyEnv = await detectPythonEnv(cwd);
+  cache.setPythonEnv(pyEnv);
 
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
   cache.setMetricsBaseline(baseline);
