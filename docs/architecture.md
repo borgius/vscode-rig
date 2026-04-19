@@ -27,17 +27,33 @@ User types: grep -r "TODO" src/
      |
 PreToolUse Hook (handlePreToolUse)
      |
-classifyIntent("grep -r TODO src/") -> IntentType.text_search
+  +--------------------------------------+
+  | Step 1: Resolution blocks            |
+  |   file_modify, rtk_cat_code -> block |
+  +--------------------------------------+
      |
-resolve(rule, environment) -> Resolution
+  +--------------------------------------+
+  | Step 2: Python env rewrite           |
+  |   .py file in args?                  |
+  |   .venv/bin/<cmd> exists? -> rewrite |
+  |   uv available? -> uv run <cmd>      |
+  +--------------------------------------+
      |
-  +----------------------------------+
-  | rtk available?   -> redirect rtk |
-  | jcodemunch ready? -> redirect jm |
-  | neither?         -> allow        |
-  +----------------------------------+
+  +--------------------------------------+
+  | Step 3: rtk transparent rewrite      |
+  |   rtk available? -> redirect rtk     |
+  +--------------------------------------+
      |
-HookResult: { decision: "block"|"allow", reason? }
+  +--------------------------------------+
+  | Step 4: No match -> pass through     |
+  +--------------------------------------+
+     |
+  +--------------------------------------+
+  | Step 5: Enforcement-level resolves   |
+  |   jcodemunch ready? -> advise jm     |
+  +--------------------------------------+
+     |
+HookResult: { decision, reason } | { type: "rewrite", command }
 ```
 
 **Files:** `src/router/intent.ts`, `src/router/rules.ts`, `src/router/resolver.ts`, `src/router/hook.ts`
@@ -54,6 +70,22 @@ HookResult: { decision: "block"|"allow", reason? }
 | `file_discovery` | Bash `find`, `fd` | jcodemunch `get_file_tree` |
 | `file_read` | Bash `cat`, `head`, `tail` | rtk or jcodemunch `get_symbol` |
 | `file_modify` | Bash `sed -i`, `awk >` | Block, redirect to Edit tool |
+
+### Python environment detection
+
+When a Bash command references a `.py` file, the router resolves the command
+binary through the Python environment. No hardcoded tool names — the `.py`
+file in args is the trigger.
+
+Resolution chain:
+1. `.venv/bin/<binary>` exists → rewrite to absolute venv path
+2. `uv` available → rewrite to `uv run <command>`
+3. Neither → pass through (no rewrite)
+
+Python environment is detected at session start (`detectPythonEnv`) and cached
+in `SessionCache`. Detection checks for `.venv/` directory and `which uv`.
+
+**Files:** `src/router/python-rewrite.ts`, `src/session/python-env.ts`
 
 ### Priority chain
 
@@ -144,11 +176,13 @@ brain+ -> plan+ -> tdd+ -> verify+ -> review+
    |        |       +-- free transition
    |        +-- free transition
    +-- free transition
+
+debug+ -- standalone, accessible from any phase
 ```
 
 **Phase transition rules:**
 
-- `review+` is accessible from any phase (no prerequisite)
+- `review+` and `debug+` are accessible from any phase (no prerequisite)
 - `verify+` requires a prior `tdd+` visit
 - All other phases (`brain+`, `plan+`, `tdd+`) allow free transitions
 
@@ -160,6 +194,11 @@ keeps template prose in sync with `.harness.yaml` configuration.
 **Files:** `src/skills/phase-tracker.ts`, `templates/skills/`
 
 ### Standalone skills
+
+`debug+` wraps `superpowers:systematic-debugging` with mandatory scout agent
+context harvesting. It maps the affected code area before debugging, ensuring
+the agent has full structural context. Accessible from any phase via `/debug+`.
+`investigate` is a backward-compatible alias for `/debug+`.
 
 `savings` reports rtk and jcodemunch token savings for the current session.
 It has no phase prerequisite and is accessible at any time via `/savings`.

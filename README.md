@@ -74,6 +74,7 @@ automatically.
 +------------+------------+-------------------+
 |              Skill Chain Pipeline            |
 |  brain+ -> plan+ -> tdd+ -> verify+ -> rev+ |
+|              debug+ (any phase)               |
 +---------------------------------------------+
 |              Scout Agent                     |
 |         (CodebaseMap + cross-repo)           |
@@ -123,10 +124,11 @@ no-mock enforcement entirely.
 | `tdd+` | Test-driven development | `superpowers:tdd` |
 | `verify+` | Installation verification | `superpowers:code-reviewer` |
 | `review+` | Code review | `superpowers:code-reviewer` |
+| `debug+` | Systematic debugging | `superpowers:systematic-debugging` |
 | `savings` | Session token savings report | -- |
-| `investigate` | Systematic debugging | `superpowers:systematic-debugging` |
+| `investigate` | Alias for `debug+` | -- |
 
-Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `savings` and `investigate` skills are standalone (no phase prerequisite).
+Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `debug+`, `savings`, and `investigate` skills are standalone (no phase prerequisite). `debug+` mandates scout agent context harvesting before debugging.
 
 ## What gets installed
 
@@ -144,9 +146,10 @@ Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
     tdd-plus/            # tdd+ skill
     verify-plus/         # verify+ skill
     review-plus/         # review+ skill
+    debug-plus/          # debug+ skill (systematic debugging)
     verify-harness/      # Installation verifier
     savings/             # Session savings report
-    investigate/         # Systematic debugging skill
+    investigate/         # Alias for debug+
   agents/
     scout.md             # Cross-repo scout agent
 ```

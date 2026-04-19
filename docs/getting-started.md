@@ -48,8 +48,10 @@ This generates:
 | `.claude/skills/tdd-plus/` | Test-driven development skill |
 | `.claude/skills/verify-plus/` | Verification skill |
 | `.claude/skills/review-plus/` | Code review skill |
+| `.claude/skills/debug-plus/` | Systematic debugging with scout context |
 | `.claude/skills/verify-harness/` | Installation verifier |
 | `.claude/skills/savings/` | Session token savings report |
+| `.claude/skills/investigate/` | Alias for debug+ |
 | `.claude/agents/scout.md` | Cross-repo scout agent |
 | `.claude/settings.json` | Hook registrations (merged, not overwritten) |
 | `.harness.yaml` | Enforcement configuration |
@@ -74,13 +76,15 @@ Skills are invoked as slash commands in Claude Code:
 /tdd+      -> Write tests, then implement
 /verify+   -> Verify the implementation works
 /review+   -> Review code quality
+/debug+    -> Systematic debugging with scout context
 /savings   -> Report token savings from rtk/jcodemunch this session
-/investigate -> Systematic debugging with codebase context
+/investigate -> Alias for /debug+
 ```
 
 Skills enforce ordering. You can't run `/tdd+` until you've visited `/plan+`. You can't run
-`/verify+` until you've visited `/tdd+`. `/savings` and `/investigate` have no prerequisites
-and work from any phase.
+`/verify+` until you've visited `/tdd+`. `/debug+`, `/savings`, and `/investigate` have no
+prerequisites and work from any phase. `/debug+` mandates scout agent context harvesting
+before debugging.
 
 ## Configure enforcement
 
