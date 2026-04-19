@@ -47,10 +47,23 @@ function classifyBashCommand(command: string): IntentType {
   const firstSegment = pipeIndex >= 0 ? command.slice(0, pipeIndex) : command;
 
   const segments = firstSegment.split(/&&|\|\||;/);
-  let highest: IntentType = 'pass_through';
 
-  for (const segment of segments) {
-    const trimmed = segment.trim();
+  // If the primary command (first segment) is pass_through, the entire chain
+  // is pass_through — grep/cat after && is post-processing, not code search.
+  const firstSeg = segments[0]?.trim() ?? '';
+  let firstIntent: IntentType = 'pass_through';
+  for (const { pattern, intent } of BASH_INTENT_PATTERNS) {
+    if (pattern.test(firstSeg)) {
+      firstIntent = intent;
+      break;
+    }
+  }
+  if (firstIntent === 'pass_through') return 'pass_through';
+
+  let highest: IntentType = firstIntent;
+
+  for (let i = 1; i < segments.length; i++) {
+    const trimmed = segments[i].trim();
     for (const { pattern, intent } of BASH_INTENT_PATTERNS) {
       if (pattern.test(trimmed)) {
         if (INTENT_PRECEDENCE[intent] > INTENT_PRECEDENCE[highest]) {

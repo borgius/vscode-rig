@@ -1,4 +1,4 @@
-import type { Environment } from '../../src/types.js';
+import type { Environment, PythonEnv } from '../../src/types.js';
 
 // ── Environment presets ──
 
@@ -447,6 +447,120 @@ export const ALL_SCENARIOS: EvalScenario[] = [
       jm_only: { action: 'advise', tool: './' },
       jm_not_indexed: { action: 'advise', tool: './' },
       neither: { action: 'advise', tool: './' },
+    },
+  },
+];
+
+// ── Python environment presets ──
+
+export interface PythonEnvPreset {
+  name: string;
+  pythonEnv: PythonEnv;
+  existsCheck: (path: string) => boolean;
+}
+
+export const PYTHON_ENV_PRESETS: PythonEnvPreset[] = [
+  {
+    name: 'venv',
+    pythonEnv: { venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() },
+    existsCheck: (p) => p.startsWith('/project/.venv/bin/'),
+  },
+  {
+    name: 'uv_only',
+    pythonEnv: { venvPath: null, uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() },
+    existsCheck: () => false,
+  },
+  {
+    name: 'both',
+    pythonEnv: { venvPath: '/project/.venv', uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() },
+    existsCheck: (p) => p.startsWith('/project/.venv/bin/'),
+  },
+  {
+    name: 'no_python',
+    pythonEnv: { venvPath: null, uvAvailable: false, uvPath: null, detectedAt: Date.now() },
+    existsCheck: () => false,
+  },
+];
+
+// ── Python eval scenarios ──
+
+export const PYTHON_SCENARIOS: EvalScenario[] = [
+  {
+    id: 'python_pytest_venv',
+    category: 'python',
+    description: 'pytest with .py file when venv available → rewrite to .venv/bin/pytest',
+    toolCall: { tool: 'Bash', args: { command: 'pytest tests/test_foo.py -v' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+      uv_only: { action: 'rewrite', tool: 'uv run' },
+      both: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+      no_python: { action: 'allow' },
+    },
+  },
+  {
+    id: 'python_pytest_uv',
+    category: 'python',
+    description: 'pytest with .py file when only uv available → rewrite to uv run',
+    toolCall: { tool: 'Bash', args: { command: 'pytest tests/test_foo.py -v' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+      uv_only: { action: 'rewrite', tool: 'uv run' },
+      both: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+      no_python: { action: 'allow' },
+    },
+  },
+  {
+    id: 'python_pytest_nopy',
+    category: 'python',
+    description: 'pytest without .py file (no signal) → allow (no rewrite)',
+    toolCall: { tool: 'Bash', args: { command: 'pytest --version' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'allow' },
+      uv_only: { action: 'allow' },
+      both: { action: 'allow' },
+      no_python: { action: 'allow' },
+    },
+  },
+  {
+    id: 'python_python_venv',
+    category: 'python',
+    description: 'python with .py file when venv available → rewrite to .venv/bin/python',
+    toolCall: { tool: 'Bash', args: { command: 'python src/main.py' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'rewrite', tool: '/project/.venv/bin/python' },
+      uv_only: { action: 'rewrite', tool: 'uv run' },
+      both: { action: 'rewrite', tool: '/project/.venv/bin/python' },
+      no_python: { action: 'allow' },
+    },
+  },
+  {
+    id: 'python_custom_venv',
+    category: 'python',
+    description: 'custom tool with .py file when binary in venv → rewrite to venv path',
+    toolCall: { tool: 'Bash', args: { command: 'my-runner tests/test_foo.py' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'rewrite', tool: '/project/.venv/bin/my-runner' },
+      uv_only: { action: 'rewrite', tool: 'uv run' },
+      both: { action: 'rewrite', tool: '/project/.venv/bin/my-runner' },
+      no_python: { action: 'allow' },
+    },
+  },
+  {
+    id: 'python_black_venv',
+    category: 'python',
+    description: 'black formatter with .py file when venv available → rewrite',
+    toolCall: { tool: 'Bash', args: { command: 'black src/format_me.py' } },
+    cwd: '/project',
+    expected: {
+      venv: { action: 'rewrite', tool: '/project/.venv/bin/black' },
+      uv_only: { action: 'rewrite', tool: 'uv run' },
+      both: { action: 'rewrite', tool: '/project/.venv/bin/black' },
+      no_python: { action: 'allow' },
     },
   },
 ];

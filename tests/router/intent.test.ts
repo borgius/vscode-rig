@@ -77,6 +77,18 @@ describe('classifyIntent', () => {
     it('classifies piped find as pass_through (output filtering)', () => {
       expect(classifyIntent('Bash', { command: 'ls -la | find . -type f' })).toBe('pass_through');
     });
+
+    it('classifies npx ... && grep as pass_through (grep is post-processing)', () => {
+      expect(classifyIntent('Bash', { command: 'npx vitest run --coverage 2>&1 > /tmp/out.txt && grep -n "%" /tmp/out.txt | head -30' })).toBe('pass_through');
+    });
+
+    it('classifies npm test && grep as pass_through', () => {
+      expect(classifyIntent('Bash', { command: 'npm test 2>&1 | tee /tmp/out.txt && grep "FAIL" /tmp/out.txt' })).toBe('pass_through');
+    });
+
+    it('still classifies grep && grep as text_search', () => {
+      expect(classifyIntent('Bash', { command: 'grep "TODO" src/a.ts && grep "FIXME" src/b.ts' })).toBe('text_search');
+    });
   });
 
   describe('Claude tool classification', () => {
