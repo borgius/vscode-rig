@@ -16,6 +16,7 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 ---
 
 ### Task 1: Add PythonEnv type and cache integration
+
 **Files:** `src/types.ts`, `src/session/cache.ts`, `tests/session/cache.test.ts`
 **Test strategy:** Unit tests for PythonEnv round-trip through cache, staleness, reset
 **Mock check:** None — pure data types and cache
@@ -27,6 +28,7 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 - [ ] Write tests: round-trip, reset clears pythonEnv, coexists with existing cache fields
 
 ### Task 2: Python environment detection
+
 **Files:** `src/session/python-env.ts` (new), `tests/session/python-env.test.ts` (new)
 **Test strategy:** Unit tests with injectable `ExecFn` and temp dirs for `.venv` detection
 **Mock check:** None — injectable dependencies
@@ -38,6 +40,7 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 - [ ] Write tests: venv detected, no venv, uv detected, neither detected, injectable exec
 
 ### Task 3: Python command rewrite in the tool router
+
 **Files:** `src/router/python-rewrite.ts` (new), `src/router/hook.ts`, `tests/router/python-rewrite.test.ts` (new), `tests/router/hook.test.ts`
 **Test strategy:** Unit tests for rewrite logic (signal detection + resolution), integration tests in hook.test.ts
 **Mock check:** None
@@ -53,6 +56,7 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 - [ ] Add integration tests in hook.test.ts: Python rewrite fires for `pytest foo.py`, doesn't fire for `pytest` alone, doesn't fire for non-Python commands
 
 ### Task 4: Wire python detection into session start
+
 **Files:** `src/session/start.ts`, `tests/session/start.test.ts`
 **Test strategy:** Unit tests verifying python env is detected and cached on session start
 **Mock check:** None — injectable `ExecFn`
@@ -62,6 +66,7 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 - [ ] Update tests to verify python env is cached
 
 ### Task 5: Add debug+ skill and phase tracker integration
+
 **Files:** `src/skills/phase-tracker.ts`, `templates/skills/debug-plus/SKILL.md` (new), `templates/skills/investigate/SKILL.md`, `tests/skills/phase-tracker.test.ts`, `src/cli/init.ts`
 **Test strategy:** Unit tests for phase transitions, verify `debug+` is a free-transition phase
 **Mock check:** None
@@ -77,22 +82,27 @@ Three features: Python env detection in the tool router, a new `debug+` skill, a
 - [ ] Write tests: `debug+` transitions freely from any phase, phase tracker includes it
 
 ### Task 6: Strengthen scout integration in plan+ and debug+
+
 **Files:** `templates/skills/plan-plus/SKILL.md`, `templates/skills/debug-plus/SKILL.md`
 **Test strategy:** Manual verification (SKILL.md templates are prose, not code)
 **Mock check:** None
 
 - [ ] Add explicit Phase A scout invocation to `plan+`:
-  ```
+
+  ```text
   1. Invoke the scout agent to map the codebase and validate file paths:
      Agent(subagent_type="scout", prompt="Map the codebase structure for [plan area]. Verify these file paths exist: [list from plan]. Focus on: dependencies, test files, and related modules.")
   ```
+
 - [ ] Ensure `debug+` Phase A scout invocation matches `brain+` pattern:
-  ```
+
+  ```text
   1. Invoke the scout agent to map the affected area:
      Agent(subagent_type="scout", prompt="Map the codebase around [affected files/modules]. Focus on: related functions, callers, test files, and recent changes.")
   ```
 
 ### Task 7: Update docs and init command
+
 **Files:** `docs/architecture.md`, `docs/getting-started.md`, `README.md`
 **Test strategy:** Manual review
 **Mock check:** None

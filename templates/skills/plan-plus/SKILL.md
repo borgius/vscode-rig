@@ -38,7 +38,7 @@ This skill runs after `brain+` has produced a validated design. It creates the i
    - Full-loop assertions: verify primary + second-order + third-order effects
    ```
 
-3. Identify the mock policy for this plan based on active enforcement rules:
+4. Identify the mock policy for this plan based on active enforcement rules:
 
    ```
    ## Mock Policy

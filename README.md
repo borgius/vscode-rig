@@ -128,7 +128,9 @@ no-mock enforcement entirely.
 | `savings` | Session token savings report | -- |
 | `investigate` | Alias for `debug+` | -- |
 
-Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+` requires prior `tdd+` visit. The `debug+`, `savings`, and `investigate` skills are standalone (no phase prerequisite). `debug+` mandates scout agent context harvesting before debugging.
+Skills enforce phase transitions: `tdd+` requires prior `plan+` visit, `verify+`
+requires prior `tdd+` visit. `debug+`, `savings`, and `investigate` are
+standalone (no phase prerequisite). `debug+` mandates scout context harvesting.
 
 ## What gets installed
 

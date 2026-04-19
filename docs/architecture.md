@@ -78,6 +78,7 @@ binary through the Python environment. No hardcoded tool names — the `.py`
 file in args is the trigger.
 
 Resolution chain:
+
 1. `.venv/bin/<binary>` exists → rewrite to absolute venv path
 2. `uv` available → rewrite to `uv run <command>`
 3. Neither → pass through (no rewrite)

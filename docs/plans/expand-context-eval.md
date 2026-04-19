@@ -16,6 +16,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 ---
 
 ### Task 1: Add PythonEnv presets and scenarios
+
 **Files:** `tests/eval/scenarios.ts`, `tests/eval/python-eval.test.ts` (new)
 **Test strategy:** New eval test file with PythonEnv-aware scenarios + scoring
 **Mock check:** None — injectable `existsCheck`
@@ -34,6 +35,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 - [ ] Verify: `npx vitest run tests/eval/python-eval.test.ts` passes
 
 ### Task 2: Add config override scenarios
+
 **Files:** `tests/eval/scenarios.ts`, `tests/eval/config-override-eval.test.ts` (new)
 **Test strategy:** New eval test file with custom config overrides
 **Mock check:** None
@@ -49,6 +51,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 - [ ] Verify: `npx vitest run tests/eval/config-override-eval.test.ts` passes
 
 ### Task 3: Add session state scenarios
+
 **Files:** `tests/eval/scenarios.ts`, `tests/eval/session-state-eval.test.ts` (new)
 **Test strategy:** New eval test file with pre-populated session cache
 **Mock check:** None
@@ -62,6 +65,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 - [ ] Verify: `npx vitest run tests/eval/session-state-eval.test.ts` passes
 
 ### Task 4: Add enforcement pipeline scenarios
+
 **Files:** `tests/eval/enforcement-eval.test.ts` (new), `tests/eval/enforcement-scenarios.ts` (new)
 **Test strategy:** New eval test file testing PostToolUse determinism
 **Mock check:** None — uses real FileTracker and SessionCache
@@ -77,6 +81,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 - [ ] Verify: `npx vitest run tests/eval/enforcement-eval.test.ts` passes
 
 ### Task 5: Add determinism (idempotency) scenarios
+
 **Files:** `tests/eval/determinism-eval.test.ts` (new)
 **Test strategy:** Run same input twice, assert identical output
 **Mock check:** None
@@ -89,6 +94,7 @@ Five new eval categories to verify deterministic behavior across the full toolki
 - [ ] Verify: `npx vitest run tests/eval/determinism-eval.test.ts` passes
 
 ### Task 6: Wire new eval categories into existing eval runner
+
 **Files:** `tests/eval/eval.test.ts`
 **Test strategy:** Update main eval runner to include python scenarios
 **Mock check:** None
