@@ -35,7 +35,7 @@ const SESSION_STATE_SCENARIOS: SessionStateScenario[] = [
     setupCache: (cache) => {
       cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
     },
-    expected: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+    expected: { action: 'rewrite', tool: '.venv/bin/pytest' },
   },
   {
     id: 'state_python_empty',
@@ -71,7 +71,7 @@ const SESSION_STATE_SCENARIOS: SessionStateScenario[] = [
       cache.setPhase('tdd+');
       cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
     },
-    expected: { action: 'rewrite', tool: '/project/.venv/bin/pytest' },
+    expected: { action: 'rewrite', tool: '.venv/bin/pytest' },
   },
   {
     id: 'state_edited_files',

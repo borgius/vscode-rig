@@ -49,7 +49,7 @@ describe('tryPythonRewrite', () => {
       pyEnv,
       (p) => p === '/project/.venv/bin/pytest',
     );
-    expect(result).toBe('/project/.venv/bin/pytest tests/test_foo.py -v');
+    expect(result).toBe('.venv/bin/pytest tests/test_foo.py -v');
   });
 
   it('rewrites to uv run when venv missing but uv available', () => {
@@ -71,7 +71,7 @@ describe('tryPythonRewrite', () => {
       pyEnv,
       (p) => p === '/project/.venv/bin/pytest',
     );
-    expect(result).toBe('/project/.venv/bin/pytest tests/test_foo.py -v');
+    expect(result).toBe('.venv/bin/pytest tests/test_foo.py -v');
   });
 
   it('returns null when no .py signal', () => {
@@ -115,7 +115,7 @@ describe('tryPythonRewrite', () => {
       pyEnv,
       (p) => p === '/project/.venv/bin/python',
     );
-    expect(result).toBe('/project/.venv/bin/python -m pytest tests/test_foo.py');
+    expect(result).toBe('.venv/bin/python -m pytest tests/test_foo.py');
   });
 
   it('handles uv fallback when binary not in venv', () => {

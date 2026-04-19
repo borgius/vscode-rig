@@ -202,7 +202,7 @@ describe('handlePreToolUse', () => {
       { existsCheck: (p) => p === '/project/.venv/bin/pytest' },
     );
     expect(result).not.toBeNull();
-    expect(result).toEqual({ type: 'rewrite', command: '/project/.venv/bin/pytest tests/test_foo.py -v', original: 'pytest tests/test_foo.py -v' });
+    expect(result).toEqual({ type: 'rewrite', command: '.venv/bin/pytest tests/test_foo.py -v', original: 'pytest tests/test_foo.py -v' });
   });
 
   it('rewrites to uv run when no venv but uv available and .py file in args', () => {
