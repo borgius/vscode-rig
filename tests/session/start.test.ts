@@ -440,4 +440,49 @@ describe('handleSessionStart', () => {
       rmSync(tmpDir, { recursive: true });
     });
   });
+
+  describe('jcodemunch file cap warning', () => {
+    it('warns when auto-index hits file limit', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/bin/rtk';
+        if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+        if (cmd.includes('list_repos')) return '{"repos":[]}';
+        if (cmd.includes('index_folder')) {
+          return JSON.stringify({
+            success: true,
+            repo: 'local/big-project',
+            file_count: 2000,
+            discovery_skip_counts: { file_limit: 4032 },
+          });
+        }
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/big-project', cache);
+      expect(output).toContain('WARNING');
+      expect(output).toContain('file limit');
+      expect(output).toContain('max_folder_files');
+      expect(output).toContain('config.jsonc');
+    });
+
+    it('does not warn when no files were skipped', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/bin/rtk';
+        if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+        if (cmd.includes('list_repos')) return '{"repos":[]}';
+        if (cmd.includes('index_folder')) {
+          return JSON.stringify({
+            success: true,
+            repo: 'local/small-project',
+            file_count: 50,
+            discovery_skip_counts: { file_limit: 0 },
+          });
+        }
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/small-project', cache);
+      expect(output).not.toContain('file limit');
+    });
+  });
 });

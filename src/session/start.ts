@@ -8,12 +8,17 @@ import { checkWorktreeSuggestion } from './worktree.js';
 import { captureMetricsBaseline, captureGraphifyStats } from './metrics.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config.js';
 
+interface FileCapWarning {
+  indexed: number;
+  total: number;
+}
+
 /**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
  * with jcodemunch if available but not yet indexed.
  */
 export async function handleSessionStart(cwd: string, cache: SessionCache): Promise<string> {
-  const env = await detectAndIndex(cwd);
+  const { env, fileCapHit } = await detectAndIndex(cwd);
   cache.setEnvironment(env);
 
   const pyEnv = await detectPythonEnv(cwd);
@@ -57,6 +62,11 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   }
 
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);
+
+  if (fileCapHit) {
+    lines.push(`[WARNING] jcodemunch indexed ${fileCapHit.indexed} of ${fileCapHit.total} files (file limit reached).`);
+    lines.push(`  Search quality is degraded. Increase max_folder_files in ~/.code-index/config.jsonc`);
+  }
 
   // Emit active enforcement rules from config
   const configPath = join(resolve(cwd), '.harness.yaml');
@@ -121,8 +131,9 @@ function formatActiveRules(config: HarnessConfig): string | null {
   return `  Active enforcement: ${active.join(', ')}`;
 }
 
-async function detectAndIndex(cwd: string): Promise<Environment> {
+async function detectAndIndex(cwd: string): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
   const env = await detectEnvironment(cwd);
+  let fileCapHit: FileCapWarning | undefined;
 
   // Auto-index if jcodemunch is available but CWD isn't indexed
   if (env.jcodemunchAvailable && !env.jcodemunchCwdIndexed) {
@@ -139,6 +150,10 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
         env.jcodemunchCwdRepo = parsedResult.repo ?? env.jcodemunchCwdRepo;
         if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
           env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
+        }
+        const skipped = parsedResult.discovery_skip_counts?.file_limit ?? 0;
+        if (skipped > 0 && parsedResult.file_count) {
+          fileCapHit = { indexed: parsedResult.file_count, total: parsedResult.file_count + skipped };
         }
       }
     } catch {
@@ -157,6 +172,10 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
               if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
                 env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
               }
+              const skipped = parsedResult.discovery_skip_counts?.file_limit ?? 0;
+              if (skipped > 0 && parsedResult.file_count) {
+                fileCapHit = { indexed: parsedResult.file_count, total: parsedResult.file_count + skipped };
+              }
             }
           }
         }
@@ -166,5 +185,5 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
     }
   }
 
-  return env;
+  return { env, fileCapHit };
 }
