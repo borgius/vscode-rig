@@ -105,6 +105,20 @@ Call index_folder with the referenced path
 Then proceed with steps 1-5 on the newly indexed repo
 ```
 
+### Step 1.5: Build graph if needed (cross-repo)
+
+When exploring a directory outside the current project:
+
+1. Check if `<target-directory>/graphify-out/graph.json` exists
+2. If not, and graphify is available (check: `which graphify`), run:
+
+   ```bash
+   graphify update <target-directory>
+   ```
+
+3. If the build succeeds, proceed with Step 2.5 relationship queries
+4. If graphify is not installed or the build fails, skip graph context
+
 ## What NOT to Do
 
 - Do not read entire files unless specifically needed for a symbol summary
