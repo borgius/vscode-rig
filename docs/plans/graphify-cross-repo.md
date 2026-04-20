@@ -47,6 +47,7 @@ No protected components involved — pure function logic with injectable exec.
   - Uses injectable `existsCheck` and `execFn` for testability
 - [ ] Step 2: Verify tests fail (function not yet exported)
 - [ ] Step 3: Implement `ensureGraphBuilt`:
+
   ```typescript
   interface GraphBuildResult {
     alreadyBuilt: boolean;
@@ -66,6 +67,7 @@ No protected components involved — pure function logic with injectable exec.
     // 5. Re-check graph.json exists; return { alreadyBuilt: false, graphPath } or null
   }
   ```
+
 - [ ] Step 4: Verify all tests pass
 - [ ] Step 5: Commit
 
