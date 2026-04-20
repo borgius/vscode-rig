@@ -18,4 +18,13 @@ describe('scout agent template', () => {
     // Must mention checking for graphify before running the build
     expect(template).toMatch(/which graphify|graphify.*available/i);
   });
+
+  it('includes jcodemunch file cap reporting instructions', () => {
+    expect(template).toContain('file limit');
+    expect(template).toMatch(/max_folder_files|config\.jsonc/);
+  });
+
+  it('includes graphify build failure reporting instructions', () => {
+    expect(template).toMatch(/graphify build failed|build fails/);
+  });
 });

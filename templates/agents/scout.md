@@ -119,6 +119,30 @@ When exploring a directory outside the current project:
 3. If the build succeeds, proceed with Step 2.5 relationship queries
 4. If graphify is not installed or the build fails, skip graph context
 
+## Alert Reporting
+
+When you detect quality issues during indexing or graph building, report them to the user:
+
+### jcodemunch file limit
+
+If `index_folder` reports that files were skipped (check `discovery_skip_counts.file_limit` in
+the response), report:
+
+```
+[WARNING] jcodemunch indexed N of M files (file limit reached).
+  Search quality is degraded. Increase max_folder_files in ~/.code-index/config.jsonc
+```
+
+### graphify build failure
+
+If `graphify update` fails for a directory (e.g., Python recursion limit on large C codebases),
+report:
+
+```
+[WARNING] graphify build failed for <directory>.
+  Graph context will not be available for this directory. Falling back to jcodemunch-only analysis.
+```
+
 ## What NOT to Do
 
 - Do not read entire files unless specifically needed for a symbol summary
