@@ -319,13 +319,13 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'agent_explore',
     category: 'agent',
-    description: 'Agent with Explore subagent (file_discovery)',
+    description: 'Agent with Explore subagent (scout_explore when jcodemunch, file_discovery otherwise)',
     toolCall: { tool: 'Agent', args: { subagent_type: 'Explore', prompt: 'find auth files' } },
     expected: {
-      full: { action: 'advise', tool: 'rtk find' },
+      full: { action: 'advise', tool: 'scout' },
       rtk_only: { action: 'advise', tool: 'rtk find' },
-      jm_only: { action: 'advise', tool: 'jcodemunch' },
-      jm_not_indexed: { action: 'advise', tool: 'Glob' },
+      jm_only: { action: 'advise', tool: 'scout' },
+      jm_not_indexed: { action: 'advise', tool: 'scout' },
       neither: { action: 'advise', tool: 'Glob' },
     },
   },

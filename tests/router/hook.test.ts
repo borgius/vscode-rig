@@ -248,3 +248,67 @@ describe('handlePreToolUse', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('scout_explore advisory', () => {
+  let cache: SessionCache;
+  let config: HarnessConfig;
+
+  beforeEach(() => {
+    cache = new SessionCache();
+    config = structuredClone(DEFAULT_CONFIG);
+  });
+
+  it('advises scout for Agent Explore when jcodemunch available and indexed', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth files' }, cache, config);
+    expect(result).not.toBeNull();
+    expect(result).toContain('scout');
+    expect(result).toContain('ADVISE');
+  });
+
+  it('advises scout for Agent Explore when jcodemunch available but NOT indexed', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: false }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'map the codebase' }, cache, config);
+    expect(result).not.toBeNull();
+    expect(result).toContain('scout');
+    expect(result).toContain('ADVISE');
+  });
+
+  it('falls through to file_discovery advisory when jcodemunch not available but rtk available', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: false, rtkAvailable: true, rtkPath: '/usr/bin/rtk' }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find tests' }, cache, config);
+    expect(result).not.toBeNull();
+    expect(result).toContain('rtk find');
+    expect(result).not.toContain('scout');
+  });
+
+  it('falls through to file_discovery advisory when neither available', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: false, rtkAvailable: false }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find config' }, cache, config);
+    expect(result).not.toBeNull();
+    expect(result).toContain('Glob');
+    expect(result).not.toContain('scout');
+  });
+
+  it('allows Agent with general-purpose subagent (pass through)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'general-purpose', prompt: 'fix the bug' }, cache, config);
+    expect(result).toBeNull();
+  });
+
+  it('respects silent enforcement', () => {
+    config.rules.tool_routing!.scout_explore = 'silent';
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth' }, cache, config);
+    expect(result).toBeNull();
+  });
+
+  it('respects block enforcement', () => {
+    config.rules.tool_routing!.scout_explore = 'block';
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth' }, cache, config);
+    expect(result).not.toBeNull();
+    expect(result).toContain('BLOCK');
+    expect(result).toContain('scout');
+  });
+});

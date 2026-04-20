@@ -236,6 +236,31 @@ describe('handleSessionStart', () => {
     expect(output).not.toContain('mcp__jcodemunch__');
   });
 
+  it('emits scout agent preference when jcodemunch available', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('scout');
+    expect(output).toContain('subagent_type');
+    expect(output).toContain('Explore');
+  });
+
+  it('omits scout agent preference when jcodemunch unavailable', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).not.toContain('scout');
+  });
+
   it('suppresses warning on second call', async () => {
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd === 'which rtk') throw new Error('not found');

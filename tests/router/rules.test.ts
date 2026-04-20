@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { getDefaultRules, findMatchingRule, isCodeFile } from '../../src/router/rules.js';
 import type { ToolRule } from '../../src/types.js';
 
+// Helper to find rule by intent
+function findRule(intent: string, rules: ToolRule[]): ToolRule | undefined {
+  return rules.find(r => r.intent === intent);
+}
+
 describe('getDefaultRules', () => {
   it('returns rules for all intents', () => {
     const rules = getDefaultRules();
@@ -276,5 +281,61 @@ describe('cwd_path_expand rule', () => {
     expect(rule).toBeDefined();
     expect(rule!.resolutions._).toBeDefined();
     expect(rule!.enforcement).toBe('advise');
+  });
+});
+
+describe('scout_explore rule', () => {
+  const rules = getDefaultRules();
+
+  it('matches Agent with Explore subagent to scout_explore rule', () => {
+    const match = findMatchingRule('Agent', { subagent_type: 'Explore', prompt: 'find auth files' }, rules);
+    expect(match).toBeDefined();
+    expect(match!.intent).toBe('scout_explore');
+  });
+
+  it('does not match Agent with general-purpose subagent', () => {
+    const match = findMatchingRule('Agent', { subagent_type: 'general-purpose', prompt: 'fix the bug' }, rules);
+    expect(match).toBeUndefined();
+  });
+
+  it('does not match Agent with Plan subagent', () => {
+    const match = findMatchingRule('Agent', { subagent_type: 'Plan', prompt: 'create a plan' }, rules);
+    expect(match).toBeUndefined();
+  });
+
+  it('scout_explore rule fires before file_discovery rule', () => {
+    // Agent+Explore should match scout_explore, not file_discovery
+    const match = findMatchingRule('Agent', { subagent_type: 'Explore', prompt: 'map the codebase' }, rules);
+    expect(match).toBeDefined();
+    expect(match!.intent).toBe('scout_explore');
+    expect(match!.intent).not.toBe('file_discovery');
+  });
+
+  it('has jcodemunch resolution with scout advisory', () => {
+    const rule = findRule('scout_explore', rules);
+    expect(rule).toBeDefined();
+    expect(rule!.resolutions.jcodemunch).toBeDefined();
+    const jmRes = rule!.resolutions.jcodemunch as { action: string; tool: string };
+    expect(jmRes.action).toBe('advise');
+    expect(jmRes.tool).toContain('scout');
+  });
+
+  it('fallback resolution is allow', () => {
+    const rule = findRule('scout_explore', rules);
+    expect(rule).toBeDefined();
+    expect(rule!.resolutions.fallback).toBeDefined();
+    const fbRes = rule!.resolutions.fallback as { action: string };
+    expect(fbRes.action).toBe('allow');
+  });
+
+  it('findMatchingRule with skipIntents falls to file_discovery', () => {
+    const match = findMatchingRule(
+      'Agent',
+      { subagent_type: 'Explore', prompt: 'find auth files' },
+      rules,
+      new Set(['scout_explore']),
+    );
+    expect(match).toBeDefined();
+    expect(match!.intent).toBe('file_discovery');
   });
 });

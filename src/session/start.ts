@@ -88,6 +88,9 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  - mcp__jcodemunch__search_text instead of grep/rg');
     lines.push('  - mcp__jcodemunch__get_file_tree instead of find/fd');
     lines.push('  - mcp__jcodemunch__get_file_outline instead of cat/head on code files');
+    lines.push('[rig] For codebase exploration, prefer the scout agent over Explore:');
+    lines.push('  Use Agent(subagent_type: "scout") instead of Explore for 80%+ token savings');
+    lines.push('  Scout uses jcodemunch and graphify MCP tools; Explore uses raw find/grep/cat');
   }
 
   if (env.graphifyAvailable) {

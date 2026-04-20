@@ -6,6 +6,7 @@ export type IntentType =
   | 'file_discovery'
   | 'file_modify'
   | 'symbol_search'
+  | 'scout_explore'
   | 'pass_through'
   | 'native_read'
   | 'native_grep'
@@ -118,6 +119,7 @@ export interface ToolRoutingRules {
   native_glob?: EnforcementLevel;
   rtk_cat_code?: EnforcementLevel;
   cwd_path_expand?: EnforcementLevel;
+  scout_explore?: EnforcementLevel;
   read_line_threshold?: number;
 }
 
