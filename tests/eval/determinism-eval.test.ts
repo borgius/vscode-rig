@@ -56,7 +56,7 @@ const CASES: DeterminismCase[] = [
     category: 'python',
     run: () => {
       const cache = new SessionCache();
-      cache.setEnvironment({ rtkAvailable: false, rtkPath: null, jcodemunchAvailable: false, jcodemunchCwdIndexed: false, jcodemunchCwdRepo: null, jcodemunchKnownRepos: [], detectedAt: Date.now() });
+      cache.setEnvironment({ rtkAvailable: false, rtkPath: null, jcodemunchAvailable: false, jcodemunchCwdIndexed: false, jcodemunchCwdRepo: null, jcodemunchKnownRepos: [], graphifyAvailable: false, graphifyGraphPath: null, detectedAt: Date.now() });
       cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
       return handlePreToolUse('Bash', { command: 'pytest tests/test_foo.py -v' }, cache, DEFAULT_CONFIG, '/project', { existsCheck: (p) => p.startsWith('/project/.venv/bin/') });
     },

@@ -25,7 +25,11 @@ Report token savings from rtk and jcodemunch usage during this session.
    `tool_breakdown` directly. These are reliable per-session counters
    maintained by the MCP server process. If jcodemunch MCP is not available,
    skip jcodemunch reporting.
-5. Format and print the report (see Output Format below). Do NOT write any
+5. For graphify: check the session cache file for `graphifyStats` in the
+   `metricsBaseline` field. If present, include the graphify line in the report.
+   Alternatively, if graphify MCP is available, call `mcp__graphify__graph_stats`
+   to get live stats. If graphify is not available, skip graphify reporting.
+6. Format and print the report (see Output Format below). Do NOT write any
    explanatory text before or after the report — output ONLY the report lines.
 
 ## Output Format
@@ -36,6 +40,7 @@ With session data (baseline + delta available):
 [rig] Session Savings
   rtk: X.XM saved (N calls, +XK this session)
   jcodemunch: XK saved (N queries, 150M total all-time)
+  graphify: N nodes, M edges, K communities (X% EXTRACTED, X% INFERRED, X% AMBIGUOUS)
 ```
 
 Without session data (no cache file found):

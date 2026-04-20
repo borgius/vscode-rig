@@ -14,6 +14,8 @@ const FULL_ENV: Environment = {
   jcodemunchCwdIndexed: true,
   jcodemunchCwdRepo: 'local/test',
   jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
   detectedAt: Date.now(),
 };
 

@@ -5,7 +5,7 @@ import type { Environment, HarnessConfig } from '../types.js';
 import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
 import { detectPythonEnv } from './python-env.js';
 import { checkWorktreeSuggestion } from './worktree.js';
-import { captureMetricsBaseline } from './metrics.js';
+import { captureMetricsBaseline, captureGraphifyStats } from './metrics.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config.js';
 
 /**
@@ -20,6 +20,10 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   cache.setPythonEnv(pyEnv);
 
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  // Capture graphify stats if available
+  if (env.graphifyAvailable) {
+    baseline.graphifyStats = captureGraphifyStats(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  }
   cache.setMetricsBaseline(baseline);
 
   // Capture changed files for failure classification
@@ -36,6 +40,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     '[rig] Session initialized',
     `  rtk: ${env.rtkAvailable ? `available (${env.rtkPath})` : 'not found'}`,
     `  jcodemunch: ${env.jcodemunchAvailable ? 'available' : 'not found'}`,
+    `  graphify: ${env.graphifyAvailable ? 'available' : 'not found'}`,
   ];
 
   if (env.jcodemunchAvailable) {
@@ -44,6 +49,11 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     } else {
       lines.push(`  CWD: not indexed (auto-indexing skipped)`);
     }
+  }
+
+  if (env.graphifyAvailable && baseline.graphifyStats) {
+    const gs = baseline.graphifyStats;
+    lines.push(`  Graph: ${gs.nodes} nodes, ${gs.edges} edges, ${gs.communities} communities (${gs.extractedPct}% EXTRACTED)`);
   }
 
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);
@@ -70,6 +80,14 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  - mcp__jcodemunch__get_file_outline instead of cat/head on code files');
   }
 
+  if (env.graphifyAvailable) {
+    lines.push('[rig] Graphify graph tools available for relationship queries:');
+    lines.push('  - mcp__graphify__query_graph for relationship context');
+    lines.push('  - mcp__graphify__god_nodes for core abstractions');
+    lines.push('  - mcp__graphify__get_community for module clustering');
+    lines.push('  - mcp__graphify__shortest_path for dependency paths');
+  }
+
   // One-time warning for missing tools
   if (!cache.getToolsWarned()) {
     if (!env.rtkAvailable) {
@@ -77,6 +95,9 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     }
     if (!env.jcodemunchAvailable) {
       lines.push('[WARNING] jcodemunch is not installed. Install for indexed code search: https://github.com/franklywatson/jcodemunch');
+    }
+    if (!env.graphifyAvailable) {
+      lines.push('[HINT] graphify is not installed. Install for knowledge graph analysis: https://github.com/safishamsi/graphify');
     }
     cache.setToolsWarned(true);
   }

@@ -291,6 +291,11 @@ function updateSettingsJson(claudeDir: string, npxCommand: string, rtkAvailable:
     permissions.allow.push('mcp__jcodemunch__*');
   }
 
+  // Auto-allow: graphify MCP tools (read-only graph queries)
+  if (!permissions.allow.includes('mcp__graphify__*')) {
+    permissions.allow.push('mcp__graphify__*');
+  }
+
   // Auto-allow: rtk binary (only when detected)
   if (rtkAvailable && !permissions.allow.includes('Bash(rtk:*)')) {
     permissions.allow.push('Bash(rtk:*)');
