@@ -30,6 +30,7 @@ Design source: brain+ session (2026-04-20).
 
 - [ ] Add `graphifyAvailable: boolean` and `graphifyGraphPath: string | null` to `Environment` interface
 - [ ] Add `graphifyStats` to `MetricsBaseline`:
+
   ```
   graphifyStats?: {
     nodes: number;
@@ -40,7 +41,9 @@ Design source: brain+ session (2026-04-20).
     ambiguousPct: number;
   } | null;
   ```
+
 - [ ] Add `GraphContext` interface:
+
   ```
   GraphContext {
     godNodes: { label: string; degree: number }[];
@@ -48,6 +51,7 @@ Design source: brain+ session (2026-04-20).
     stats: { nodes: number; edges: number; communities: number };
   }
   ```
+
 - [ ] Add `graphifyCalls: number` to `SessionCacheFile.metricCounters`
 - [ ] Update `isEnvironment` type guard to validate `graphifyAvailable` (boolean)
 - [ ] Add `isGraphContext` type guard
@@ -104,6 +108,7 @@ Design source: brain+ session (2026-04-20).
 - [ ] **GREEN**: Wire `detectGraphify` result into `handleSessionStart` — add `graphifyAvailable` and `graphifyGraphPath` to detected environment
 - [ ] **GREEN**: If graphify available, call `captureGraphifyStats` and emit summary line
 - [ ] **GREEN**: If graphify available, add graphify MCP tools to subagent delegation instructions:
+
   ```
   - mcp__graphify__query_graph for relationship context
   - mcp__graphify__god_nodes for core abstractions
@@ -111,6 +116,7 @@ Design source: brain+ session (2026-04-20).
   - mcp__graphify__shortest_path for dependency paths
   - mcp__graphify__graph_stats for graph statistics
   ```
+
 - [ ] **GREEN**: Add one-time warning if graphify not installed (after rtk/jcodemunch warning)
 - [ ] Verify: `npx vitest run tests/session/start.test.ts` passes
 - [ ] Commit
@@ -142,6 +148,7 @@ Design source: brain+ session (2026-04-20).
 - [ ] **GREEN**: Add graphify MCP tools to agent `tools` frontmatter:
   `mcp__graphify__query_graph,mcp__graphify__get_community,mcp__graphify__god_nodes,mcp__graphify__shortest_path,mcp__graphify__graph_stats`
 - [ ] **GREEN**: Add Step 2.5 between existing Steps 2 and 3:
+
   ```
   ### Step 2.5: Map relationships (if graphify available)
 
@@ -154,13 +161,16 @@ Design source: brain+ session (2026-04-20).
 
   Skip this step entirely if graphify is not available.
   ```
+
 - [ ] **GREEN**: Update Step 5 output format to include `GraphContext` section:
+
   ```
   ### GraphContext (if graphify available)
   - God nodes: [top 5 by degree]
   - Communities: [top 3 by size, with labels]
   - Stats: [nodes/edges/communities]
   ```
+
 - [ ] Verify: `npx vitest run tests/scout/agent-definition.test.ts` passes
 - [ ] Commit
 
@@ -175,9 +185,11 @@ Design source: brain+ session (2026-04-20).
 - [ ] **RED**: Write failing test — `formatSavingsReport` omits graphify section when stats null
 - [ ] **RED**: Write failing test — `formatSavingsReport` graphify section shows nodes/edges/communities and confidence breakdown
 - [ ] **GREEN**: Add graphify section to `formatSavingsReport`:
+
   ```
   graphify: 450 nodes, 1200 edges, 8 communities (92% EXTRACTED, 6% INFERRED, 2% AMBIGUOUS)
   ```
+
 - [ ] **GREEN**: Update savings SKILL.md procedure:
   - Add step 5.5: If graphify available, call `mcp__graphify__graph_stats` and include in report
   - Update output format to show graphify line
