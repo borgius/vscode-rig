@@ -3,6 +3,7 @@ import { handlePreToolUse } from '../../src/router/hook.js';
 import { incrementMetric } from '../../src/session/metrics.js';
 import { SessionCache } from '../../src/session/cache.js';
 import { DEFAULT_CONFIG } from '../../src/config.js';
+import { ensureGraphBuilt } from '../../src/scout/cross-repo.js';
 import { ENV_PRESETS, mockRtkRewrite } from './scenarios.js';
 import { scoreResult, buildReport, parseResult, type EvalResult } from './score.js';
 
@@ -134,6 +135,82 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
         actual: { action: hasStats ? 'has_stats' : 'no_stats' },
         score: hasStats === expected ? 1.0 : 0.0,
         pass: hasStats === expected,
+      };
+    },
+  },
+  {
+    id: 'cross_repo_graph_exists',
+    description: 'ensureGraphBuilt returns alreadyBuilt when graph exists at target',
+    run: (envPreset) => {
+      const existsCheck = () => true;
+      const exec = () => '';
+      const result = ensureGraphBuilt('/home/user/external-project', envPreset.env, exec, existsCheck);
+      const expected = envPreset.env.graphifyAvailable;
+
+      return {
+        expected: { action: expected ? 'alreadyBuilt' : 'skip' },
+        actual: { action: result ? (result.alreadyBuilt ? 'alreadyBuilt' : 'built') : 'skip' },
+        score: (expected ? result !== null && result.alreadyBuilt : result === null) ? 1.0 : 0.0,
+        pass: (expected ? result !== null && result.alreadyBuilt : result === null),
+      };
+    },
+  },
+  {
+    id: 'cross_repo_graph_build',
+    description: 'ensureGraphBuilt triggers build for new directory',
+    run: (envPreset) => {
+      let buildCalled = false;
+      let callCount = 0;
+      const existsCheck = () => { callCount++; return callCount > 1; };
+      const exec = (cmd: string) => { if (cmd.includes('graphify update')) buildCalled = true; return ''; };
+      const result = ensureGraphBuilt('/home/user/new-project', envPreset.env, exec, existsCheck);
+
+      const expected = envPreset.env.graphifyAvailable;
+      return {
+        expected: { action: expected ? 'built' : 'skip' },
+        actual: {
+          action: result
+            ? (result.alreadyBuilt ? 'alreadyBuilt' : (buildCalled ? 'built' : 'no_build'))
+            : 'skip',
+        },
+        score: (expected ? result !== null && !result.alreadyBuilt && buildCalled : result === null) ? 1.0 : 0.0,
+        pass: (expected ? result !== null && !result.alreadyBuilt && buildCalled : result === null),
+      };
+    },
+  },
+  {
+    id: 'cross_repo_routing_unchanged',
+    description: 'tool routing unchanged after ensureGraphBuilt (graphify does not affect router)',
+    run: (envPreset) => {
+      // Run ensureGraphBuilt first (simulate scout workflow)
+      ensureGraphBuilt('/home/user/external-project', envPreset.env, () => '', () => true);
+
+      // Then check routing — should be unaffected
+      const cache = new SessionCache();
+      const config = structuredClone(DEFAULT_CONFIG);
+      cache.setEnvironment(envPreset.env);
+
+      const actual = handlePreToolUse(
+        'Bash',
+        { command: 'grep -r "pattern" src/' },
+        cache,
+        config,
+        undefined,
+        { execRewrite: mockRtkRewrite },
+      );
+      const parsed = parseResult(actual);
+
+      const rtkAvailable = envPreset.env.rtkAvailable;
+      const expected: { action: string; tool?: string } = rtkAvailable
+        ? { action: 'rewrite', tool: 'rtk grep' }
+        : { action: 'advise', tool: 'Grep' };
+
+      const score = scoreResult(expected as any, actual);
+      return {
+        expected,
+        actual: parsed.action === 'allow' ? null : { action: parsed.action, tool: parsed.tool },
+        score,
+        pass: score >= 0.5,
       };
     },
   },
