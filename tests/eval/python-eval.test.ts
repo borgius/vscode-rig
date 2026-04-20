@@ -15,6 +15,8 @@ const BASE_ENV = {
   jcodemunchCwdIndexed: false,
   jcodemunchCwdRepo: null,
   jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
   detectedAt: Date.now(),
 };
 

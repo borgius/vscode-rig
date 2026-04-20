@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   captureMetricsBaseline,
+  captureGraphifyStats,
   incrementMetric,
   formatSavingsReport,
 } from '../../src/session/metrics.js';
@@ -85,6 +86,16 @@ describe('incrementMetric', () => {
     const result = incrementMetric('Read', { file_path: '/package.json' });
     expect(result).toBeNull();
   });
+
+  it('detects graphify usage from MCP tool name', () => {
+    const result = incrementMetric('mcp__graphify__query_graph', { query: 'find cycles' });
+    expect(result).toBe('graphifyCalls');
+  });
+
+  it('detects graphify usage from any mcp__graphify__ prefix', () => {
+    const result = incrementMetric('mcp__graphify__get_stats', {});
+    expect(result).toBe('graphifyCalls');
+  });
 });
 
 describe('formatSavingsReport', () => {
@@ -129,5 +140,134 @@ describe('formatSavingsReport', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
     const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 }, null);
     expect(report).not.toContain('jcodemunch');
+  });
+
+  it('includes graphify stats line when stats are provided', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const graphifyStats = {
+      nodes: 450,
+      edges: 1200,
+      communities: 8,
+      extractedPct: 92,
+      inferredPct: 6,
+      ambiguousPct: 2,
+    };
+    const report = formatSavingsReport(
+      baseline,
+      1000,
+      { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 5 },
+      undefined,
+      graphifyStats,
+    );
+    expect(report).toContain('graphify:');
+    expect(report).toContain('450 nodes');
+    expect(report).toContain('1200 edges');
+    expect(report).toContain('8 communities');
+    expect(report).toContain('92% EXTRACTED');
+    expect(report).toContain('6% INFERRED');
+    expect(report).toContain('2% AMBIGUOUS');
+    expect(report).toContain('5 queries');
+  });
+
+  it('omits graphify line when stats are null', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const report = formatSavingsReport(
+      baseline,
+      1000,
+      { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+      undefined,
+      null,
+    );
+    expect(report).not.toContain('graphify');
+  });
+
+  it('omits graphify line when stats are undefined', () => {
+    const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
+    const report = formatSavingsReport(
+      baseline,
+      1000,
+      { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+    );
+    expect(report).not.toContain('graphify');
+  });
+});
+
+describe('captureGraphifyStats', () => {
+  it('returns null when graph.json not available (exec throws)', () => {
+    const exec = makeExec({
+      'cat "/project/graphify-out/graph.json"': new Error('no such file'),
+    });
+    const result = captureGraphifyStats('/project', exec);
+    expect(result).toBeNull();
+  });
+
+  it('parses valid graph.json into correct shape', () => {
+    const graphData = {
+      nodes: [
+        { id: 'n1', label: 'ModuleA', community: 1 },
+        { id: 'n2', label: 'ModuleB', community: 1 },
+        { id: 'n3', label: 'ModuleC', community: 2 },
+      ],
+      links: [
+        { source: 'n1', target: 'n2', relation: 'imports', confidence: 'EXTRACTED' },
+        { source: 'n1', target: 'n3', relation: 'calls', confidence: 'INFERRED' },
+        { source: 'n2', target: 'n3', relation: 'uses', confidence: 'AMBIGUOUS' },
+      ],
+    };
+    const exec = makeExec({
+      'cat "/project/graphify-out/graph.json"': JSON.stringify(graphData),
+    });
+    const result = captureGraphifyStats('/project', exec);
+    expect(result).toEqual({
+      nodes: 3,
+      edges: 3,
+      communities: 2,
+      extractedPct: 33,
+      inferredPct: 33,
+      ambiguousPct: 33,
+    });
+  });
+
+  it('handles malformed JSON gracefully (returns null)', () => {
+    const exec = makeExec({
+      'cat "/project/graphify-out/graph.json"': 'not valid json {{{',
+    });
+    const result = captureGraphifyStats('/project', exec);
+    expect(result).toBeNull();
+  });
+
+  it('handles empty graph (zero nodes and edges)', () => {
+    const graphData = { nodes: [], links: [] };
+    const exec = makeExec({
+      'cat "/project/graphify-out/graph.json"': JSON.stringify(graphData),
+    });
+    const result = captureGraphifyStats('/project', exec);
+    expect(result).toEqual({
+      nodes: 0,
+      edges: 0,
+      communities: 0,
+      extractedPct: 0,
+      inferredPct: 0,
+      ambiguousPct: 0,
+    });
+  });
+
+  it('treats links without confidence as EXTRACTED', () => {
+    const graphData = {
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      links: [{ source: 'n1', target: 'n2' }],
+    };
+    const exec = makeExec({
+      'cat "/project/graphify-out/graph.json"': JSON.stringify(graphData),
+    });
+    const result = captureGraphifyStats('/project', exec);
+    expect(result).toEqual({
+      nodes: 2,
+      edges: 1,
+      communities: 0,
+      extractedPct: 100,
+      inferredPct: 0,
+      ambiguousPct: 0,
+    });
   });
 });

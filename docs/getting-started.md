@@ -18,6 +18,10 @@ Strongly recommended:
 - [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code
   search MCP server. Powers the scout agent for cross-repo indexing and
   serves as the tool router's fallback for `grep`/`find`/`cat` redirection.
+- [graphify](https://github.com/safishamsi/graphify) -- knowledge graph builder.
+  Powers the scout agent's relationship traversal (communities, dependency paths,
+  god nodes) alongside jcodemunch's symbol search. Graphify rebuilds via its own
+  git hooks; rig detects the existing graph.
 
 ## Install and initialize
 
@@ -139,9 +143,10 @@ Each check returns a violation message or null. All violations are combined as a
 
 When a Claude Code session starts, the session-start hook:
 
-1. Detects available tools (rtk, jcodemunch)
+1. Detects available tools (rtk, jcodemunch, graphify)
 2. Auto-indexes the project via jcodemunch if not already indexed
-3. Caches results for the session (30-min TTL)
+3. Captures graphify graph stats (nodes, edges, communities) when available
+4. Caches results for the session (30-min TTL)
 
 ## Re-initialize
 

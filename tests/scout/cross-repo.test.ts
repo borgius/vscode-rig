@@ -21,6 +21,8 @@ describe('ensureIndexed', () => {
       jcodemunchCwdIndexed: true,
       jcodemunchCwdRepo: 'local/my-project',
       jcodemunchKnownRepos: ['local/my-project', 'local/superpowers'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
       detectedAt: Date.now(),
     };
 
@@ -45,6 +47,8 @@ describe('ensureIndexed', () => {
       jcodemunchCwdIndexed: false,
       jcodemunchCwdRepo: null,
       jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
       detectedAt: Date.now(),
     };
 
@@ -65,6 +69,8 @@ describe('ensureIndexed', () => {
       jcodemunchCwdIndexed: false,
       jcodemunchCwdRepo: null,
       jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
       detectedAt: Date.now(),
     };
 
@@ -87,6 +93,8 @@ describe('ensureIndexed', () => {
       jcodemunchCwdIndexed: false,
       jcodemunchCwdRepo: null,
       jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
       detectedAt: Date.now(),
     };
 
@@ -102,6 +110,8 @@ describe('ensureIndexed', () => {
       jcodemunchCwdIndexed: false,
       jcodemunchCwdRepo: null,
       jcodemunchKnownRepos: ['local/superpowers', 'local/gstack'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
       detectedAt: Date.now(),
     };
 

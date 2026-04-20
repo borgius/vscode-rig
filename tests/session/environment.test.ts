@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectEnvironment } from '../../src/session/environment.js';
+import { detectEnvironment, detectGraphify } from '../../src/session/environment.js';
 import type { ExecFn } from '../../src/session/environment.js';
 
 function makeExec(responses: Record<string, string | Error>): ExecFn {
@@ -192,5 +192,56 @@ describe('detectEnvironment', () => {
     expect(env.jcodemunchCwdRepo).toBeNull();
     expect(env.jcodemunchKnownRepos).toEqual([]);
     expect(typeof env.detectedAt).toBe('number');
+  });
+});
+
+describe('detectGraphify', () => {
+  it('returns available true with graphPath when graphify CLI and graph.json exist', () => {
+    const exec = makeExec({
+      'which graphify': '/usr/local/bin/graphify',
+    });
+    const existsCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json';
+
+    const result = detectGraphify('/fake/cwd', exec, existsCheck);
+    expect(result.available).toBe(true);
+    expect(result.graphPath).toBe('graphify-out/graph.json');
+  });
+
+  it('returns available false when which graphify fails', () => {
+    const exec = makeExec({
+      'which graphify': new Error('not found'),
+    });
+    const existsCheck = (_path: string) => true;
+
+    const result = detectGraphify('/fake/cwd', exec, existsCheck);
+    expect(result.available).toBe(false);
+    expect(result.graphPath).toBeNull();
+  });
+
+  it('returns available false when CLI exists but graph.json does not', () => {
+    const exec = makeExec({
+      'which graphify': '/usr/local/bin/graphify',
+    });
+    const existsCheck = (_path: string) => false;
+
+    const result = detectGraphify('/fake/cwd', exec, existsCheck);
+    expect(result.available).toBe(false);
+    expect(result.graphPath).toBeNull();
+  });
+
+  it('is wired into detectEnvironment result', async () => {
+    const exec = makeExec({
+      'which rtk': new Error('not found'),
+      'which jcodemunch': new Error('not found'),
+      'which jcodemunch-mcp': new Error('not found'),
+      'which graphify': '/usr/local/bin/graphify',
+    });
+    const existsCheck = (path: string) =>
+      path === '/project/graphify-out/graph.json';
+
+    const env = await detectEnvironment('/project', exec, existsCheck);
+    expect(env.graphifyAvailable).toBe(true);
+    expect(env.graphifyGraphPath).toBe('graphify-out/graph.json');
   });
 });

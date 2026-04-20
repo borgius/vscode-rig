@@ -56,6 +56,8 @@ function defaultEnv() {
     jcodemunchCwdIndexed: false,
     jcodemunchCwdRepo: null,
     jcodemunchKnownRepos: [] as string[],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 }

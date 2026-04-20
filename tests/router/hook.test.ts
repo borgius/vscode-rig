@@ -12,6 +12,8 @@ function makeEnv(overrides: Partial<Environment> = {}): Environment {
     jcodemunchCwdIndexed: false,
     jcodemunchCwdRepo: null,
     jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
     ...overrides,
   };

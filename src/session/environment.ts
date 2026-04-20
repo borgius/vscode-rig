@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
+import { existsSync } from 'node:fs';
 import type { Environment } from '../types.js';
 
 export interface ExecFn {
@@ -12,9 +13,11 @@ const defaultExec: ExecFn = (cmd, opts) =>
 export async function detectEnvironment(
   cwd: string,
   exec: ExecFn = defaultExec,
+  existsCheck: (path: string) => boolean = existsSync,
 ): Promise<Environment> {
   const rtkResult = detectRtk(exec);
   const jmResult = detectJcodemunch(cwd, exec);
+  const graphifyResult = detectGraphify(cwd, exec, existsCheck);
 
   return {
     rtkAvailable: rtkResult.available,
@@ -23,6 +26,8 @@ export async function detectEnvironment(
     jcodemunchCwdIndexed: jmResult.cwdIndexed,
     jcodemunchCwdRepo: jmResult.cwdRepo,
     jcodemunchKnownRepos: jmResult.knownRepos,
+    graphifyAvailable: graphifyResult.available,
+    graphifyGraphPath: graphifyResult.graphPath,
     detectedAt: Date.now(),
   };
 }
@@ -34,6 +39,25 @@ function detectRtk(exec: ExecFn): { available: boolean; path: string | null } {
   } catch {
     return { available: false, path: null };
   }
+}
+
+export function detectGraphify(
+  cwd: string,
+  exec: ExecFn,
+  existsCheck: (path: string) => boolean = existsSync,
+): { available: boolean; graphPath: string | null } {
+  try {
+    exec('which graphify');
+  } catch {
+    return { available: false, graphPath: null };
+  }
+
+  const graphPath = join(cwd, 'graphify-out', 'graph.json');
+  if (existsCheck(graphPath)) {
+    return { available: true, graphPath: 'graphify-out/graph.json' };
+  }
+
+  return { available: false, graphPath: null };
 }
 
 function detectJcodemunch(cwd: string, exec: ExecFn): {

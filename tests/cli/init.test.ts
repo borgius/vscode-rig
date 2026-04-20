@@ -528,6 +528,17 @@ console.log('stale old hook');
       expect(settings.permissions.allow).toContain('mcp__jcodemunch__*');
     });
 
+    it('adds graphify MCP permission', async () => {
+      const claudeDir = join(tempDir, '.claude');
+      mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
+      const exec: ExecFn = () => { throw new Error('not found'); };
+      await initCommand(tempDir, { force: false, exec });
+
+      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      expect(settings.permissions.allow).toContain('mcp__graphify__*');
+    });
+
     it('adds secret file deny list', async () => {
       const claudeDir = join(tempDir, '.claude');
       mkdirSync(claudeDir, { recursive: true });

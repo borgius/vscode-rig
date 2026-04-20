@@ -5,6 +5,7 @@ import {
   isResolutionBlock,
   isToolRule,
   isEnvironment,
+  isGraphContext,
 } from '../src/types.js';
 
 describe('type guards', () => {
@@ -73,6 +74,58 @@ describe('type guards', () => {
 
     it('returns false when missing required fields', () => {
       expect(isEnvironment({ rtkAvailable: true })).toBe(false);
+    });
+
+    it('accepts environment with graphify fields', () => {
+      expect(isEnvironment({
+        rtkAvailable: true,
+        rtkPath: '/usr/local/bin/rtk',
+        jcodemunchAvailable: true,
+        jcodemunchCwdIndexed: true,
+        jcodemunchCwdRepo: 'local/my-project',
+        jcodemunchKnownRepos: ['local/my-project'],
+        detectedAt: Date.now(),
+        graphifyAvailable: true,
+        graphifyGraphPath: 'graphify-out/graph.json',
+      })).toBe(true);
+    });
+
+    it('accepts environment without graphify fields (backward compat)', () => {
+      expect(isEnvironment({
+        rtkAvailable: false,
+        rtkPath: null,
+        jcodemunchAvailable: false,
+        jcodemunchCwdIndexed: false,
+        jcodemunchCwdRepo: null,
+        jcodemunchKnownRepos: [],
+        detectedAt: Date.now(),
+      })).toBe(true);
+    });
+  });
+
+  describe('isGraphContext', () => {
+    it('returns true for valid GraphContext', () => {
+      expect(isGraphContext({
+        godNodes: [{ label: 'handleAuth', degree: 12 }],
+        communities: [{ id: 0, label: 'auth', nodeCount: 8 }],
+        stats: { nodes: 450, edges: 1200, communities: 8 },
+      })).toBe(true);
+    });
+
+    it('returns false for empty object', () => {
+      expect(isGraphContext({})).toBe(false);
+    });
+
+    it('returns false for non-object', () => {
+      expect(isGraphContext(null)).toBe(false);
+      expect(isGraphContext('graph')).toBe(false);
+    });
+
+    it('returns false when missing stats', () => {
+      expect(isGraphContext({
+        godNodes: [],
+        communities: [],
+      })).toBe(false);
     });
   });
 });
