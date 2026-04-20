@@ -340,3 +340,10 @@ Key design decisions:
 - No mode-aware enforcement (same thresholds regardless of workflow phase)
 - No multi-agent specialist review pattern (single review+ pass)
 - No REPO_MODE awareness (solo vs collaborative)
+- jcodemunch silently caps indexing at 2000 files per folder (`max_folder_files`
+  in `~/.code-index/config.jsonc`). Session-start emits a `[WARNING]` when files
+  are skipped, but search quality may be degraded for large projects until the
+  limit is increased.
+- graphify build fails on very large C codebases (6000+ files) due to Python
+  AST recursion limits. The scout agent falls back to jcodemunch-only analysis
+  and reports the failure.
