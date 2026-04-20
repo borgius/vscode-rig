@@ -96,10 +96,10 @@ export function handlePreToolUse(
       const prefix = enforcement === 'block' ? '[BLOCK]' : '[ADVISE]';
       return [
         `${prefix} Tool Router: scout_explore detected`,
-        `advise: use scout — Use Agent with subagent_type: "scout" instead of Explore. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens).`,
+        `advise: use scout — You MUST use Agent with subagent_type: "scout" instead of Explore when examining codebases. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens).`,
         enforcement === 'block'
           ? 'This operation is blocked by .harness.yaml. Use the recommended tool instead.'
-          : 'Consider using the recommended tool for better efficiency.',
+          : 'Do not dismiss this advisory. Switch to subagent_type: "scout" now.',
       ].join('\n');
     }
     // jcodemunch not available — fall through to file_discovery

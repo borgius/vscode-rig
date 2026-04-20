@@ -466,6 +466,67 @@ describe('handleSessionStart', () => {
     });
   });
 
+  describe('baseline preservation', () => {
+    it('preserves existing baseline when recapture yields zero', async () => {
+      // Pre-populate cache with a valid baseline
+      cache.setMetricsBaseline({ totalSaved: 5000000, capturedAt: Date.now() - 1000 });
+
+      // Simulate rtk being temporarily unavailable on restart
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        if (cmd === 'rtk gain --format json') throw new Error('not found');
+        return '';
+      });
+
+      await handleSessionStart('/home/user/test-project', cache);
+      const baseline = cache.getMetricsBaseline();
+      expect(baseline).toBeDefined();
+      expect(baseline!.totalSaved).toBe(5000000);
+    });
+
+    it('preserves existing graphify stats when recapture yields zero baseline', async () => {
+      // Pre-populate cache with baseline including graphify stats
+      cache.setMetricsBaseline({
+        totalSaved: 5000000,
+        capturedAt: Date.now() - 1000,
+        graphifyStats: { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 },
+      });
+
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        if (cmd === 'rtk gain --format json') throw new Error('not found');
+        return '';
+      });
+
+      await handleSessionStart('/home/user/test-project', cache);
+      const baseline = cache.getMetricsBaseline();
+      expect(baseline?.graphifyStats).toBeDefined();
+      expect(baseline!.graphifyStats!.nodes).toBe(100);
+    });
+
+    it('uses new baseline when recapture succeeds', async () => {
+      cache.setMetricsBaseline({ totalSaved: 5000000, capturedAt: Date.now() - 1000 });
+
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/bin/rtk';
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        if (cmd === 'rtk gain --format json') return JSON.stringify({ summary: { total_saved: 6000000 } });
+        return '';
+      });
+
+      await handleSessionStart('/home/user/test-project', cache);
+      const baseline = cache.getMetricsBaseline();
+      expect(baseline!.totalSaved).toBe(6000000);
+    });
+  });
+
   describe('jcodemunch file cap warning', () => {
     it('warns when auto-index hits file limit', async () => {
       vi.mocked(execSync).mockImplementation((cmd: string) => {

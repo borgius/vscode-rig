@@ -29,6 +29,12 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   if (env.graphifyAvailable) {
     baseline.graphifyStats = captureGraphifyStats(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
   }
+  // Preserve existing baseline if recapture yields zero (e.g. rtk temporarily unavailable)
+  const existingBaseline = cache.getMetricsBaseline();
+  if (existingBaseline && existingBaseline.totalSaved > 0 && baseline.totalSaved === 0) {
+    baseline.totalSaved = existingBaseline.totalSaved;
+    baseline.graphifyStats = baseline.graphifyStats ?? existingBaseline.graphifyStats;
+  }
   cache.setMetricsBaseline(baseline);
 
   // Capture changed files for failure classification
@@ -88,9 +94,10 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  - mcp__jcodemunch__search_text instead of grep/rg');
     lines.push('  - mcp__jcodemunch__get_file_tree instead of find/fd');
     lines.push('  - mcp__jcodemunch__get_file_outline instead of cat/head on code files');
-    lines.push('[rig] For codebase exploration, prefer the scout agent over Explore:');
+    lines.push('[rig] For codebase exploration, you MUST use the scout agent instead of Explore:');
     lines.push('  Use Agent(subagent_type: "scout") instead of Explore for 80%+ token savings');
     lines.push('  Scout uses jcodemunch and graphify MCP tools; Explore uses raw find/grep/cat');
+    lines.push('  Do NOT dismiss this advisory — always use scout for codebase exploration tasks');
   }
 
   if (env.graphifyAvailable) {

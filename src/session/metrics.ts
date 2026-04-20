@@ -89,21 +89,33 @@ export interface JcodemunchSessionStats {
 }
 
 export function formatSavingsReport(
-  baseline: MetricsBaseline,
+  baseline: MetricsBaseline | null | undefined,
   currentSaved: number,
   counters: { rtkCalls: number; jmCalls: number; efficientCalls: number; graphifyCalls: number },
   jmStats?: JcodemunchSessionStats | null,
   graphifyStats?: MetricsBaseline['graphifyStats'],
 ): string {
-  const delta = currentSaved - baseline.totalSaved;
-  const lines: string[] = ['[rig] Session Savings'];
+  const hasBaseline = baseline != null && baseline.totalSaved > 0;
+  const lines: string[] = [];
 
-  if (delta > 0 || counters.rtkCalls > 0) {
-    const deltaStr = formatTokens(delta);
-    const totalStr = formatTokens(currentSaved);
-    lines.push(`  rtk: ${totalStr} saved (${counters.rtkCalls} calls, +${deltaStr} this session)`);
+  if (hasBaseline) {
+    lines.push('[rig] Session Savings');
+    const delta = currentSaved - baseline.totalSaved;
+    if (delta > 0 || counters.rtkCalls > 0) {
+      const deltaStr = formatTokens(delta);
+      const totalStr = formatTokens(currentSaved);
+      lines.push(`  rtk: ${totalStr} saved (${counters.rtkCalls} calls, +${deltaStr} this session)`);
+    } else {
+      lines.push(`  rtk: no token savings this session`);
+    }
   } else {
-    lines.push(`  rtk: no token savings this session`);
+    lines.push('[rig] Session Savings (all-time)');
+    if (currentSaved > 0) {
+      const totalStr = formatTokens(currentSaved);
+      lines.push(`  rtk: ${totalStr} saved (${counters.rtkCalls} calls, all-time)`);
+    } else {
+      lines.push(`  rtk: no data`);
+    }
   }
 
   if (jmStats && jmStats.session_calls > 0) {
@@ -111,6 +123,9 @@ export function formatSavingsReport(
     const totalStr = jmStats.total_tokens_saved ? formatTokens(jmStats.total_tokens_saved) : '';
     const totalSuffix = totalStr ? `, ${totalStr} total all-time` : '';
     lines.push(`  jcodemunch: ${saved} saved (${jmStats.session_calls} queries${totalSuffix})`);
+  } else if (jmStats && jmStats.total_tokens_saved && jmStats.total_tokens_saved > 0) {
+    const totalStr = formatTokens(jmStats.total_tokens_saved);
+    lines.push(`  jcodemunch: ${totalStr} saved all-time (no queries this session)`);
   } else if (jmStats) {
     lines.push(`  jcodemunch: available (no queries this session)`);
   }

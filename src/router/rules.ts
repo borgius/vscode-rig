@@ -91,7 +91,7 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       },
       intent: 'scout_explore',
       resolutions: {
-        jcodemunch: { action: 'advise', tool: 'scout', reason: 'Use Agent with subagent_type: "scout" instead of Explore. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens)' },
+        jcodemunch: { action: 'advise', tool: 'scout', reason: 'You MUST use Agent with subagent_type: "scout" instead of Explore when examining codebases. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens)' },
         fallback: { action: 'allow' },
       },
       enforcement: 'advise',

@@ -43,12 +43,18 @@ With session data (baseline + delta available):
   graphify: N nodes, M edges, K communities (X% EXTRACTED, X% INFERRED, X% AMBIGUOUS)
 ```
 
-Without session data (no cache file found):
+Without session data (no cache file or baseline is null):
 
 ```
 [rig] Session Savings (all-time)
   rtk: X.XM saved (N commands, XX.X% avg savings)
+  jcodemunch: XM saved all-time (N queries)
+  graphify: N nodes, M edges, K communities (X% EXTRACTED, X% INFERRED, X% AMBIGUOUS)
 ```
+
+When baseline is missing, still call `mcp__jcodemunch__get_session_stats` for all-time
+totals and `mcp__graphify__graph_stats` for live graph stats. Only skip a line if the
+tool is genuinely unavailable.
 
 If rtk is not installed:
 

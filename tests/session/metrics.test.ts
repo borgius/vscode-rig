@@ -190,6 +190,98 @@ describe('formatSavingsReport', () => {
     );
     expect(report).not.toContain('graphify');
   });
+
+  it('falls back to all-time format when baseline is null', () => {
+    const report = formatSavingsReport(
+      null,
+      5955925,
+      { rtkCalls: 13, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+    );
+    expect(report).toContain('[rig] Session Savings (all-time)');
+    expect(report).toContain('rtk:');
+    expect(report).toContain('6.0M saved');
+    expect(report).toContain('all-time');
+  });
+
+  it('falls back to all-time format when baseline is undefined', () => {
+    const report = formatSavingsReport(
+      undefined,
+      5955925,
+      { rtkCalls: 13, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+    );
+    expect(report).toContain('[rig] Session Savings (all-time)');
+    expect(report).toContain('rtk:');
+  });
+
+  it('shows jcodemunch all-time stats when baseline is null and no session calls', () => {
+    const jmStats = { session_tokens_saved: 0, session_calls: 0, total_tokens_saved: 181819680 };
+    const report = formatSavingsReport(
+      null,
+      5955925,
+      { rtkCalls: 13, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+      jmStats,
+    );
+    expect(report).toContain('jcodemunch:');
+    expect(report).toContain('181.8M saved all-time');
+    expect(report).toContain('no queries this session');
+  });
+
+  it('shows graphify stats in all-time format', () => {
+    const graphifyStats = {
+      nodes: 261,
+      edges: 460,
+      communities: 21,
+      extractedPct: 90,
+      inferredPct: 10,
+      ambiguousPct: 0,
+    };
+    const report = formatSavingsReport(
+      null,
+      5955925,
+      { rtkCalls: 13, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+      undefined,
+      graphifyStats,
+    );
+    expect(report).toContain('graphify:');
+    expect(report).toContain('261 nodes');
+    expect(report).toContain('460 edges');
+    expect(report).toContain('21 communities');
+    expect(report).toContain('90% EXTRACTED');
+  });
+
+  it('shows all tools in all-time format', () => {
+    const jmStats = { session_tokens_saved: 0, session_calls: 0, total_tokens_saved: 50000000 };
+    const graphifyStats = {
+      nodes: 100,
+      edges: 200,
+      communities: 5,
+      extractedPct: 80,
+      inferredPct: 20,
+      ambiguousPct: 0,
+    };
+    const report = formatSavingsReport(
+      null,
+      5955925,
+      { rtkCalls: 13, jmCalls: 0, efficientCalls: 14, graphifyCalls: 3 },
+      jmStats,
+      graphifyStats,
+    );
+    expect(report).toContain('[rig] Session Savings (all-time)');
+    expect(report).toContain('rtk:');
+    expect(report).toContain('jcodemunch:');
+    expect(report).toContain('graphify:');
+    expect(report).toContain('efficient tools:');
+  });
+
+  it('handles null baseline with zero rtk savings', () => {
+    const report = formatSavingsReport(
+      null,
+      0,
+      { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 },
+    );
+    expect(report).toContain('[rig] Session Savings (all-time)');
+    expect(report).toContain('rtk: no data');
+  });
 });
 
 describe('captureGraphifyStats', () => {
