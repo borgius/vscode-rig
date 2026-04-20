@@ -267,6 +267,7 @@ structure.
 
 **Graph MCP tools** — session-start emits available graphify MCP tools for the
 agent to use directly:
+
 - `mcp__graphify__query_graph` — relationship queries between symbols
 - `mcp__graphify__god_nodes` — core abstractions ranked by connection density
 - `mcp__graphify__get_community` — module clustering for a specific community

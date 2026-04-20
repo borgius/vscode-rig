@@ -11,7 +11,9 @@ Rig installs guardrails into a Claude Code project:
   advises on native Read/Grep/Glob when jcodemunch is indexed; blocks `sed -i` and `rtk cat` on code files
 - **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (real dependencies in stack/E2E tests), and zero-defect status (with pre-existing failure classification)
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
-- **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection, enriched with graphify relationship data (god nodes, module communities, dependency paths) when available
+- **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap`
+  for context injection, enriched with graphify relationship data (god nodes,
+  module communities, dependency paths) when available
 
 Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patterns) L2-L4 patterns.
 
@@ -22,7 +24,10 @@ Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patte
 - [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
 - [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
 - [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server (strongly recommended; powers the scout agent and tool router fallback)
-- [graphify](https://github.com/safishamsi/graphify) -- knowledge graph builder (recommended; auto-builds graphs at session start and provides god nodes, module communities, and dependency path queries that complement jcodemunch's symbol search)
+- [graphify](https://github.com/safishamsi/graphify) -- knowledge graph builder
+  (recommended; auto-builds graphs at session start and provides god nodes,
+  module communities, and dependency path queries that complement jcodemunch's
+  symbol search)
 
 ## Quick start
 
