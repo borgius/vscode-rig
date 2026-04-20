@@ -39,8 +39,10 @@
       "mcp__jcodemunch__*",
       "Bash(rtk:*)",
       "mcp__graphify__*",
-      "Bash(npx vitest *)",
-      "Bash(npx tsc *)"
+      "Bash(npx *)",
+      "Bash(cat /tmp/rig-session-*)",
+      "Read(/tmp/rig-session-*)",
+      "Bash(npx:*)"
     ],
     "deny": [
       "Read(**/secrets/**)",
