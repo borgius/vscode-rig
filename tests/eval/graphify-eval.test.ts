@@ -140,7 +140,7 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
   },
   {
     id: 'cross_repo_graph_exists',
-    description: 'ensureGraphBuilt returns alreadyBuilt when graph exists at target',
+    description: 'ensureGraphBuilt returns status ready when graph exists at target',
     run: (envPreset) => {
       const existsCheck = () => true;
       const exec = () => '';
@@ -148,10 +148,10 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
       const expected = envPreset.env.graphifyAvailable;
 
       return {
-        expected: { action: expected ? 'alreadyBuilt' : 'skip' },
-        actual: { action: result ? (result.alreadyBuilt ? 'alreadyBuilt' : 'built') : 'skip' },
-        score: (expected ? result !== null && result.alreadyBuilt : result === null) ? 1.0 : 0.0,
-        pass: (expected ? result !== null && result.alreadyBuilt : result === null),
+        expected: { action: expected ? 'ready' : 'skip' },
+        actual: { action: result ? result.status : 'skip' },
+        score: (expected ? result !== null && result.status === 'ready' : result === null) ? 1.0 : 0.0,
+        pass: (expected ? result !== null && result.status === 'ready' : result === null),
       };
     },
   },
@@ -170,11 +170,11 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
         expected: { action: expected ? 'built' : 'skip' },
         actual: {
           action: result
-            ? (result.alreadyBuilt ? 'alreadyBuilt' : (buildCalled ? 'built' : 'no_build'))
+            ? (result.status === 'ready' && buildCalled ? 'built' : result.status)
             : 'skip',
         },
-        score: (expected ? result !== null && !result.alreadyBuilt && buildCalled : result === null) ? 1.0 : 0.0,
-        pass: (expected ? result !== null && !result.alreadyBuilt && buildCalled : result === null),
+        score: (expected ? result !== null && result.status === 'ready' && buildCalled : result === null) ? 1.0 : 0.0,
+        pass: (expected ? result !== null && result.status === 'ready' && buildCalled : result === null),
       };
     },
   },

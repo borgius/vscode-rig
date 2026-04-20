@@ -6,6 +6,7 @@ import type { Environment } from '../types.js';
 interface IndexResult {
   alreadyIndexed: boolean;
   repo: string;
+  fileCapHit?: { indexed: number; total: number };
 }
 
 /**
@@ -30,7 +31,12 @@ export function ensureIndexed(directory: string, env: Environment): IndexResult 
     ).trim();
     const parsed = JSON.parse(raw);
     if (parsed.success) {
-      return { alreadyIndexed: false, repo: parsed.repo };
+      const result: IndexResult = { alreadyIndexed: false, repo: parsed.repo };
+      const skipped = parsed.discovery_skip_counts?.file_limit ?? 0;
+      if (skipped > 0 && parsed.file_count) {
+        result.fileCapHit = { indexed: parsed.file_count, total: parsed.file_count + skipped };
+      }
+      return result;
     }
     return null;
   } catch {
@@ -39,14 +45,14 @@ export function ensureIndexed(directory: string, env: Environment): IndexResult 
 }
 
 interface GraphBuildResult {
-  alreadyBuilt: boolean;
-  graphPath: string;
+  status: 'ready' | 'build_failed';
+  graphPath?: string;
 }
 
 /**
  * Ensure a directory has a graphify knowledge graph built.
  * Checks for existing graph.json; runs `graphify update` if missing.
- * Returns result if graph is available, or null if graphify is not installed or build fails.
+ * Returns result with status, or null if graphify is not installed.
  */
 export function ensureGraphBuilt(
   directory: string,
@@ -58,18 +64,18 @@ export function ensureGraphBuilt(
 
   const graphJsonPath = join(directory, 'graphify-out', 'graph.json');
   if (existsCheck(graphJsonPath)) {
-    return { alreadyBuilt: true, graphPath: 'graphify-out/graph.json' };
+    return { status: 'ready', graphPath: 'graphify-out/graph.json' };
   }
 
   try {
     exec(`graphify update "${directory}"`, { encoding: 'utf-8', timeout: 120_000 });
   } catch {
-    return null;
+    return { status: 'build_failed' };
   }
 
   if (existsCheck(graphJsonPath)) {
-    return { alreadyBuilt: false, graphPath: 'graphify-out/graph.json' };
+    return { status: 'ready', graphPath: 'graphify-out/graph.json' };
   }
 
-  return null;
+  return { status: 'build_failed' };
 }

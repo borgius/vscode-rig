@@ -120,6 +120,66 @@ describe('ensureIndexed', () => {
     expect(result.alreadyIndexed).toBe(true);
     expect(result.repo).toBe('local/superpowers');
   });
+
+  it('returns fileCapHit when files were skipped due to limit', () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd.includes('index_folder')) {
+        return JSON.stringify({
+          success: true,
+          repo: 'local/big-project',
+          file_count: 2000,
+          discovery_skip_counts: { file_limit: 4032 },
+        });
+      }
+      return '';
+    });
+
+    const env: Environment = {
+      rtkAvailable: false,
+      rtkPath: null,
+      jcodemunchAvailable: true,
+      jcodemunchCwdIndexed: false,
+      jcodemunchCwdRepo: null,
+      jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
+      detectedAt: Date.now(),
+    };
+
+    const result = ensureIndexed('/home/user/big-project', env);
+    expect(result.fileCapHit).toBeDefined();
+    expect(result.fileCapHit!.indexed).toBe(2000);
+    expect(result.fileCapHit!.total).toBe(6032);
+  });
+
+  it('omits fileCapHit when no files were skipped', () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd.includes('index_folder')) {
+        return JSON.stringify({
+          success: true,
+          repo: 'local/small-project',
+          file_count: 50,
+          discovery_skip_counts: { file_limit: 0 },
+        });
+      }
+      return '';
+    });
+
+    const env: Environment = {
+      rtkAvailable: false,
+      rtkPath: null,
+      jcodemunchAvailable: true,
+      jcodemunchCwdIndexed: false,
+      jcodemunchCwdRepo: null,
+      jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
+      detectedAt: Date.now(),
+    };
+
+    const result = ensureIndexed('/home/user/small-project', env);
+    expect(result.fileCapHit).toBeUndefined();
+  });
 });
 
 describe('ensureGraphBuilt', () => {
@@ -151,19 +211,17 @@ describe('ensureGraphBuilt', () => {
     vi.resetAllMocks();
   });
 
-  it('returns alreadyBuilt when graph.json exists at target', () => {
+  it('returns status ready when graph.json exists at target', () => {
     const existsCheck = (p: string) => p.includes('graphify-out/graph.json');
     const result = ensureGraphBuilt('/home/user/my-project', graphifyEnv, execSync as any, existsCheck);
     expect(result).not.toBeNull();
-    expect(result!.alreadyBuilt).toBe(true);
+    expect(result!.status).toBe('ready');
     expect(result!.graphPath).toBe('graphify-out/graph.json');
   });
 
-  it('builds graph and returns result when graph.json does not exist', () => {
+  it('builds graph and returns status ready when graph.json does not exist', () => {
     let callCount = 0;
     const existsCheck = (p: string) => {
-      // First check: graph doesn't exist yet
-      // After build: graph exists
       callCount++;
       return callCount > 1;
     };
@@ -174,7 +232,7 @@ describe('ensureGraphBuilt', () => {
 
     const result = ensureGraphBuilt('/home/user/new-project', graphifyEnv, execSync as any, existsCheck);
     expect(result).not.toBeNull();
-    expect(result!.alreadyBuilt).toBe(false);
+    expect(result!.status).toBe('ready');
     expect(result!.graphPath).toBe('graphify-out/graph.json');
     expect(execSync).toHaveBeenCalledWith(
       expect.stringContaining('graphify update'),
@@ -187,18 +245,20 @@ describe('ensureGraphBuilt', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null when build fails', () => {
+  it('returns status build_failed when exec throws', () => {
     const existsCheck = () => false;
     vi.mocked(execSync).mockImplementation((cmd: string) => {
-      if (cmd.includes('graphify update')) throw new Error('build failed');
+      if (cmd.includes('graphify update')) throw new Error('recursion depth exceeded');
       return '';
     });
 
     const result = ensureGraphBuilt('/home/user/broken-project', graphifyEnv, execSync as any, existsCheck);
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result!.status).toBe('build_failed');
+    expect(result!.graphPath).toBeUndefined();
   });
 
-  it('returns null when build succeeds but graph.json still missing', () => {
+  it('returns status build_failed when build succeeds but graph.json still missing', () => {
     const existsCheck = () => false;
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd.includes('graphify update')) return '';
@@ -206,6 +266,8 @@ describe('ensureGraphBuilt', () => {
     });
 
     const result = ensureGraphBuilt('/home/user/empty-project', graphifyEnv, execSync as any, existsCheck);
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result!.status).toBe('build_failed');
+    expect(result!.graphPath).toBeUndefined();
   });
 });
