@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
-import { basename } from 'node:path';
+import { basename, join } from 'node:path';
+import { existsSync } from 'node:fs';
 import type { Environment } from '../types.js';
 
 interface IndexResult {
@@ -35,4 +36,40 @@ export function ensureIndexed(directory: string, env: Environment): IndexResult 
   } catch {
     return null;
   }
+}
+
+interface GraphBuildResult {
+  alreadyBuilt: boolean;
+  graphPath: string;
+}
+
+/**
+ * Ensure a directory has a graphify knowledge graph built.
+ * Checks for existing graph.json; runs `graphify update` if missing.
+ * Returns result if graph is available, or null if graphify is not installed or build fails.
+ */
+export function ensureGraphBuilt(
+  directory: string,
+  env: Environment,
+  exec: (cmd: string, opts?: { encoding?: string; timeout?: number }) => string,
+  existsCheck: (path: string) => boolean = existsSync,
+): GraphBuildResult | null {
+  if (!env.graphifyAvailable) return null;
+
+  const graphJsonPath = join(directory, 'graphify-out', 'graph.json');
+  if (existsCheck(graphJsonPath)) {
+    return { alreadyBuilt: true, graphPath: 'graphify-out/graph.json' };
+  }
+
+  try {
+    exec(`graphify update "${directory}"`, { encoding: 'utf-8', timeout: 120_000 });
+  } catch {
+    return null;
+  }
+
+  if (existsCheck(graphJsonPath)) {
+    return { alreadyBuilt: false, graphPath: 'graphify-out/graph.json' };
+  }
+
+  return null;
 }
