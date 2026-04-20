@@ -22,10 +22,14 @@ Strongly recommended:
   larger projects, increase `max_folder_files` in `~/.code-index/config.jsonc`.
   Rig emits a `[WARNING]` at session start when files are skipped.
 - [graphify](https://github.com/safishamsi/graphify) -- knowledge graph builder.
-  Powers the scout agent's relationship traversal (communities, dependency paths,
-  god nodes) alongside jcodemunch's symbol search. Graphify rebuilds via its own
-  git hooks; rig detects the existing graph. Note: graphify may fail on very
-  large codebases (6000+ files) due to Python AST recursion limits.
+  Powers the scout agent's relationship traversal alongside jcodemunch's symbol
+  search. When installed, rig auto-builds graphs at session start and provides
+  god nodes (core abstractions ranked by connection density), module communities
+  (clustered subsystems), and dependency path queries via MCP tools. Graphify
+  rebuilds via its own git hooks; rig detects the existing graph and auto-builds
+  on first use if needed. Note: graphify may fail on very large codebases
+  (6000+ files) due to Python AST recursion limits during tree-sitter traversal.
+  The scout agent falls back to jcodemunch-only analysis in this case.
 
 ## Install and initialize
 

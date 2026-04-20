@@ -250,6 +250,40 @@ Formatted as structured context for the agent
 **Graphify** provides relationship traversal (communities, dependency paths, god nodes).
 They're complementary — jcodemunch answers "what exists?" and graphify answers "how do things connect?".
 
+### Graphify integration
+
+When graphify is installed, the scout agent and session-start hook gain three
+additional capabilities:
+
+**God nodes** — high-degree nodes in the knowledge graph, representing core
+abstractions that many other modules depend on. These surface the most
+architecturally important symbols in the codebase (e.g., a shared config module
+or a base class that many components extend).
+
+**Communities** — clustered groups of related nodes detected by graphify's
+community detection algorithm. Each community represents a logical module or
+subsystem, providing a higher-level view of code organization beyond directory
+structure.
+
+**Graph MCP tools** — session-start emits available graphify MCP tools for the
+agent to use directly:
+
+- `mcp__graphify__query_graph` — relationship queries between symbols
+- `mcp__graphify__god_nodes` — core abstractions ranked by connection density
+- `mcp__graphify__get_community` — module clustering for a specific community
+- `mcp__graphify__shortest_path` — dependency path between two symbols
+
+**Auto-building:** `ensureGraphBuilt()` automatically runs `graphify update
+<directory>` when no graph exists for a directory. This happens for both the
+main project and external directories referenced during cross-repo indexing.
+If graphify is not installed, the scout agent falls back to jcodemunch-only
+analysis (symbol search without relationship data).
+
+**Confidence levels:** Graph edges carry confidence labels — `EXTRACTED`
+(verified by AST analysis), `INFERRED` (heuristic), `AMBIGUOUS`. Session-start
+reports these percentages (e.g., "90% EXTRACTED, 10% INFERRED") so agents can
+gauge graph reliability.
+
 **Cross-repo support:** `ensureIndexed()` indexes external directories on first
 reference. `ensureGraphBuilt()` auto-builds graphify knowledge graphs for external
 directories (runs `graphify update <dir>` if `<dir>/graphify-out/graph.json` doesn't
