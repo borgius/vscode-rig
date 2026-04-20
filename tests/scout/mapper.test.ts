@@ -4,8 +4,9 @@ import {
   formatFileTree,
   formatSymbolSearch,
   buildCodebaseMap,
+  buildGraphContext,
 } from '../../src/scout/mapper.js';
-import type { CodebaseMap, SymbolSummary } from '../../src/types.js';
+import type { CodebaseMap, SymbolSummary, GraphContext } from '../../src/types.js';
 
 describe('formatRepoOutline', () => {
   it('formats a repo outline into summary lines', () => {
@@ -139,5 +140,86 @@ describe('buildCodebaseMap', () => {
     expect(result.keyExports).toEqual([]);
     expect(result.dependencies).toEqual([]);
     expect(result.symbols).toEqual({ functions: 0, classes: 0, types: 0 });
+  });
+});
+
+describe('buildGraphContext', () => {
+  it('with valid stats and god nodes returns correct GraphContext', () => {
+    const statsText = [
+      'Nodes: 128',
+      'Edges: 312',
+      'Communities: 5',
+      'EXTRACTED: 60%',
+      'INFERRED: 30%',
+      'AMBIGUOUS: 10%',
+    ].join('\n');
+
+    const godNodesText = [
+      'God nodes (most connected):',
+      '  1. router - 42 edges',
+      '  2. mapper - 28 edges',
+      '  3. config - 15 edges',
+    ].join('\n');
+
+    const result = buildGraphContext(statsText, godNodesText);
+
+    expect(result).not.toBeNull();
+    expect(result!.stats).toEqual({ nodes: 128, edges: 312, communities: 5 });
+    expect(result!.godNodes).toHaveLength(3);
+    expect(result!.godNodes[0]).toEqual({ label: 'router', degree: 42 });
+    expect(result!.godNodes[1]).toEqual({ label: 'mapper', degree: 28 });
+    expect(result!.godNodes[2]).toEqual({ label: 'config', degree: 15 });
+  });
+
+  it('with empty god nodes returns empty array', () => {
+    const statsText = [
+      'Nodes: 50',
+      'Edges: 90',
+      'Communities: 3',
+      'EXTRACTED: 50%',
+      'INFERRED: 40%',
+      'AMBIGUOUS: 10%',
+    ].join('\n');
+
+    const result = buildGraphContext(statsText, '');
+
+    expect(result).not.toBeNull();
+    expect(result!.stats).toEqual({ nodes: 50, edges: 90, communities: 3 });
+    expect(result!.godNodes).toEqual([]);
+    expect(result!.communities).toEqual([]);
+  });
+
+  it('with null/undefined stats returns null', () => {
+    expect(buildGraphContext(null, 'some god nodes')).toBeNull();
+    expect(buildGraphContext(undefined as unknown as string, 'nodes')).toBeNull();
+    expect(buildGraphContext('', 'nodes')).toBeNull();
+  });
+
+  it('extracts communities from stats with community labels', () => {
+    const statsText = [
+      'Nodes: 200',
+      'Edges: 500',
+      'Communities: 3',
+      'Community 0: router, resolver, rules (15 nodes)',
+      'Community 1: mapper, scout, cache (22 nodes)',
+      'Community 2: config, session (8 nodes)',
+      'EXTRACTED: 70%',
+      'INFERRED: 20%',
+      'AMBIGUOUS: 10%',
+    ].join('\n');
+
+    const godNodesText = [
+      'God nodes (most connected):',
+      '  1. router - 50 edges',
+    ].join('\n');
+
+    const result = buildGraphContext(statsText, godNodesText);
+
+    expect(result).not.toBeNull();
+    expect(result!.stats).toEqual({ nodes: 200, edges: 500, communities: 3 });
+    expect(result!.communities).toHaveLength(3);
+    expect(result!.communities[0]).toEqual({ id: 0, label: 'router, resolver, rules', nodeCount: 15 });
+    expect(result!.communities[1]).toEqual({ id: 1, label: 'mapper, scout, cache', nodeCount: 22 });
+    expect(result!.communities[2]).toEqual({ id: 2, label: 'config, session', nodeCount: 8 });
   });
 });

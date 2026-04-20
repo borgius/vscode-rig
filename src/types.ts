@@ -6,6 +6,7 @@ export type IntentType =
   | 'file_discovery'
   | 'file_modify'
   | 'symbol_search'
+  | 'scout_explore'
   | 'pass_through'
   | 'native_read'
   | 'native_grep'
@@ -67,6 +68,8 @@ export interface Environment {
   jcodemunchCwdIndexed: boolean;
   jcodemunchCwdRepo: string | null;
   jcodemunchKnownRepos: string[];
+  graphifyAvailable: boolean;
+  graphifyGraphPath: string | null;
   detectedAt: number;
 }
 
@@ -80,6 +83,14 @@ export interface PythonEnv {
 export interface MetricsBaseline {
   totalSaved: number;
   capturedAt: number;
+  graphifyStats?: {
+    nodes: number;
+    edges: number;
+    communities: number;
+    extractedPct: number;
+    inferredPct: number;
+    ambiguousPct: number;
+  } | null;
 }
 
 export interface SessionCacheFile {
@@ -88,7 +99,7 @@ export interface SessionCacheFile {
   editedFiles: Record<string, string[]>;
   currentPhase: string | null;
   metricsBaseline: MetricsBaseline | null;
-  metricCounters: { rtkCalls: number; jmCalls: number; efficientCalls: number };
+  metricCounters: { rtkCalls: number; jmCalls: number; efficientCalls: number; graphifyCalls: number };
   toolsWarned: boolean;
   changedFiles: string[];
   pythonEnv: PythonEnv | null;
@@ -108,6 +119,7 @@ export interface ToolRoutingRules {
   native_glob?: EnforcementLevel;
   rtk_cat_code?: EnforcementLevel;
   cwd_path_expand?: EnforcementLevel;
+  scout_explore?: EnforcementLevel;
   read_line_threshold?: number;
 }
 
@@ -171,6 +183,12 @@ export interface CodebaseMap {
   symbols: { functions: number; classes: number; types: number };
 }
 
+export interface GraphContext {
+  godNodes: { label: string; degree: number }[];
+  communities: { id: number; label: string; nodeCount: number }[];
+  stats: { nodes: number; edges: number; communities: number };
+}
+
 // ── Type Guards ──
 
 export function isResolutionAllow(val: unknown): val is ResolutionAllow {
@@ -215,5 +233,17 @@ export function isEnvironment(val: unknown): val is Environment {
     typeof env.jcodemunchAvailable === 'boolean' &&
     typeof env.jcodemunchCwdIndexed === 'boolean' &&
     typeof env.detectedAt === 'number'
+  );
+}
+
+export function isGraphContext(val: unknown): val is GraphContext {
+  if (typeof val !== 'object' || val === null) return false;
+  const ctx = val as GraphContext;
+  return (
+    Array.isArray(ctx.godNodes) &&
+    Array.isArray(ctx.communities) &&
+    typeof ctx.stats === 'object' &&
+    ctx.stats !== null &&
+    typeof (ctx.stats as { nodes: number }).nodes === 'number'
   );
 }

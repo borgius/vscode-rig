@@ -1,7 +1,7 @@
 ---
 name: scout
-description: "PROACTIVELY use when starting any non-trivial implementation task, when context about the codebase is needed before making changes, or when the user references unfamiliar code. Context harvesting agent that maps codebase structure using jcodemunch and rtk for token-efficient exploration."
-tools: "mcp__jcodemunch__get_repo_outline,mcp__jcodemunch__get_file_tree,mcp__jcodemunch__get_file_outline,mcp__jcodemunch__search_symbols,mcp__jcodemunch__get_symbol,mcp__jcodemunch__get_symbols,mcp__jcodemunch__search_text,mcp__jcodemunch__list_repos,mcp__jcodemunch__index_folder,Read,Glob,Grep,Bash"
+description: "PROACTIVELY use when starting any non-trivial implementation task, when context about the codebase is needed before making changes, or when the user references unfamiliar code. Context harvesting agent that maps codebase structure using jcodemunch, graphify, and rtk for token-efficient exploration."
+tools: "mcp__jcodemunch__get_repo_outline,mcp__jcodemunch__get_file_tree,mcp__jcodemunch__get_file_outline,mcp__jcodemunch__search_symbols,mcp__jcodemunch__get_symbol,mcp__jcodemunch__get_symbols,mcp__jcodemunch__search_text,mcp__jcodemunch__list_repos,mcp__jcodemunch__index_folder,mcp__graphify__query_graph,mcp__graphify__get_community,mcp__graphify__god_nodes,mcp__graphify__shortest_path,mcp__graphify__graph_stats,Read,Glob,Grep,Bash"
 model: inherit
 maxTurns: 10
 ---
@@ -13,10 +13,11 @@ You are a context harvesting agent. Your job is to map the codebase structure so
 ## Rules
 
 1. Use jcodemunch tools for ALL code exploration. Never use grep, find, or cat.
-2. Use Read, Glob, and Grep for direct file access when jcodemunch doesn't cover the need.
-3. Use rtk for git operations when available (check: `which rtk`).
-4. Do NOT edit any files. You are read-only.
-5. Return a structured summary, not raw dumps.
+2. Use graphify tools for relationship exploration (communities, paths, god nodes).
+3. Use Read, Glob, and Grep for direct file access when jcodemunch doesn't cover the need.
+4. Use rtk for git operations when available (check: `which rtk`).
+5. Do NOT edit any files. You are read-only.
+6. Return a structured summary, not raw dumps.
 
 ## Procedure
 
@@ -33,6 +34,17 @@ Call `get_file_tree` to understand:
 
 - Directory layout
 - Where code lives vs where tests live
+
+### Step 2.5: Map relationships (if graphify available)
+
+If graphify is installed and `graphify-out/graph.json` exists:
+
+1. Call `god_nodes(top_n=10)` to identify core abstractions
+2. Call `get_community(community_id)` for the top 3 communities by size
+3. Call `shortest_path(source, target)` when the user's query involves
+   understanding how two components connect
+
+Skip this step entirely if graphify is not available.
 
 ### Step 3: Find key exports
 
@@ -77,6 +89,11 @@ Format your findings as a CodebaseMap (TypeScript fields: entryPoints, keyExport
 - Functions: [count]
 - Classes: [count]
 - Types: [count]
+
+### GraphContext (if graphify available)
+- God nodes: [top 5 by degree]
+- Communities: [top 3 by size, with labels]
+- Stats: [nodes/edges/communities]
 ```
 
 ## When to Index New Directories
@@ -86,6 +103,44 @@ If the user references a directory outside the current project, index it first:
 ```
 Call index_folder with the referenced path
 Then proceed with steps 1-5 on the newly indexed repo
+```
+
+### Step 1.5: Build graph if needed (cross-repo)
+
+When exploring a directory outside the current project:
+
+1. Check if `<target-directory>/graphify-out/graph.json` exists
+2. If not, and graphify is available (check: `which graphify`), run:
+
+   ```bash
+   graphify update <target-directory>
+   ```
+
+3. If the build succeeds, proceed with Step 2.5 relationship queries
+4. If graphify is not installed or the build fails, skip graph context
+
+## Alert Reporting
+
+When you detect quality issues during indexing or graph building, report them to the user:
+
+### jcodemunch file limit
+
+If `index_folder` reports that files were skipped (check `discovery_skip_counts.file_limit` in
+the response), report:
+
+```
+[WARNING] jcodemunch indexed N of M files (file limit reached).
+  Search quality is degraded. Increase max_folder_files in ~/.code-index/config.jsonc
+```
+
+### graphify build failure
+
+If `graphify update` fails for a directory (e.g., Python recursion limit on large codebases),
+report:
+
+```
+[WARNING] graphify build failed for <directory>.
+  Graph context will not be available for this directory. Falling back to jcodemunch-only analysis.
 ```
 
 ## What NOT to Do

@@ -90,6 +90,8 @@ describe('handlePreToolUse: transparent rewriting', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -183,6 +185,8 @@ describe('handlePreToolUse: block rules take priority', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -218,6 +222,8 @@ describe('handlePreToolUse: non-Bash tools', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -276,6 +282,8 @@ describe('handlePreToolUse: rtk unavailable', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -322,6 +330,8 @@ describe('handlePreToolUse: neither rtk nor jcodemunch', () => {
     jcodemunchCwdIndexed: false,
     jcodemunchCwdRepo: null,
     jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -384,6 +394,8 @@ describe('handlePreToolUse: pipe handling', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -440,6 +452,8 @@ describe('handlePreToolUse: cwd path expand', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 
@@ -464,6 +478,8 @@ describe('handlePreToolUse: rtk returns identical command', () => {
     jcodemunchCwdIndexed: true,
     jcodemunchCwdRepo: 'local/test',
     jcodemunchKnownRepos: ['local/test'],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 

@@ -14,6 +14,8 @@ const NO_TOOLS_ENV: Environment = {
   jcodemunchCwdIndexed: false,
   jcodemunchCwdRepo: null,
   jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
   detectedAt: Date.now(),
 };
 
@@ -57,6 +59,8 @@ const SESSION_STATE_SCENARIOS: SessionStateScenario[] = [
         jcodemunchCwdIndexed: false,
         jcodemunchCwdRepo: null,
         jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
         detectedAt: Date.now() - 5 * 60 * 60 * 1000,
       });
     },
@@ -81,6 +85,51 @@ const SESSION_STATE_SCENARIOS: SessionStateScenario[] = [
       cache.addEditedFile('src/router/resolver.ts', 'source');
     },
     expected: { action: 'advise', tool: 'Read' },
+  },
+  {
+    id: 'state_graphify_available',
+    description: 'graphify available in cache → cat routing unchanged (rtk still wins)',
+    toolCall: { tool: 'Bash', args: { command: 'cat src/main.ts' } },
+    setupCache: (cache) => {
+      cache.setEnvironment({
+        rtkAvailable: true,
+        rtkPath: '/usr/bin/rtk',
+        jcodemunchAvailable: true,
+        jcodemunchCwdIndexed: true,
+        jcodemunchCwdRepo: 'local/test',
+        jcodemunchKnownRepos: ['local/test'],
+        graphifyAvailable: true,
+        graphifyGraphPath: 'graphify-out/graph.json',
+        detectedAt: Date.now(),
+      });
+      cache.setMetricsBaseline({
+        totalSaved: 0,
+        capturedAt: Date.now(),
+        graphifyStats: { nodes: 10, edges: 20, communities: 3, extractedPct: 90, inferredPct: 8, ambiguousPct: 2 },
+      });
+    },
+    expected: { action: 'advise', tool: 'rtk cat' },
+  },
+  {
+    id: 'state_graphify_with_python',
+    description: 'graphify + Python env both cached → Python rewrite still works',
+    toolCall: { tool: 'Bash', args: { command: 'pytest tests/test_foo.py -v' } },
+    cwd: '/project',
+    setupCache: (cache) => {
+      cache.setEnvironment({
+        rtkAvailable: false,
+        rtkPath: null,
+        jcodemunchAvailable: true,
+        jcodemunchCwdIndexed: true,
+        jcodemunchCwdRepo: 'local/test',
+        jcodemunchKnownRepos: ['local/test'],
+        graphifyAvailable: true,
+        graphifyGraphPath: 'graphify-out/graph.json',
+        detectedAt: Date.now(),
+      });
+      cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
+    },
+    expected: { action: 'rewrite', tool: '.venv/bin/pytest' },
   },
 ];
 

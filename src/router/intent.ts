@@ -4,6 +4,7 @@ export type IntentType =
   | 'file_discovery'
   | 'file_modify'
   | 'symbol_search'
+  | 'scout_explore'
   | 'pass_through';
 
 const INTENT_PRECEDENCE: Record<IntentType, number> = {
@@ -12,6 +13,7 @@ const INTENT_PRECEDENCE: Record<IntentType, number> = {
   text_search: 3,
   file_discovery: 3,
   file_read: 2,
+  scout_explore: 3,
   pass_through: 0,
 };
 

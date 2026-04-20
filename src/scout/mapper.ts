@@ -1,4 +1,4 @@
-import type { CodebaseMap, SymbolSummary } from '../types.js';
+import type { CodebaseMap, GraphContext, SymbolSummary } from '../types.js';
 
 interface RawOutline {
   file_count: number;
@@ -96,5 +96,73 @@ export function buildCodebaseMap(
       classes: symbolKinds.class ?? 0,
       types: symbolKinds.type ?? 0,
     },
+  };
+}
+
+// ── Graphify Context Builder ──
+
+interface RawGodNode {
+  label: string;
+  degree: number;
+}
+
+interface RawCommunity {
+  id: number;
+  label: string;
+  nodeCount: number;
+}
+
+const GOD_NODE_PATTERN = /^\s*\d+\.\s+(.+?)\s+-\s+(\d+)\s+edges?$/;
+const COMMUNITY_PATTERN = /^Community\s+(\d+):\s+(.+?)\s+\((\d+)\s+nodes?\)$/;
+
+function parseStatsLine(text: string, key: string): number | null {
+  const pattern = new RegExp(`^${key}:\\s*(\\d+)`, 'm');
+  const match = text.match(pattern);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function parseGodNodes(text: string | null): RawGodNode[] {
+  if (!text) return [];
+  const nodes: RawGodNode[] = [];
+  for (const line of text.split('\n')) {
+    const match = line.match(GOD_NODE_PATTERN);
+    if (match) {
+      nodes.push({ label: match[1], degree: parseInt(match[2], 10) });
+    }
+  }
+  return nodes;
+}
+
+function parseCommunities(text: string): RawCommunity[] {
+  const communities: RawCommunity[] = [];
+  for (const line of text.split('\n')) {
+    const match = line.match(COMMUNITY_PATTERN);
+    if (match) {
+      communities.push({
+        id: parseInt(match[1], 10),
+        label: match[2],
+        nodeCount: parseInt(match[3], 10),
+      });
+    }
+  }
+  return communities;
+}
+
+export function buildGraphContext(
+  statsResult: string | null,
+  godNodesResult: string | null,
+): GraphContext | null {
+  if (!statsResult) return null;
+
+  const nodes = parseStatsLine(statsResult, 'Nodes');
+  const edges = parseStatsLine(statsResult, 'Edges');
+  const communitiesCount = parseStatsLine(statsResult, 'Communities');
+
+  if (nodes === null || edges === null || communitiesCount === null) return null;
+
+  return {
+    godNodes: parseGodNodes(godNodesResult),
+    communities: parseCommunities(statsResult),
+    stats: { nodes, edges, communities: communitiesCount },
   };
 }

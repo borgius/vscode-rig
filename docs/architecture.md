@@ -214,14 +214,19 @@ via `formatSavingsReport()`.
 
 ## Layer 4: Scout Agent
 
-The scout agent builds a typed `CodebaseMap` from jcodemunch indexes.
+The scout agent builds a typed `CodebaseMap` from jcodemunch indexes, enriched
+with relationship context from graphify when available.
 
 ```
 Scout agent invoked
      |
 ensureIndexed(directory) -> jcodemunch auto-index
      |
+ensureGraphBuilt(directory) -> graphify auto-build (if graphify available)
+     |
 buildCodebaseMap(index) -> CodebaseMap
+     |
+buildGraphContext() -> GraphContext (if graphify available)
      |
 CodebaseMap: {
   structure: { path, type, symbolCount? }[],
@@ -232,10 +237,23 @@ CodebaseMap: {
   symbols: { functions, classes, types }
 }
      |
+GraphContext: {
+  godNodes: { label, degree }[],
+  communities: { id, label, nodeCount }[],
+  stats: { nodes, edges, communities }
+}
+     |
 Formatted as structured context for the agent
 ```
 
-**Cross-repo support:** `ensureIndexed()` indexes external directories on first reference. `ScoutCache` with 30-min TTL prevents redundant indexing.
+**jcodemunch** provides symbol search (BM25, embeddings, AST extraction).
+**Graphify** provides relationship traversal (communities, dependency paths, god nodes).
+They're complementary — jcodemunch answers "what exists?" and graphify answers "how do things connect?".
+
+**Cross-repo support:** `ensureIndexed()` indexes external directories on first
+reference. `ensureGraphBuilt()` auto-builds graphify knowledge graphs for external
+directories (runs `graphify update <dir>` if `<dir>/graphify-out/graph.json` doesn't
+exist). `ScoutCache` with 30-min TTL prevents redundant indexing.
 
 **Entry point detection:** Derives from filename patterns: `index.*`, `main.*`, `cli.*`, `app.*`, `server.*`.
 
@@ -251,15 +269,17 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 
 ### Session (`src/session/`)
 
-`detectEnvironment()` checks for rtk, jcodemunch, and other tools via injectable
-`ExecFn`. `SessionCache` with 30-min TTL persists to `/tmp/rig-session-{cwd-hash}.json`
-for cross-process state sharing between hook invocations. Environment detection
-results, edited file tracking, phase, metrics baseline, tool call counters, and a
-`toolsWarned` flag all persist. `handleSessionStart()` auto-indexes the project,
-captures a metrics baseline on first session, emits active enforcement rules from
-`.harness.yaml` (so skill templates can reference them dynamically), and emits a
-one-time warning if rtk or jcodemunch are not installed (suppressed for the rest
-of the session via the `toolsWarned` cache flag).
+`detectEnvironment()` checks for rtk, jcodemunch, graphify, and other tools via
+injectable `ExecFn`. `SessionCache` with 30-min TTL persists to
+`/tmp/rig-session-{cwd-hash}.json` for cross-process state sharing between hook
+invocations. Environment detection results, edited file tracking, phase, metrics
+baseline (including graphify stats), tool call counters, and a `toolsWarned` flag
+all persist. `handleSessionStart()` auto-indexes the project, captures a metrics
+baseline on first session, emits active enforcement rules from `.harness.yaml` (so
+skill templates can reference them dynamically), captures graphify graph stats
+when available, and emits a one-time warning if rtk or jcodemunch are not installed
+(suppressed for the rest of the session via the `toolsWarned` cache flag). A `[HINT]`
+is emitted when graphify is not installed.
 
 ### CLI (`src/cli/`)
 
@@ -320,3 +340,10 @@ Key design decisions:
 - No mode-aware enforcement (same thresholds regardless of workflow phase)
 - No multi-agent specialist review pattern (single review+ pass)
 - No REPO_MODE awareness (solo vs collaborative)
+- jcodemunch silently caps indexing at 2000 files per folder (`max_folder_files`
+  in `~/.code-index/config.jsonc`). Session-start emits a `[WARNING]` when files
+  are skipped, but search quality may be degraded for large projects until the
+  limit is increased.
+- graphify build may fail on very large codebases (6000+ files) due to Python
+  AST recursion limits during tree-sitter traversal. The scout agent falls back
+  to jcodemunch-only analysis and reports the failure.

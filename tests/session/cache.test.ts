@@ -11,6 +11,8 @@ function makeEnv(overrides: Partial<Environment> = {}): Environment {
     jcodemunchCwdIndexed: false,
     jcodemunchCwdRepo: null,
     jcodemunchKnownRepos: [],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
     ...overrides,
   };
@@ -101,11 +103,11 @@ describe('SessionCache', () => {
 
   it('stores and increments metric counters', () => {
     const cache = new SessionCache();
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
     cache.incrementMetricCounter('rtkCalls');
     cache.incrementMetricCounter('rtkCalls');
     cache.incrementMetricCounter('jmCalls');
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 2, jmCalls: 1, efficientCalls: 0 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 2, jmCalls: 1, efficientCalls: 0, graphifyCalls: 0 });
   });
 });
 
@@ -158,11 +160,11 @@ describe('SessionCache (file-backed)', () => {
 
     // cacheB should not see cacheA's state
     expect(cacheB.getCurrentPhase()).toBeNull();
-    expect(cacheB.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    expect(cacheB.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
 
     // cacheA should retain its state
     expect(cacheA.getCurrentPhase()).toBe('tdd+');
-    expect(cacheA.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0 });
+    expect(cacheA.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
 
     trackPath(sessionCachePath(testCwd, sessionIdA));
     trackPath(sessionCachePath(testCwd, sessionIdB));
@@ -175,7 +177,7 @@ describe('SessionCache (file-backed)', () => {
     expect(cache.getEnvironment()).toBeUndefined();
     expect(cache.getEditedFiles('source')).toEqual([]);
     expect(cache.getCurrentPhase()).toBeNull();
-    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    expect(cache.getMetricCounters()).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
   });
 
   it('saves and round-trips all fields', () => {
@@ -202,7 +204,7 @@ describe('SessionCache (file-backed)', () => {
     expect(cache2.getEditedFiles('test')).toEqual(['tests/foo.test.ts']);
     expect(cache2.getCurrentPhase()).toBe('plan+');
     expect(cache2.getMetricsBaseline()!.totalSaved).toBe(50000);
-    expect(cache2.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0 });
+    expect(cache2.getMetricCounters()).toEqual({ rtkCalls: 1, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
     expect(cache2.getPythonEnv()).toBeDefined();
     expect(cache2.getPythonEnv()!.venvPath).toBe('/project/.venv');
     expect(cache2.getPythonEnv()!.uvAvailable).toBe(true);
@@ -254,6 +256,6 @@ describe('SessionCache (file-backed)', () => {
     expect(parsed.editedFiles).toEqual({});
     expect(parsed.currentPhase).toBe('tdd+');
     expect(parsed.metricsBaseline).toBeNull();
-    expect(parsed.metricCounters).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    expect(parsed.metricCounters).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
   });
 });

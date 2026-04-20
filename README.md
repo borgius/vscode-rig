@@ -11,9 +11,9 @@ Rig installs guardrails into a Claude Code project:
   advises on native Read/Grep/Glob when jcodemunch is indexed; blocks `sed -i` and `rtk cat` on code files
 - **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (real dependencies in stack/E2E tests), and zero-defect status (with pre-existing failure classification)
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
-- **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection
+- **Scout Agent** -- cross-repo indexing agent that builds a typed `CodebaseMap` for context injection, enriched with graphify relationship data when available
 
-Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patterns) L2 and L3 patterns.
+Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patterns) L2-L4 patterns.
 
 ## Requirements
 
@@ -22,6 +22,7 @@ Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patte
 - [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
 - [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
 - [jcodemunch](https://github.com/franklywatson/jcodemunch) -- indexed code search MCP server (strongly recommended; powers the scout agent and tool router fallback)
+- [graphify](https://github.com/safishamsi/graphify) -- knowledge graph builder (recommended; powers scout agent's relationship traversal alongside jcodemunch)
 
 ## Quick start
 
@@ -52,9 +53,10 @@ across machines.
 `rig init` adds permission entries to `.claude/settings.json` so you don't get repeated
 permission prompts during normal usage:
 
-- **Allow** -- `Bash(rtk:*)` (when rtk is detected) and `mcp__jcodemunch__*` (always) are
-  auto-added to `permissions.allow`. Transparent command rewrites and jcodemunch searches
-  run without prompting.
+- **Allow** -- `Bash(rtk:*)` (when rtk is detected), `Bash(cat /tmp/rig-session-*)`,
+  `Bash(npx:*)`, and `mcp__jcodemunch__*` / `mcp__graphify__*` (always) are auto-added to
+  `permissions.allow`. Transparent command rewrites, session cache reads, npx runs, and
+  jcodemunch/graphify searches run without prompting.
 - **Deny** -- A built-in secret file deny list blocks Read, Edit, and Write on
   `**/secrets/**`, `**/credentials/**`, `**/*.pem`, and `**/*.key`. This baseline is
   always applied and re-applied on `rig init --force`.
@@ -77,7 +79,7 @@ automatically.
 |              debug+ (any phase)               |
 +---------------------------------------------+
 |              Scout Agent                     |
-|         (CodebaseMap + cross-repo)           |
+|    (CodebaseMap + GraphContext + cross-repo) |
 +---------------------------------------------+
 |           .harness.yaml config               |
 +---------------------------------------------+
@@ -225,6 +227,7 @@ and domain-specific scenarios.
 - [agentic-patterns](https://github.com/franklywatson/agentic-patterns) -- Pattern library (L0-L4) that guided this system's design
 - [superpowers](https://github.com/obra/superpowers) -- Base skills framework that the skill chain wraps
 - [gstack](https://github.com/garrytan/gstack) -- Alternative agent skill framework with resolver pipeline
+- [graphify](https://github.com/safishamsi/graphify) -- Knowledge graph builder for relationship-aware code exploration
 
 ## License
 

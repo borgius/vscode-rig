@@ -56,6 +56,8 @@ function defaultEnv() {
     jcodemunchCwdIndexed: false,
     jcodemunchCwdRepo: null,
     jcodemunchKnownRepos: [] as string[],
+    graphifyAvailable: false,
+    graphifyGraphPath: null,
     detectedAt: Date.now(),
   };
 }
@@ -83,8 +85,26 @@ export function handlePreToolUse(
     ? { execRewrite: options }
     : options ?? {};
   const rules = getDefaultRules(effectiveCwd);
-  const match = findMatchingRule(tool, args, rules);
+  let match = findMatchingRule(tool, args, rules);
   const env = cache.getEnvironment() ?? defaultEnv();
+
+  // Step 0: Scout explore — advise scout when jcodemunch available, fall through otherwise
+  if (match?.intent === 'scout_explore') {
+    if (env.jcodemunchAvailable) {
+      const enforcement = getEffectiveEnforcement('scout_explore', config, match.enforcement);
+      if (enforcement === 'silent') return null;
+      const prefix = enforcement === 'block' ? '[BLOCK]' : '[ADVISE]';
+      return [
+        `${prefix} Tool Router: scout_explore detected`,
+        `advise: use scout — Use Agent with subagent_type: "scout" instead of Explore. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens).`,
+        enforcement === 'block'
+          ? 'This operation is blocked by .harness.yaml. Use the recommended tool instead.'
+          : 'Consider using the recommended tool for better efficiency.',
+      ].join('\n');
+    }
+    // jcodemunch not available — fall through to file_discovery
+    match = findMatchingRule(tool, args, rules, new Set(['scout_explore']));
+  }
 
   // Step 1: Resolution-level blocks always win (file_modify, rtk_cat_code)
   if (match) {
@@ -167,6 +187,7 @@ const INTENT_CONFIG_KEYS: Record<string, string> = {
   native_glob: 'native_glob',
   rtk_cat_code: 'rtk_cat_code',
   cwd_path_expand: 'cwd_path_expand',
+  scout_explore: 'scout_explore',
 };
 
 function getEffectiveEnforcement(

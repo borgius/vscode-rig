@@ -236,6 +236,31 @@ describe('handleSessionStart', () => {
     expect(output).not.toContain('mcp__jcodemunch__');
   });
 
+  it('emits scout agent preference when jcodemunch available', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+      if (cmd.includes('list_repos')) return '{"repos":["local/test-project"]}';
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).toContain('scout');
+    expect(output).toContain('subagent_type');
+    expect(output).toContain('Explore');
+  });
+
+  it('omits scout agent preference when jcodemunch unavailable', async () => {
+    vi.mocked(execSync).mockImplementation((cmd: string) => {
+      if (cmd === 'which rtk') return '/usr/bin/rtk';
+      if (cmd === 'which jcodemunch') throw new Error('not found');
+      return '';
+    });
+
+    const output = await handleSessionStart('/home/user/test-project', cache);
+    expect(output).not.toContain('scout');
+  });
+
   it('suppresses warning on second call', async () => {
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd === 'which rtk') throw new Error('not found');
@@ -322,5 +347,167 @@ describe('handleSessionStart', () => {
     expect(output).not.toContain('evidence_only');
 
     rmSync(configDir, { recursive: true });
+  });
+
+  describe('graphify integration', () => {
+    it('detects graphify and emits graphify line in session output', async () => {
+      const { mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const tmpDir = '/tmp/rig-test-graphify-' + process.pid;
+      mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
+      const graphData = JSON.stringify({
+        nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }, { id: 'c', community: 1 }],
+        links: [
+          { source: 'a', target: 'b', confidence: 'EXTRACTED' },
+          { source: 'b', target: 'c', confidence: 'INFERRED' },
+        ],
+      });
+      writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') return '/usr/bin/graphify';
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        return '';
+      });
+
+      const output = await handleSessionStart(tmpDir, cache);
+      expect(output).toContain('graphify: available');
+      expect(output).toContain('3 nodes');
+      expect(output).toContain('2 edges');
+      expect(output).toContain('2 communities');
+      expect(output).toContain('50% EXTRACTED');
+      rmSync(tmpDir, { recursive: true });
+    });
+
+    it('omits graphify line when graphify not installed', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/test-project', cache);
+      expect(output).toContain('graphify: not found');
+      expect(output).not.toContain('nodes');
+    });
+
+    it('emits graphify MCP tools in delegation instructions when available', async () => {
+      const { mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const tmpDir = '/tmp/rig-test-graphify-deleg-' + process.pid;
+      mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
+      writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), JSON.stringify({
+        nodes: [{ id: 'a' }],
+        links: [],
+      }));
+
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') return '/usr/bin/graphify';
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        return '';
+      });
+
+      const output = await handleSessionStart(tmpDir, cache);
+      expect(output).toContain('mcp__graphify__query_graph');
+      expect(output).toContain('mcp__graphify__god_nodes');
+      expect(output).toContain('mcp__graphify__get_community');
+      expect(output).toContain('mcp__graphify__shortest_path');
+      rmSync(tmpDir, { recursive: true });
+    });
+
+    it('emits graphify hint when not installed', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/test-project', cache);
+      expect(output).toContain('HINT');
+      expect(output).toContain('graphify');
+    });
+
+    it('stores graphify stats in session cache', async () => {
+      const { mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+      const { join } = await import('node:path');
+      const tmpDir = '/tmp/rig-test-graphify-cache-' + process.pid;
+      mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
+      const graphData = JSON.stringify({
+        nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }],
+        links: [{ source: 'a', target: 'b', confidence: 'EXTRACTED' }],
+      });
+      writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') throw new Error('not found');
+        if (cmd === 'which jcodemunch') throw new Error('not found');
+        if (cmd === 'which graphify') return '/usr/bin/graphify';
+        if (cmd === 'git branch --show-current') return 'feat/test';
+        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        return '';
+      });
+
+      await handleSessionStart(tmpDir, cache);
+      const baseline = cache.getMetricsBaseline();
+      expect(baseline?.graphifyStats).toBeDefined();
+      expect(baseline!.graphifyStats!.nodes).toBe(2);
+      expect(baseline!.graphifyStats!.edges).toBe(1);
+      expect(baseline!.graphifyStats!.extractedPct).toBe(100);
+      rmSync(tmpDir, { recursive: true });
+    });
+  });
+
+  describe('jcodemunch file cap warning', () => {
+    it('warns when auto-index hits file limit', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/bin/rtk';
+        if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+        if (cmd.includes('list_repos')) return '{"repos":[]}';
+        if (cmd.includes('index_folder')) {
+          return JSON.stringify({
+            success: true,
+            repo: 'local/big-project',
+            file_count: 2000,
+            discovery_skip_counts: { file_limit: 4032 },
+          });
+        }
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/big-project', cache);
+      expect(output).toContain('WARNING');
+      expect(output).toContain('file limit');
+      expect(output).toContain('max_folder_files');
+      expect(output).toContain('config.jsonc');
+    });
+
+    it('does not warn when no files were skipped', async () => {
+      vi.mocked(execSync).mockImplementation((cmd: string) => {
+        if (cmd === 'which rtk') return '/usr/bin/rtk';
+        if (cmd === 'which jcodemunch') return '/usr/bin/jcodemunch';
+        if (cmd.includes('list_repos')) return '{"repos":[]}';
+        if (cmd.includes('index_folder')) {
+          return JSON.stringify({
+            success: true,
+            repo: 'local/small-project',
+            file_count: 50,
+            discovery_skip_counts: { file_limit: 0 },
+          });
+        }
+        return '';
+      });
+
+      const output = await handleSessionStart('/home/user/small-project', cache);
+      expect(output).not.toContain('file limit');
+    });
   });
 });

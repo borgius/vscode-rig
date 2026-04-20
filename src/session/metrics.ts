@@ -2,6 +2,38 @@ import type { MetricsBaseline } from '../types.js';
 
 export type ExecFn = (cmd: string) => string;
 
+/**
+ * Read graphify-out/graph.json (NetworkX node-link format) and compute stats.
+ * Returns null if the file is missing or malformed.
+ */
+export function captureGraphifyStats(cwd: string, exec: ExecFn): MetricsBaseline['graphifyStats'] {
+  try {
+    const raw = exec(`cat "${cwd}/graphify-out/graph.json"`);
+    const data = JSON.parse(raw) as { nodes?: unknown[]; links?: unknown[] };
+    const nodes = data.nodes ?? [];
+    const links = data.links ?? [];
+    const communities = new Set<number>(
+      nodes
+        .map((n: unknown) => (n as Record<string, unknown>)?.community)
+        .filter((c): c is number => c != null),
+    );
+    const confidences = links.map(
+      (l: unknown) => ((l as Record<string, unknown>)?.confidence as string) ?? 'EXTRACTED',
+    );
+    const total = confidences.length || 1;
+    return {
+      nodes: nodes.length,
+      edges: links.length,
+      communities: communities.size,
+      extractedPct: Math.round((confidences.filter(c => c === 'EXTRACTED').length / total) * 100),
+      inferredPct: Math.round((confidences.filter(c => c === 'INFERRED').length / total) * 100),
+      ambiguousPct: Math.round((confidences.filter(c => c === 'AMBIGUOUS').length / total) * 100),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {
   try {
     const raw = exec('rtk gain --format json');
@@ -16,7 +48,7 @@ export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {
 export function incrementMetric(
   toolName: string,
   toolInput: Record<string, unknown>,
-): 'rtkCalls' | 'jmCalls' | 'efficientCalls' | null {
+): 'rtkCalls' | 'jmCalls' | 'efficientCalls' | 'graphifyCalls' | null {
   if (toolName === 'Bash' && typeof toolInput.command === 'string') {
     if (/\brtk\b/.test(toolInput.command)) {
       return 'rtkCalls';
@@ -24,6 +56,9 @@ export function incrementMetric(
   }
   if (toolName.startsWith('mcp__jcodemunch__')) {
     return 'jmCalls';
+  }
+  if (toolName.startsWith('mcp__graphify__')) {
+    return 'graphifyCalls';
   }
   // Track efficient native tool usage on code files
   if (toolName === 'Read' && typeof toolInput.file_path === 'string') {
@@ -56,8 +91,9 @@ export interface JcodemunchSessionStats {
 export function formatSavingsReport(
   baseline: MetricsBaseline,
   currentSaved: number,
-  counters: { rtkCalls: number; jmCalls: number; efficientCalls: number },
+  counters: { rtkCalls: number; jmCalls: number; efficientCalls: number; graphifyCalls: number },
   jmStats?: JcodemunchSessionStats | null,
+  graphifyStats?: MetricsBaseline['graphifyStats'],
 ): string {
   const delta = currentSaved - baseline.totalSaved;
   const lines: string[] = ['[rig] Session Savings'];
@@ -81,6 +117,13 @@ export function formatSavingsReport(
 
   if (counters.efficientCalls > 0) {
     lines.push(`  efficient tools: ${counters.efficientCalls} calls (Read/Grep/Glob on code files)`);
+  }
+
+  if (graphifyStats) {
+    const querySuffix = counters.graphifyCalls > 0 ? `, ${counters.graphifyCalls} queries` : '';
+    lines.push(
+      `  graphify: ${graphifyStats.nodes} nodes, ${graphifyStats.edges} edges, ${graphifyStats.communities} communities (${graphifyStats.extractedPct}% EXTRACTED, ${graphifyStats.inferredPct}% INFERRED, ${graphifyStats.ambiguousPct}% AMBIGUOUS)${querySuffix}`,
+    );
   }
 
   return lines.join('\n');

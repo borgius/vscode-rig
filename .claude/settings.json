@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx tsx .claude/hooks/scripts/pre-tool-use.ts"
+            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/pre-tool-use.ts"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx tsx .claude/hooks/scripts/post-tool-use.ts"
+            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/post-tool-use.ts"
           }
         ]
       }
@@ -28,10 +28,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx tsx .claude/hooks/scripts/session-start.ts"
+            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/session-start.ts"
           }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "mcp__jcodemunch__*",
+      "Bash(rtk:*)",
+      "mcp__graphify__*",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)"
+    ],
+    "deny": [
+      "Read(**/secrets/**)",
+      "Read(**/credentials/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Edit(**/secrets/**)",
+      "Edit(**/credentials/**)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Write(**/secrets/**)",
+      "Write(**/credentials/**)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)"
     ]
   }
 }

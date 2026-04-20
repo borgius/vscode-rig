@@ -5,21 +5,30 @@ import type { Environment, HarnessConfig } from '../types.js';
 import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
 import { detectPythonEnv } from './python-env.js';
 import { checkWorktreeSuggestion } from './worktree.js';
-import { captureMetricsBaseline } from './metrics.js';
+import { captureMetricsBaseline, captureGraphifyStats } from './metrics.js';
 import { loadConfig, DEFAULT_CONFIG } from '../config.js';
+
+interface FileCapWarning {
+  indexed: number;
+  total: number;
+}
 
 /**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
  * with jcodemunch if available but not yet indexed.
  */
 export async function handleSessionStart(cwd: string, cache: SessionCache): Promise<string> {
-  const env = await detectAndIndex(cwd);
+  const { env, fileCapHit } = await detectAndIndex(cwd);
   cache.setEnvironment(env);
 
   const pyEnv = await detectPythonEnv(cwd);
   cache.setPythonEnv(pyEnv);
 
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  // Capture graphify stats if available
+  if (env.graphifyAvailable) {
+    baseline.graphifyStats = captureGraphifyStats(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  }
   cache.setMetricsBaseline(baseline);
 
   // Capture changed files for failure classification
@@ -36,6 +45,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     '[rig] Session initialized',
     `  rtk: ${env.rtkAvailable ? `available (${env.rtkPath})` : 'not found'}`,
     `  jcodemunch: ${env.jcodemunchAvailable ? 'available' : 'not found'}`,
+    `  graphify: ${env.graphifyAvailable ? 'available' : 'not found'}`,
   ];
 
   if (env.jcodemunchAvailable) {
@@ -46,7 +56,17 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     }
   }
 
+  if (env.graphifyAvailable && baseline.graphifyStats) {
+    const gs = baseline.graphifyStats;
+    lines.push(`  Graph: ${gs.nodes} nodes, ${gs.edges} edges, ${gs.communities} communities (${gs.extractedPct}% EXTRACTED)`);
+  }
+
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);
+
+  if (fileCapHit) {
+    lines.push(`[WARNING] jcodemunch indexed ${fileCapHit.indexed} of ${fileCapHit.total} files (file limit reached).`);
+    lines.push(`  Search quality is degraded. Increase max_folder_files in ~/.code-index/config.jsonc`);
+  }
 
   // Emit active enforcement rules from config
   const configPath = join(resolve(cwd), '.harness.yaml');
@@ -68,6 +88,17 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  - mcp__jcodemunch__search_text instead of grep/rg');
     lines.push('  - mcp__jcodemunch__get_file_tree instead of find/fd');
     lines.push('  - mcp__jcodemunch__get_file_outline instead of cat/head on code files');
+    lines.push('[rig] For codebase exploration, prefer the scout agent over Explore:');
+    lines.push('  Use Agent(subagent_type: "scout") instead of Explore for 80%+ token savings');
+    lines.push('  Scout uses jcodemunch and graphify MCP tools; Explore uses raw find/grep/cat');
+  }
+
+  if (env.graphifyAvailable) {
+    lines.push('[rig] Graphify graph tools available for relationship queries:');
+    lines.push('  - mcp__graphify__query_graph for relationship context');
+    lines.push('  - mcp__graphify__god_nodes for core abstractions');
+    lines.push('  - mcp__graphify__get_community for module clustering');
+    lines.push('  - mcp__graphify__shortest_path for dependency paths');
   }
 
   // One-time warning for missing tools
@@ -77,6 +108,9 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     }
     if (!env.jcodemunchAvailable) {
       lines.push('[WARNING] jcodemunch is not installed. Install for indexed code search: https://github.com/franklywatson/jcodemunch');
+    }
+    if (!env.graphifyAvailable) {
+      lines.push('[HINT] graphify is not installed. Install for knowledge graph analysis: https://github.com/safishamsi/graphify');
     }
     cache.setToolsWarned(true);
   }
@@ -100,8 +134,9 @@ function formatActiveRules(config: HarnessConfig): string | null {
   return `  Active enforcement: ${active.join(', ')}`;
 }
 
-async function detectAndIndex(cwd: string): Promise<Environment> {
+async function detectAndIndex(cwd: string): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
   const env = await detectEnvironment(cwd);
+  let fileCapHit: FileCapWarning | undefined;
 
   // Auto-index if jcodemunch is available but CWD isn't indexed
   if (env.jcodemunchAvailable && !env.jcodemunchCwdIndexed) {
@@ -118,6 +153,10 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
         env.jcodemunchCwdRepo = parsedResult.repo ?? env.jcodemunchCwdRepo;
         if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
           env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
+        }
+        const skipped = parsedResult.discovery_skip_counts?.file_limit ?? 0;
+        if (skipped > 0 && parsedResult.file_count) {
+          fileCapHit = { indexed: parsedResult.file_count, total: parsedResult.file_count + skipped };
         }
       }
     } catch {
@@ -136,6 +175,10 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
               if (env.jcodemunchCwdRepo && !env.jcodemunchKnownRepos.includes(env.jcodemunchCwdRepo)) {
                 env.jcodemunchKnownRepos.push(env.jcodemunchCwdRepo);
               }
+              const skipped = parsedResult.discovery_skip_counts?.file_limit ?? 0;
+              if (skipped > 0 && parsedResult.file_count) {
+                fileCapHit = { indexed: parsedResult.file_count, total: parsedResult.file_count + skipped };
+              }
             }
           }
         }
@@ -145,5 +188,5 @@ async function detectAndIndex(cwd: string): Promise<Environment> {
     }
   }
 
-  return env;
+  return { env, fileCapHit };
 }

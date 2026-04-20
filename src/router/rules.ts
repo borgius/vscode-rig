@@ -84,6 +84,19 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       enforcement: 'block',
     },
 
+    // ── Scout Explore Advisory (Agent with Explore subagent → prefer scout) ──
+    {
+      match: (tool: string, args: Record<string, unknown>) => {
+        return tool === 'Agent' && typeof args.subagent_type === 'string' && args.subagent_type === 'Explore';
+      },
+      intent: 'scout_explore',
+      resolutions: {
+        jcodemunch: { action: 'advise', tool: 'scout', reason: 'Use Agent with subagent_type: "scout" instead of Explore. Scout uses jcodemunch and graphify MCP tools for token-efficient exploration (80%+ fewer tokens)' },
+        fallback: { action: 'allow' },
+      },
+      enforcement: 'advise',
+    },
+
     // ── Text Search ──
     {
       match: (tool: string, args: Record<string, unknown>) => {
@@ -170,8 +183,10 @@ export function findMatchingRule(
   tool: string,
   args: Record<string, unknown>,
   rules: ToolRule[],
+  skipIntents?: Set<string>,
 ): ToolRule | undefined {
   for (const rule of rules) {
+    if (skipIntents?.has(rule.intent)) continue;
     const matchFn = rule.match;
     if (matchFn instanceof RegExp) {
       // For bash commands, test against the command string
