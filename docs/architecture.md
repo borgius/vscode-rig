@@ -222,6 +222,8 @@ Scout agent invoked
      |
 ensureIndexed(directory) -> jcodemunch auto-index
      |
+ensureGraphBuilt(directory) -> graphify auto-build (if graphify available)
+     |
 buildCodebaseMap(index) -> CodebaseMap
      |
 buildGraphContext() -> GraphContext (if graphify available)
@@ -248,7 +250,7 @@ Formatted as structured context for the agent
 **Graphify** provides relationship traversal (communities, dependency paths, god nodes).
 They're complementary — jcodemunch answers "what exists?" and graphify answers "how do things connect?".
 
-**Cross-repo support:** `ensureIndexed()` indexes external directories on first reference. `ScoutCache` with 30-min TTL prevents redundant indexing.
+**Cross-repo support:** `ensureIndexed()` indexes external directories on first reference. `ensureGraphBuilt()` auto-builds graphify knowledge graphs for external directories (runs `graphify update <dir>` if `<dir>/graphify-out/graph.json` doesn't exist). `ScoutCache` with 30-min TTL prevents redundant indexing.
 
 **Entry point detection:** Derives from filename patterns: `index.*`, `main.*`, `cli.*`, `app.*`, `server.*`.
 
