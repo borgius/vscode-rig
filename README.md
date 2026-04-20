@@ -53,9 +53,10 @@ across machines.
 `rig init` adds permission entries to `.claude/settings.json` so you don't get repeated
 permission prompts during normal usage:
 
-- **Allow** -- `Bash(rtk:*)` (when rtk is detected) and `mcp__jcodemunch__*` (always) are
-  auto-added to `permissions.allow`. Transparent command rewrites and jcodemunch searches
-  run without prompting.
+- **Allow** -- `Bash(rtk:*)` (when rtk is detected), `Bash(cat /tmp/rig-session-*)`,
+  `Bash(npx:*)`, and `mcp__jcodemunch__*` / `mcp__graphify__*` (always) are auto-added to
+  `permissions.allow`. Transparent command rewrites, session cache reads, npx runs, and
+  jcodemunch/graphify searches run without prompting.
 - **Deny** -- A built-in secret file deny list blocks Read, Edit, and Write on
   `**/secrets/**`, `**/credentials/**`, `**/*.pem`, and `**/*.key`. This baseline is
   always applied and re-applied on `rig init --force`.

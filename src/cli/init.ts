@@ -301,6 +301,16 @@ function updateSettingsJson(claudeDir: string, npxCommand: string, rtkAvailable:
     permissions.allow.push('Bash(rtk:*)');
   }
 
+  // Auto-allow: session cache reads
+  if (!permissions.allow.includes('Bash(cat /tmp/rig-session-*)')) {
+    permissions.allow.push('Bash(cat /tmp/rig-session-*)');
+  }
+
+  // Auto-allow: npx commands
+  if (!permissions.allow.includes('Bash(npx:*)')) {
+    permissions.allow.push('Bash(npx:*)');
+  }
+
   // Default deny: secret file patterns
   for (const entry of SECRET_DENY_LIST) {
     if (!permissions.deny.includes(entry)) {
