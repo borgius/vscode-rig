@@ -135,7 +135,7 @@ the response), report:
 
 ### graphify build failure
 
-If `graphify update` fails for a directory (e.g., Python recursion limit on large C codebases),
+If `graphify update` fails for a directory (e.g., Python recursion limit on large codebases),
 report:
 
 ```

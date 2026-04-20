@@ -344,6 +344,6 @@ Key design decisions:
   in `~/.code-index/config.jsonc`). Session-start emits a `[WARNING]` when files
   are skipped, but search quality may be degraded for large projects until the
   limit is increased.
-- graphify build fails on very large C codebases (6000+ files) due to Python
-  AST recursion limits. The scout agent falls back to jcodemunch-only analysis
-  and reports the failure.
+- graphify build may fail on very large codebases (6000+ files) due to Python
+  AST recursion limits during tree-sitter traversal. The scout agent falls back
+  to jcodemunch-only analysis and reports the failure.

@@ -25,7 +25,7 @@ Strongly recommended:
   Powers the scout agent's relationship traversal (communities, dependency paths,
   god nodes) alongside jcodemunch's symbol search. Graphify rebuilds via its own
   git hooks; rig detects the existing graph. Note: graphify may fail on very
-  large C codebases (6000+ files) due to Python AST recursion limits.
+  large codebases (6000+ files) due to Python AST recursion limits.
 
 ## Install and initialize
 
