@@ -1,5 +1,9 @@
 # rig
 
+![Tests](https://github.com/franklywatson/claude-rig/actions/workflows/test.yml/badge.svg)
+![Coverage Gate](https://github.com/franklywatson/claude-rig/actions/workflows/coverage.yml/badge.svg)
+![Docs Quality](https://github.com/franklywatson/claude-rig/actions/workflows/docs.yml/badge.svg)
+
 Agent harness that enforces tool routing, skill chains, and multi-agent discipline for [Claude Code](https://claude.ai/code).
 
 ## What it does
