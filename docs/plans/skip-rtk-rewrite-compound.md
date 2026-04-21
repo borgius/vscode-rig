@@ -1,5 +1,7 @@
 # Skip rtk Rewrite for Compound/Piped Commands
 
+**Status: COMPLETED** (2026-04-20) — PR #6
+
 ## Problem
 
 When an agent issues a chained command like `ls -la /path/file 2>/dev/null; diff /path/file -`, the PreToolUse hook rewrites it through rtk (e.g., `rtk ls -la ...; diff ...`). This rewritten command is different from the original, requiring user approval because Claude Code treats it as a new command.
