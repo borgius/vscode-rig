@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/pre-tool-use.ts"
+            "command": "PATH=\"/home/jerome/.local/share/nvm/v25.6.1/bin:$PATH\" /home/jerome/.local/share/nvm/v25.6.1/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/pre-tool-use.ts"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/post-tool-use.ts"
+            "command": "PATH=\"/home/jerome/.local/share/nvm/v25.6.1/bin:$PATH\" /home/jerome/.local/share/nvm/v25.6.1/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/post-tool-use.ts"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PATH=\"/home/jerome/.nvm/versions/node/v22.20.0/bin:$PATH\" /home/jerome/.nvm/versions/node/v22.20.0/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/session-start.ts"
+            "command": "PATH=\"/home/jerome/.local/share/nvm/v25.6.1/bin:$PATH\" /home/jerome/.local/share/nvm/v25.6.1/bin/npx tsx ${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/session-start.ts"
           }
         ]
       }

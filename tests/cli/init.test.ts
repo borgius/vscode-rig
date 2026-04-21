@@ -57,6 +57,29 @@ describe('initCommand', () => {
     expect(content).toContain('stale_tests');
   });
 
+  it('creates graphify-out/graph.json placeholder', async () => {
+    await initCommand(tempDir, { force: false });
+    const graphPath = join(tempDir, 'graphify-out', 'graph.json');
+    expect(existsSync(graphPath)).toBe(true);
+    const content = readFileSync(graphPath, 'utf-8');
+    const parsed = JSON.parse(content);
+    expect(parsed).toEqual({ nodes: [], links: [] });
+  });
+
+  it('does not overwrite existing graphify graph.json', async () => {
+    // Simulate a real graph already built by graphify
+    const graphifyDir = join(tempDir, 'graphify-out');
+    mkdirSync(graphifyDir, { recursive: true });
+    const realGraph = { nodes: [{ id: 'a' }], links: [{ source: 'a', target: 'b' }] };
+    writeFileSync(join(graphifyDir, 'graph.json'), JSON.stringify(realGraph));
+
+    await initCommand(tempDir, { force: false });
+
+    const content = readFileSync(join(graphifyDir, 'graph.json'), 'utf-8');
+    const parsed = JSON.parse(content);
+    expect(parsed).toEqual(realGraph);
+  });
+
   it('does not overwrite existing files without --force', async () => {
     await initCommand(tempDir, { force: false });
     // Modify a file by appending custom content and removing the rig marker
@@ -455,6 +478,7 @@ console.log('stale old hook');
       expect(gitignore).toContain('rig-managed');
       expect(gitignore).toContain('.harness.yaml.local');
       expect(gitignore).toContain('*.session-cache.json');
+      expect(gitignore).toContain('graphify-out/');
     });
 
     it('does not duplicate rig-managed section on re-init', async () => {
@@ -476,6 +500,22 @@ console.log('stale old hook');
       const after = readFileSync(gitignorePath, 'utf-8');
       expect(after).toContain('node_modules/');
       expect(after).toContain('.harness.yaml.local');
+    });
+
+    it('adds new entries to existing rig-managed section on re-init', async () => {
+      await initCommand(tempDir, { force: false });
+      const gitignorePath = join(tempDir, '.gitignore');
+      // Remove graphify-out/ to simulate an older rig install
+      let content = readFileSync(gitignorePath, 'utf-8');
+      content = content.replace('graphify-out/\n', '');
+      writeFileSync(gitignorePath, content);
+
+      await initCommand(tempDir, { force: false });
+      const after = readFileSync(gitignorePath, 'utf-8');
+      // Should have been added back without duplicating the section
+      expect(after).toContain('graphify-out/');
+      const matches = after.match(/rig-managed/g);
+      expect(matches).toHaveLength(2); // still just opening + closing marker
     });
   });
 

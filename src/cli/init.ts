@@ -99,6 +99,14 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     writeFileSync(configPath, yamlStringify(DEFAULT_CONFIG, { lineWidth: 0 }));
   }
 
+  // Create graphify placeholder so the MCP server doesn't crash on startup
+  const graphifyDir = join(projectDir, 'graphify-out');
+  const graphJsonPath = join(graphifyDir, 'graph.json');
+  if (!existsSync(graphJsonPath)) {
+    mkdirSync(graphifyDir, { recursive: true });
+    writeFileSync(graphJsonPath, '{"nodes": [], "links": []}\n');
+  }
+
   // Update settings.json with hook registrations
   const npxCommand = resolveNpxPath(options.exec);
   updateSettingsJson(claudeDir, npxCommand, rtkAvailable);
@@ -112,6 +120,7 @@ const GITIGNORE_MARKER_END = '# --- end rig-managed ---';
 const GITIGNORE_ENTRIES = [
   '.harness.yaml.local',
   '*.session-cache.json',
+  'graphify-out/',
 ];
 
 function updateGitignore(projectDir: string): void {
@@ -124,6 +133,22 @@ function updateGitignore(projectDir: string): void {
 
   // Check if rig-managed section already exists
   if (content.includes(GITIGNORE_MARKER_START)) {
+    // Update entries within existing section if any are missing
+    const startIdx = content.indexOf(GITIGNORE_MARKER_START);
+    const endIdx = content.indexOf(GITIGNORE_MARKER_END);
+    if (endIdx > startIdx) {
+      const section = content.substring(startIdx, endIdx + GITIGNORE_MARKER_END.length);
+      let updated = section;
+      for (const entry of GITIGNORE_ENTRIES) {
+        if (!section.includes(entry)) {
+          // Insert before the end marker
+          updated = updated.replace(GITIGNORE_MARKER_END, `${entry}\n${GITIGNORE_MARKER_END}`);
+        }
+      }
+      if (updated !== section) {
+        writeFileSync(gitignorePath, content.replace(section, updated));
+      }
+    }
     return;
   }
 
