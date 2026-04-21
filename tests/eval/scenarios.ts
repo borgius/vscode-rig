@@ -46,7 +46,6 @@ export const ENV_PRESETS: EnvPreset[] = [
       jcodemunchCwdRepo: 'local/test',
       jcodemunchKnownRepos: ['local/test'],
       graphifyAvailable: true,
-      graphifyGraphPath: 'graphify-out/graph.json',
       graphifyGraphPath: null,
       detectedAt: Date.now(),
     },
@@ -90,7 +89,7 @@ export interface ExpectedOutcome {
 
 export interface EvalScenario {
   id: string;
-  category: 'bash' | 'native' | 'agent' | 'pipe' | 'edge';
+  category: 'bash' | 'native' | 'agent' | 'pipe' | 'edge' | 'python';
   description: string;
   toolCall: { tool: string; args: Record<string, unknown> };
   expected: Record<string, ExpectedOutcome>; // keyed by env preset name
@@ -363,14 +362,14 @@ export const ALL_SCENARIOS: EvalScenario[] = [
   {
     id: 'pipe_cat_grep',
     category: 'pipe',
-    description: 'piped cat | grep — mock rewrites cat (first segment)',
+    description: 'piped cat | grep — compound command passes through without rewrite or advisory',
     toolCall: { tool: 'Bash', args: { command: 'cat file | grep pattern' } },
     expected: {
-      full: { action: 'rewrite', tool: 'rtk read' },
-      rtk_only: { action: 'rewrite', tool: 'rtk read' },
-      jm_only: { action: 'advise', tool: 'jcodemunch' },
-      jm_not_indexed: { action: 'advise', tool: 'Read' },
-      neither: { action: 'advise', tool: 'Read' },
+      full: { action: 'allow' },
+      rtk_only: { action: 'allow' },
+      jm_only: { action: 'allow' },
+      jm_not_indexed: { action: 'allow' },
+      neither: { action: 'allow' },
     },
   },
 

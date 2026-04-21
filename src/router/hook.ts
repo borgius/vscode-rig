@@ -4,6 +4,7 @@ import { SessionCache } from '../session/cache.js';
 import { findMatchingRule, getDefaultRules } from './rules.js';
 import { resolve } from './resolver.js';
 import { tryPythonRewrite } from './python-rewrite.js';
+import { isCompoundCommand } from './intent.js';
 
 export type ExecRewriteFn = (rtkPath: string, args: string[]) => string | null;
 export type ExistsCheckFn = (path: string) => boolean;
@@ -129,9 +130,9 @@ export function handlePreToolUse(
     }
   }
 
-  // Step 3: Transparent rewrite via rtk for Bash commands
+  // Step 3: Transparent rewrite via rtk for Bash commands (skip compound commands)
   if (tool === 'Bash' && typeof args.command === 'string') {
-    if (env.rtkAvailable && env.rtkPath) {
+    if (env.rtkAvailable && env.rtkPath && !isCompoundCommand(args.command)) {
       const rewritten = tryRtkRewrite(args.command, env.rtkPath, resolvedOptions.execRewrite);
       if (rewritten) {
         return { type: 'rewrite', command: rewritten, original: args.command };
@@ -141,6 +142,11 @@ export function handlePreToolUse(
 
   // Step 4: No match = pass through
   if (!match) return null;
+
+  // Step 4b: Compound commands skip advisory (but file_modify still blocks above)
+  if (tool === 'Bash' && typeof args.command === 'string' && isCompoundCommand(args.command)) {
+    return null;
+  }
 
   // Step 5: Enforcement-level blocks and advises
   const resolution = resolve(match, env);

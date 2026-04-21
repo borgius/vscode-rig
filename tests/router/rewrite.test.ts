@@ -399,21 +399,14 @@ describe('handlePreToolUse: pipe handling', () => {
     detectedAt: Date.now(),
   };
 
-  it('piped command where rtk rewrites first segment', () => {
+  it('piped command skips rtk rewrite and passes through', () => {
     const cache = new SessionCache();
     cache.setEnvironment(ENV_WITH_RTK);
-    // mockRewriteSuccess rewrites "cat file" but not piped content
-    const mockPipedRewrite: ExecRewriteFn = (_rtkPath, args) => {
-      const cmd = args[1];
-      if (cmd.startsWith('cat ')) return cmd.replace(/^cat\s+/, 'rtk read ');
-      return null;
-    };
     const result = handlePreToolUse(
-      'Bash', { command: 'cat file | grep pattern' }, cache, DEFAULT_CONFIG, undefined, mockPipedRewrite,
+      'Bash', { command: 'cat file | grep pattern' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
     );
-    expect(result).not.toBeNull();
-    expect((result as RewriteResult).type).toBe('rewrite');
-    expect((result as RewriteResult).command).toContain('rtk read');
+    // Compound commands (with |) pass through without rewrite or advise
+    expect(result).toBeNull();
   });
 
   it('pipelines that rtk skips fall through to allow', () => {
@@ -439,6 +432,42 @@ describe('handlePreToolUse: pipe handling', () => {
     );
     expect(typeof result).toBe('string');
     expect(result).toContain('[BLOCK]');
+  });
+
+  it('chained ls; diff passes through without rtk rewrite', () => {
+    const cache = new SessionCache();
+    cache.setEnvironment(ENV_WITH_RTK);
+    const result = handlePreToolUse(
+      'Bash', { command: 'ls -la /path/file 2>/dev/null; diff /path/file -' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('piped cat | grep passes through without rtk rewrite', () => {
+    const cache = new SessionCache();
+    cache.setEnvironment(ENV_WITH_RTK);
+    const result = handlePreToolUse(
+      'Bash', { command: 'cat file | grep pattern' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('chained git status && git diff passes through without rtk rewrite', () => {
+    const cache = new SessionCache();
+    cache.setEnvironment(ENV_WITH_RTK);
+    const result = handlePreToolUse(
+      'Bash', { command: 'git status && git diff' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('or-chained command passes through without rtk rewrite', () => {
+    const cache = new SessionCache();
+    cache.setEnvironment(ENV_WITH_RTK);
+    const result = handlePreToolUse(
+      'Bash', { command: 'grep "TODO" src/ 2>/dev/null || echo "none"' }, cache, DEFAULT_CONFIG, undefined, mockRewriteSuccess,
+    );
+    expect(result).toBeNull();
   });
 });
 
