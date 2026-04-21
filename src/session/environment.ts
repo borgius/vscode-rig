@@ -46,9 +46,21 @@ export function detectGraphify(
   exec: ExecFn,
   existsCheck: (path: string) => boolean = existsSync,
 ): { available: boolean; graphPath: string | null } {
+  // Check for graphify CLI — package installs as 'graphifyy' (double-y)
+  let cliAvailable = false;
   try {
     exec('which graphify');
+    cliAvailable = true;
   } catch {
+    try {
+      exec('which graphifyy');
+      cliAvailable = true;
+    } catch {
+      // Neither binary found — MCP server may still be running via uvx
+    }
+  }
+
+  if (!cliAvailable) {
     return { available: false, graphPath: null };
   }
 
