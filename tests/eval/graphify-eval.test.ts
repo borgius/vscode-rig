@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { handlePreToolUse } from '../../src/router/hook.js';
 import { incrementMetric } from '../../src/session/metrics.js';
 import { SessionCache } from '../../src/session/cache.js';
@@ -214,11 +217,123 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
       };
     },
   },
+  {
+    id: 'env_preset_graphify_consistency',
+    description: 'env presets with graphifyAvailable=true must have graphifyGraphPath set',
+    run: (envPreset) => {
+      const { graphifyAvailable, graphifyGraphPath } = envPreset.env;
+      const consistent = graphifyAvailable ? graphifyGraphPath !== null : true;
+
+      return {
+        expected: { action: 'consistent' },
+        actual: { action: consistent ? 'consistent' : `available=${graphifyAvailable},path=${graphifyGraphPath}` },
+        score: consistent ? 1.0 : 0.0,
+        pass: consistent,
+      };
+    },
+  },
+];
+
+// Scenarios that check file contents (run once, not per env preset)
+const TEMPLATE_SCENARIOS: GraphifyScenario[] = [
+  {
+    id: 'scout_template_lists_graphify_tools',
+    description: 'scout agent template includes all graphify MCP tools in tools field',
+    run: () => {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const templatePath = resolve(__dirname, '..', '..', 'templates', 'agents', 'scout.md');
+      const content = readFileSync(templatePath, 'utf-8');
+      const toolsMatch = content.match(/^tools:\s*"(.+)"/m);
+      const toolsField = toolsMatch ? toolsMatch[1] : '';
+
+      const requiredTools = [
+        'mcp__graphify__query_graph',
+        'mcp__graphify__get_community',
+        'mcp__graphify__god_nodes',
+        'mcp__graphify__shortest_path',
+        'mcp__graphify__graph_stats',
+      ];
+      const missing = requiredTools.filter(t => !toolsField.includes(t));
+
+      return {
+        expected: { action: 'all_graphify_tools_present' },
+        actual: { action: missing.length === 0 ? 'all_present' : `missing:${missing.join(',')}` },
+        score: missing.length === 0 ? 1.0 : (requiredTools.length - missing.length) / requiredTools.length,
+        pass: missing.length === 0,
+      };
+    },
+  },
+  {
+    id: 'scout_template_graphifyy_fallback',
+    description: 'scout agent template mentions graphifyy as fallback CLI check',
+    run: () => {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const templatePath = resolve(__dirname, '..', '..', 'templates', 'agents', 'scout.md');
+      const content = readFileSync(templatePath, 'utf-8');
+
+      const hasGraphifyy = content.includes('graphifyy');
+
+      return {
+        expected: { action: 'graphifyy_mentioned' },
+        actual: { action: hasGraphifyy ? 'graphifyy_mentioned' : 'graphifyy_absent' },
+        score: hasGraphifyy ? 1.0 : 0.0,
+        pass: hasGraphifyy,
+      };
+    },
+  },
+  {
+    id: 'scout_template_step_2_5_graphify',
+    description: 'scout agent template Step 2.5 instructs agent to call graphify tools',
+    run: () => {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const templatePath = resolve(__dirname, '..', '..', 'templates', 'agents', 'scout.md');
+      const content = readFileSync(templatePath, 'utf-8');
+
+      // Step 2.5 should reference specific graphify tool calls
+      const hasGodNodes = content.includes('god_nodes');
+      const hasCommunity = content.includes('get_community');
+      const hasShortestPath = content.includes('shortest_path');
+
+      const passed = hasGodNodes && hasCommunity && hasShortestPath;
+
+      return {
+        expected: { action: 'step_2_5_references_tools' },
+        actual: { action: passed ? 'all_referenced' : 'missing_references' },
+        score: passed ? 1.0 : 0.0,
+        pass: passed,
+      };
+    },
+  },
+  {
+    id: 'session_start_gates_graphify_on_env',
+    description: 'session-start code gates graphify tool emissions on env.graphifyAvailable',
+    run: () => {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const startPath = resolve(__dirname, '..', '..', 'src', 'session', 'start.ts');
+      const content = readFileSync(startPath, 'utf-8');
+
+      const hasGraphifyGate = content.includes('if (env.graphifyAvailable)');
+      const hasQueryGraph = content.includes('mcp__graphify__query_graph');
+      const hasGodNodes = content.includes('mcp__graphify__god_nodes');
+      const hasCommunity = content.includes('mcp__graphify__get_community');
+      const hasShortestPath = content.includes('mcp__graphify__shortest_path');
+
+      const allPresent = hasGraphifyGate && hasQueryGraph && hasGodNodes && hasCommunity && hasShortestPath;
+
+      return {
+        expected: { action: 'code_correct' },
+        actual: { action: allPresent ? 'code_correct' : 'code_missing_references' },
+        score: allPresent ? 1.0 : 0.0,
+        pass: allPresent,
+      };
+    },
+  },
 ];
 
 describe('Context Eval: graphify integration', () => {
   const results: EvalResult[] = [];
 
+  // Env-dependent scenarios: run across all presets
   for (const scenario of GRAPHIFY_SCENARIOS) {
     for (const envPreset of ENV_PRESETS) {
       const testId = `${scenario.id} [${envPreset.name}]`;
@@ -249,6 +364,29 @@ describe('Context Eval: graphify integration', () => {
         expect(result.pass).toBe(true);
       });
     }
+  }
+
+  // Template/code scenarios: run once
+  for (const scenario of TEMPLATE_SCENARIOS) {
+    it(scenario.id, () => {
+      const result = scenario.run(ENV_PRESETS[0]); // preset unused but required by type
+
+      results.push({
+        scenarioId: scenario.id,
+        environment: 'template',
+        category: 'graphify',
+        expected: result.expected as any,
+        actual: result.actual,
+        score: result.score,
+        pass: result.pass,
+      });
+
+      if (!result.pass) {
+        expect.fail(`Graphify eval mismatch: ${scenario.description}\n  Expected: ${JSON.stringify(result.expected)}\n  Actual:   ${JSON.stringify(result.actual)}`);
+      }
+
+      expect(result.pass).toBe(true);
+    });
   }
 
   it('overall score meets minimum threshold', () => {

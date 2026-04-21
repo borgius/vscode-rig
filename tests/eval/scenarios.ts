@@ -46,7 +46,7 @@ export const ENV_PRESETS: EnvPreset[] = [
       jcodemunchCwdRepo: 'local/test',
       jcodemunchKnownRepos: ['local/test'],
       graphifyAvailable: true,
-      graphifyGraphPath: null,
+      graphifyGraphPath: 'graphify-out/graph.json',
       detectedAt: Date.now(),
     },
   },

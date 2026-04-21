@@ -37,7 +37,7 @@ Call `get_file_tree` to understand:
 
 ### Step 2.5: Map relationships (if graphify available)
 
-If graphify is installed and `graphify-out/graph.json` exists:
+If graphify is installed (`which graphify` or `which graphifyy`) and `graphify-out/graph.json` exists:
 
 1. Call `god_nodes(top_n=10)` to identify core abstractions
 2. Call `get_community(community_id)` for the top 3 communities by size
@@ -110,7 +110,7 @@ Then proceed with steps 1-5 on the newly indexed repo
 When exploring a directory outside the current project:
 
 1. Check if `<target-directory>/graphify-out/graph.json` exists
-2. If not, and graphify is available (check: `which graphify`), run:
+2. If not, and graphify is available (check: `which graphify` or `which graphifyy`), run:
 
    ```bash
    graphify update <target-directory>
