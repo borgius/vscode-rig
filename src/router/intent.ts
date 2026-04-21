@@ -79,6 +79,52 @@ function classifyBashCommand(command: string): IntentType {
   return highest;
 }
 
+/**
+ * Detect shell chaining/piping operators outside of quoted strings.
+ * Matches `;`, `&&`, `||`, and `|` but ignores operators inside
+ * single or double quotes, and ignores redirect tokens like `2>&1`.
+ */
+export function isCompoundCommand(command: string): boolean {
+  let inSingle = false;
+  let inDouble = false;
+  let i = 0;
+
+  while (i < command.length) {
+    const ch = command[i];
+
+    if (ch === '\'' && !inDouble) {
+      inSingle = !inSingle;
+      i++;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      i++;
+      continue;
+    }
+
+    if (inSingle || inDouble) {
+      i++;
+      continue;
+    }
+
+    // Check for multi-char operators first
+    if (ch === '&' && command[i + 1] === '&') return true;
+    if (ch === '|' && command[i + 1] === '|') return true;
+
+    // Single-char operators (but | followed by & is 2>&1 redirect, not a pipe)
+    if (ch === ';') return true;
+    if (ch === '|') {
+      // |& is a pipe-and-stderr redirect, still a pipe
+      return true;
+    }
+
+    i++;
+  }
+
+  return false;
+}
+
 export function classifyIntent(tool: string, args: Record<string, unknown>): IntentType {
   // Direct tool mapping
   if (tool === 'Bash' && typeof args.command === 'string') {

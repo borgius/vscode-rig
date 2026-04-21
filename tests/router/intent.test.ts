@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyIntent, IntentType } from '../../src/router/intent.js';
+import { classifyIntent, isCompoundCommand, type IntentType } from '../../src/router/intent.js';
 
 describe('classifyIntent', () => {
   describe('bash command classification', () => {
@@ -128,6 +128,56 @@ describe('classifyIntent', () => {
 
     it('file_modify wins over file_read in compound command', () => {
       expect(classifyIntent('Bash', { command: "cat file ; sed -i 's/a/b/g' file" })).toBe('file_modify');
+    });
+  });
+
+  describe('isCompoundCommand', () => {
+    it('detects semicolon separator', () => {
+      expect(isCompoundCommand('ls -la /path/file 2>/dev/null; diff /path/file -')).toBe(true);
+    });
+
+    it('detects && separator', () => {
+      expect(isCompoundCommand('git status && git diff')).toBe(true);
+    });
+
+    it('detects || separator', () => {
+      expect(isCompoundCommand('cmd1 || cmd2')).toBe(true);
+    });
+
+    it('detects | pipe', () => {
+      expect(isCompoundCommand('cat file | grep pattern')).toBe(true);
+    });
+
+    it('detects mixed operators', () => {
+      expect(isCompoundCommand('cat file | grep foo && ls')).toBe(true);
+    });
+
+    it('returns false for simple command', () => {
+      expect(isCompoundCommand('cat file.ts')).toBe(false);
+    });
+
+    it('returns false for redirect without pipe', () => {
+      expect(isCompoundCommand('ls -la /path 2>/dev/null')).toBe(false);
+    });
+
+    it('returns false for 2>&1 redirect', () => {
+      expect(isCompoundCommand('docker compose build 2>&1 | grep error')).toBe(true);
+    });
+
+    it('ignores semicolon inside single quotes', () => {
+      expect(isCompoundCommand("grep 'foo;bar' file")).toBe(false);
+    });
+
+    it('ignores pipe inside double quotes', () => {
+      expect(isCompoundCommand('grep "a|b" file')).toBe(false);
+    });
+
+    it('ignores && inside double quotes', () => {
+      expect(isCompoundCommand('echo "run && check"')).toBe(false);
+    });
+
+    it('detects operator outside quotes even when quotes present', () => {
+      expect(isCompoundCommand("echo 'hello' && grep 'world' file")).toBe(true);
     });
   });
 });
