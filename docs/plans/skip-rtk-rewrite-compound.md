@@ -4,7 +4,10 @@
 
 ## Problem
 
-When an agent issues a chained command like `ls -la /path/file 2>/dev/null; diff /path/file -`, the PreToolUse hook rewrites it through rtk (e.g., `rtk ls -la ...; diff ...`). This rewritten command is different from the original, requiring user approval because Claude Code treats it as a new command.
+When an agent issues a chained command like `ls -la file; diff file -`, the
+PreToolUse hook rewrites it through rtk (e.g., `rtk ls ...; diff ...`). This
+rewritten command is different from the original, requiring user approval
+because Claude Code treats it as a new command.
 
 ## Solution
 
