@@ -22,6 +22,7 @@ export class SessionCache {
   private changedFiles: string[] = [];
   private toolsWarned = false;
   private pythonEnv: PythonEnv | undefined;
+  private advisedIntents: Set<string> = new Set();
 
   constructor(cwd?: string, sessionId?: string) {
     this.cwd = cwd;
@@ -104,6 +105,15 @@ export class SessionCache {
     this.save();
   }
 
+  hasAdvised(intent: string): boolean {
+    return this.advisedIntents.has(intent);
+  }
+
+  markAdvised(intent: string): void {
+    this.advisedIntents.add(intent);
+    this.save();
+  }
+
   getPythonEnv(): PythonEnv | undefined {
     return this.pythonEnv;
   }
@@ -122,6 +132,7 @@ export class SessionCache {
     this.toolsWarned = false;
     this.changedFiles = [];
     this.pythonEnv = undefined;
+    this.advisedIntents = new Set();
     this.save();
   }
 
@@ -140,6 +151,7 @@ export class SessionCache {
       toolsWarned: this.toolsWarned,
       changedFiles: [...this.changedFiles],
       pythonEnv: this.pythonEnv ?? null,
+      advisedIntents: Array.from(this.advisedIntents),
     };
   }
 
@@ -174,6 +186,7 @@ export class SessionCache {
       this.toolsWarned = data.toolsWarned ?? false;
       this.changedFiles = data.changedFiles ?? [];
       this.pythonEnv = data.pythonEnv ?? undefined;
+      this.advisedIntents = new Set(data.advisedIntents ?? []);
     } catch {
       // Corrupt or unreadable file — start fresh
     }

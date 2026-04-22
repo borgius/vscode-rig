@@ -94,6 +94,9 @@ export function handlePreToolUse(
     if (env.jcodemunchAvailable) {
       const enforcement = getEffectiveEnforcement('scout_explore', config, match.enforcement);
       if (enforcement === 'silent') return null;
+      // First-occurrence suppression for scout_explore advisory
+      if (enforcement === 'advise' && cache.hasAdvised('scout_explore')) return null;
+      cache.markAdvised('scout_explore');
       const prefix = enforcement === 'block' ? '[BLOCK]' : '[ADVISE]';
       return [
         `${prefix} Tool Router: scout_explore detected`,
@@ -119,8 +122,8 @@ export function handlePreToolUse(
     }
   }
 
-  // Step 2: Python environment rewrite for Bash commands
-  if (tool === 'Bash' && typeof args.command === 'string') {
+  // Step 2: Python environment rewrite for Bash commands (skip compound commands)
+  if (tool === 'Bash' && typeof args.command === 'string' && !isCompoundCommand(args.command)) {
     const pythonEnv = cache.getPythonEnv();
     if (pythonEnv) {
       const rewritten = tryPythonRewrite(args.command, effectiveCwd, pythonEnv, resolvedOptions.existsCheck);
@@ -155,6 +158,12 @@ export function handlePreToolUse(
   const enforcementLevel = getEffectiveEnforcement(match.intent, config, match.enforcement);
 
   if (enforcementLevel === 'silent') return null;
+
+  // First-occurrence suppression: advise once per intent per session
+  if (resolution.action === 'advise' && enforcementLevel === 'advise') {
+    if (cache.hasAdvised(match.intent)) return null;
+    cache.markAdvised(match.intent);
+  }
 
   const prefix = enforcementLevel === 'block' ? '[BLOCK]' : '[ADVISE]';
 

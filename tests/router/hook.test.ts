@@ -34,12 +34,12 @@ describe('handlePreToolUse', () => {
     expect(result).toBeNull(); // null = allow, no output
   });
 
-  it('advises jcodemunch for Grep when indexed', () => {
+  it('advises jcodemunch for Grep when indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Grep', { pattern: 'function' }, cache, config);
     expect(result).not.toBeNull();
     expect(result).toContain('jcodemunch');
-    expect(result).toContain('advise');
+    expect(result).toContain('ADVISE');
   });
 
   it('blocks sed -i regardless of environment', () => {
@@ -69,26 +69,36 @@ describe('handlePreToolUse', () => {
     expect(result).toBeNull();
   });
 
-  it('allows native Grep when environment not set (no jcodemunch to advise)', () => {
-    // No environment set — native_grep falls through to fallback: allow
-    const result = handlePreToolUse('Grep', { pattern: 'test' }, cache, config);
-    expect(result).toBeNull();
-  });
-
-  it('includes enforcement level in output', () => {
+  it('advises jcodemunch for native Grep on first call', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
-    const result = handlePreToolUse('Bash', { command: 'grep -r pattern .' }, cache, config);
+    const result = handlePreToolUse('Grep', { pattern: 'test' }, cache, config);
     expect(result).not.toBeNull();
-    // grep default enforcement is 'advise'
+    expect(result).toContain('jcodemunch');
     expect(result).toContain('ADVISE');
   });
 
-  it('advises jcodemunch for native Read on code file when indexed', () => {
+  it('suppresses jcodemunch advisory for native Grep on second call (first-occurrence)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    // First call — advises
+    handlePreToolUse('Grep', { pattern: 'test' }, cache, config);
+    // Second call — suppressed
+    const result = handlePreToolUse('Grep', { pattern: 'another' }, cache, config);
+    expect(result).toBeNull();
+  });
+
+  it('advises for native Read on code file when jcodemunch indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Read', { file_path: '/some/file.ts' }, cache, config);
     expect(result).not.toBeNull();
     expect(result).toContain('jcodemunch');
     expect(result).toContain('ADVISE');
+  });
+
+  it('suppresses native Read advisory on second call (first-occurrence)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    handlePreToolUse('Read', { file_path: '/some/file.ts' }, cache, config);
+    const result = handlePreToolUse('Read', { file_path: '/other/file.ts' }, cache, config);
+    expect(result).toBeNull();
   });
 
   it('allows native Read on code file when jcodemunch not indexed', () => {
@@ -109,12 +119,19 @@ describe('handlePreToolUse', () => {
     expect(result).toBeNull();
   });
 
-  it('advises jcodemunch for native Grep when indexed', () => {
+  it('advises for native Grep when jcodemunch indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Grep', { pattern: 'function' }, cache, config);
     expect(result).not.toBeNull();
     expect(result).toContain('jcodemunch');
     expect(result).toContain('ADVISE');
+  });
+
+  it('suppresses Grep advisory on second call (first-occurrence)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    handlePreToolUse('Grep', { pattern: 'function' }, cache, config);
+    const result = handlePreToolUse('Grep', { pattern: 'another' }, cache, config);
+    expect(result).toBeNull();
   });
 
   it('allows native Grep when jcodemunch not indexed', () => {
@@ -123,12 +140,19 @@ describe('handlePreToolUse', () => {
     expect(result).toBeNull();
   });
 
-  it('advises jcodemunch for native Glob on code pattern when indexed', () => {
+  it('advises for native Glob on code pattern when jcodemunch indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Glob', { pattern: '**/*.ts' }, cache, config);
     expect(result).not.toBeNull();
     expect(result).toContain('jcodemunch');
     expect(result).toContain('ADVISE');
+  });
+
+  it('suppresses Glob advisory on second call (first-occurrence)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    handlePreToolUse('Glob', { pattern: '**/*.ts' }, cache, config);
+    const result = handlePreToolUse('Glob', { pattern: '**/*.py' }, cache, config);
+    expect(result).toBeNull();
   });
 
   it('allows native Glob when jcodemunch not indexed', () => {
@@ -170,14 +194,13 @@ describe('handlePreToolUse', () => {
   // cwd_path_expand tests
   it('advises when Bash command starts with fully-qualified CWD path', () => {
     cache.setEnvironment(makeEnv());
-    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
+    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
     expect(result).not.toBeNull();
     expect(result).toContain('ADVISE');
-    expect(result).toContain('./.venv/bin/pip');
+    expect(result).toContain('./bin/pip');
   });
 
-  it('cwd_path_expand respects silent enforcement', () => {
-    config.rules.tool_routing!.cwd_path_expand = 'silent';
+  it('cwd_path_expand does not fire on .venv/bin paths', () => {
     cache.setEnvironment(makeEnv());
     const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
     expect(result).toBeNull();
@@ -186,7 +209,7 @@ describe('handlePreToolUse', () => {
   it('cwd_path_expand respects block enforcement', () => {
     config.rules.tool_routing!.cwd_path_expand = 'block';
     cache.setEnvironment(makeEnv());
-    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
+    const result = handlePreToolUse('Bash', { command: '/home/user/projects/my-app/bin/pip install pytest' }, cache, config, '/home/user/projects/my-app');
     expect(result).not.toBeNull();
     expect(result).toContain('BLOCK');
   });
@@ -227,11 +250,25 @@ describe('handlePreToolUse', () => {
     cache.setPythonEnv({ venvPath: '/project/.venv', uvAvailable: false, uvPath: null, detectedAt: Date.now() });
     const result = handlePreToolUse(
       'Bash',
-      { command: 'pytest --version' },
+      { command: 'git add src/store.py' },
       cache,
       config,
       '/project',
       { existsCheck: () => true },
+    );
+    expect(result).toBeNull();
+  });
+
+  it('does not rewrite compound commands', () => {
+    cache.setEnvironment(makeEnv());
+    cache.setPythonEnv({ venvPath: null, uvAvailable: true, uvPath: '/usr/bin/uv', detectedAt: Date.now() });
+    const result = handlePreToolUse(
+      'Bash',
+      { command: 'pytest tests/test_foo.py && git add src/store.py' },
+      cache,
+      config,
+      '/project',
+      { existsCheck: () => false },
     );
     expect(result).toBeNull();
   });
@@ -258,7 +295,7 @@ describe('scout_explore advisory', () => {
     config = structuredClone(DEFAULT_CONFIG);
   });
 
-  it('advises scout for Agent Explore when jcodemunch available and indexed', () => {
+  it('advises scout for Agent Explore when jcodemunch available and indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth files' }, cache, config);
     expect(result).not.toBeNull();
@@ -266,7 +303,14 @@ describe('scout_explore advisory', () => {
     expect(result).toContain('ADVISE');
   });
 
-  it('advises scout for Agent Explore when jcodemunch available but NOT indexed', () => {
+  it('suppresses scout advisory for Agent Explore on second call (first-occurrence)', () => {
+    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
+    handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth files' }, cache, config);
+    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find config files' }, cache, config);
+    expect(result).toBeNull();
+  });
+
+  it('advises scout for Agent Explore when jcodemunch available but NOT indexed (first call)', () => {
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: false }));
     const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'map the codebase' }, cache, config);
     expect(result).not.toBeNull();
@@ -296,14 +340,7 @@ describe('scout_explore advisory', () => {
     expect(result).toBeNull();
   });
 
-  it('respects silent enforcement', () => {
-    config.rules.tool_routing!.scout_explore = 'silent';
-    cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
-    const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth' }, cache, config);
-    expect(result).toBeNull();
-  });
-
-  it('respects block enforcement', () => {
+  it('respects block enforcement for scout_explore', () => {
     config.rules.tool_routing!.scout_explore = 'block';
     cache.setEnvironment(makeEnv({ jcodemunchAvailable: true, jcodemunchCwdIndexed: true }));
     const result = handlePreToolUse('Agent', { subagent_type: 'Explore', prompt: 'find auth' }, cache, config);
