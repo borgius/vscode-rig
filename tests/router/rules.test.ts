@@ -237,9 +237,15 @@ describe('cwd_path_expand rule', () => {
 
   it('matches Bash command starting with fully-qualified CWD path', () => {
     const rules = getDefaultRules(cwd);
-    const match = findMatchingRule('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, rules);
+    const match = findMatchingRule('Bash', { command: '/home/user/projects/my-app/bin/pip install pytest' }, rules);
     expect(match).toBeDefined();
     expect(match!.intent).toBe('cwd_path_expand');
+  });
+
+  it('does not match .venv/bin paths (legitimate venv invocation)', () => {
+    const rules = getDefaultRules(cwd);
+    const match = findMatchingRule('Bash', { command: '/home/user/projects/my-app/.venv/bin/pip install pytest' }, rules);
+    expect(match).toBeUndefined();
   });
 
   it('does not match Bash command starting with different path', () => {

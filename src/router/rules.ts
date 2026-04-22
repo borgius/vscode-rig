@@ -160,7 +160,10 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
         if (tool !== 'Bash') return false;
         const command = args.command as string | undefined;
         if (!command || !cwd) return false;
-        return command.startsWith(cwd + '/');
+        if (!command.startsWith(cwd + '/')) return false;
+        // .venv/bin paths are legitimate — the Python rewrite produces them
+        if (command.includes('.venv/')) return false;
+        return true;
       },
       intent: 'cwd_path_expand',
       resolutions: {

@@ -2,14 +2,23 @@ import { join, relative } from 'node:path';
 import { existsSync } from 'node:fs';
 import type { PythonEnv } from '../types.js';
 
+const PYTHON_BINARIES = [
+  'python', 'python3', 'pip', 'pip3',
+  'pytest', 'py.test',
+  'ruff', 'black', 'mypy', 'flake8', 'pylint', 'isort',
+  'coverage',
+  'uv', 'tox', 'nox', 'hatch', 'poetry',
+  'pyinstaller', 'celery', 'gunicorn', 'uvicorn',
+];
+
 /**
- * Check if a command references a .py file in its arguments.
- * This is the signal that we're in a Python context.
+ * Check if the command's binary is a known Python tool.
+ * This is the signal that we're in a Python context —
+ * not whether .py files appear in arguments.
  */
-export function hasPythonSignal(command: string): boolean {
-  // Match .py as a file extension: preceded by a word char or / or . (path)
-  // and NOT followed by a word char (rules out .pyc, .pyo, .pyx, etc.)
-  return /\.py\b/.test(command);
+export function isPythonBinary(command: string): boolean {
+  const binary = command.trimStart().split(/\s+/)[0] ?? '';
+  return PYTHON_BINARIES.includes(binary);
 }
 
 /**
@@ -19,7 +28,7 @@ export function hasPythonSignal(command: string): boolean {
  * 2. uv available → rewrite to `uv run <command>`
  * 3. Neither → return null (pass through)
  *
- * Only triggers when the command has a .py file in its arguments.
+ * Only triggers when the binary is a known Python tool.
  * Uses relative paths to avoid triggering CWD path expansion rules
  * and Claude Code permission prompts on absolute paths.
  */
@@ -29,7 +38,7 @@ export function tryPythonRewrite(
   pythonEnv: PythonEnv,
   existsCheck: (path: string) => boolean = existsSync,
 ): string | null {
-  if (!hasPythonSignal(command)) return null;
+  if (!isPythonBinary(command)) return null;
 
   const { venvPath, uvAvailable } = pythonEnv;
 

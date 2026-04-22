@@ -103,6 +103,7 @@ export interface SessionCacheFile {
   toolsWarned: boolean;
   changedFiles: string[];
   pythonEnv: PythonEnv | null;
+  advisedIntents?: string[];
 }
 
 // ── Config Types ──

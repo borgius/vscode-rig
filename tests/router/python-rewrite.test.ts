@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hasPythonSignal, tryPythonRewrite } from '../../src/router/python-rewrite.js';
+import { isPythonBinary, tryPythonRewrite } from '../../src/router/python-rewrite.js';
 import type { PythonEnv } from '../../src/types.js';
 
 function makePythonEnv(overrides: Partial<PythonEnv> = {}): PythonEnv {
@@ -12,29 +12,81 @@ function makePythonEnv(overrides: Partial<PythonEnv> = {}): PythonEnv {
   };
 }
 
-describe('hasPythonSignal', () => {
-  it('detects .py file in command args', () => {
-    expect(hasPythonSignal('pytest tests/test_foo.py -v')).toBe(true);
+describe('isPythonBinary', () => {
+  it('matches python', () => {
+    expect(isPythonBinary('python src/main.py')).toBe(true);
   });
 
-  it('detects .py file with path prefix', () => {
-    expect(hasPythonSignal('python src/main.py')).toBe(true);
+  it('matches python3', () => {
+    expect(isPythonBinary('python3 -m pytest')).toBe(true);
   });
 
-  it('returns false when no .py file in args', () => {
-    expect(hasPythonSignal('pytest --version')).toBe(false);
+  it('matches pytest', () => {
+    expect(isPythonBinary('pytest tests/test_foo.py -v')).toBe(true);
   });
 
-  it('returns false for .pyc files', () => {
-    expect(hasPythonSignal('cat module.pyc')).toBe(false);
+  it('matches pip', () => {
+    expect(isPythonBinary('pip install -r requirements.txt')).toBe(true);
   });
 
-  it('returns false for .py in directory names', () => {
-    expect(hasPythonSignal('ls src.python/')).toBe(false);
+  it('matches ruff', () => {
+    expect(isPythonBinary('ruff check src/')).toBe(true);
   });
 
-  it('detects .py at end of quoted path', () => {
-    expect(hasPythonSignal('pytest "tests/test bar.py"')).toBe(true);
+  it('matches black', () => {
+    expect(isPythonBinary('black src/main.py')).toBe(true);
+  });
+
+  it('matches mypy', () => {
+    expect(isPythonBinary('mypy src/')).toBe(true);
+  });
+
+  it('matches uv', () => {
+    expect(isPythonBinary('uv run pytest')).toBe(true);
+  });
+
+  it('matches coverage', () => {
+    expect(isPythonBinary('coverage run -m pytest')).toBe(true);
+  });
+
+  it('does NOT match git', () => {
+    expect(isPythonBinary('git add src/store.py')).toBe(false);
+  });
+
+  it('does NOT match git commit with .py in message', () => {
+    expect(isPythonBinary('git commit -m "fix store.py bug"')).toBe(false);
+  });
+
+  it('does NOT match ls', () => {
+    expect(isPythonBinary('ls src/python/')).toBe(false);
+  });
+
+  it('does NOT match cat', () => {
+    expect(isPythonBinary('cat module.py')).toBe(false);
+  });
+
+  it('does NOT match echo', () => {
+    expect(isPythonBinary('echo "test.py"')).toBe(false);
+  });
+
+  it('does NOT match curl', () => {
+    expect(isPythonBinary('curl https://example.com/api.py')).toBe(false);
+  });
+
+  it('matches tox', () => {
+    expect(isPythonBinary('tox')).toBe(true);
+  });
+
+  it('matches nox', () => {
+    expect(isPythonBinary('nox')).toBe(true);
+  });
+
+  it('matches hatch', () => {
+    expect(isPythonBinary('hatch test')).toBe(true);
+  });
+
+  it('matches poetry', () => {
+    expect(isPythonBinary('poetry run pytest')).toBe(true);
   });
 });
 
@@ -74,18 +126,18 @@ describe('tryPythonRewrite', () => {
     expect(result).toBe('.venv/bin/pytest tests/test_foo.py -v');
   });
 
-  it('returns null when no .py signal', () => {
-    const pyEnv = makePythonEnv({ venvPath: '/project/.venv' });
+  it('returns null for non-Python binary even with .py in args', () => {
+    const pyEnv = makePythonEnv({ venvPath: '/project/.venv', uvAvailable: true, uvPath: '/usr/bin/uv' });
     const result = tryPythonRewrite(
-      'pytest --version',
+      'git add src/store.py tests/test_store.py',
       cwd,
       pyEnv,
-      () => true,
+      () => false,
     );
     expect(result).toBeNull();
   });
 
-  it('returns null when binary not in venv and no uv', () => {
+  it('returns null for non-Python binary', () => {
     const pyEnv = makePythonEnv({ venvPath: '/project/.venv' });
     const result = tryPythonRewrite(
       'mytool tests/test_foo.py -v',
@@ -124,8 +176,19 @@ describe('tryPythonRewrite', () => {
       'black tests/test_foo.py',
       cwd,
       pyEnv,
-      (p) => p === '/project/.venv/bin/black' ? false : false,
+      () => false,
     );
     expect(result).toBe('uv run black tests/test_foo.py');
+  });
+
+  it('rewrites pytest --version when venv has pytest', () => {
+    const pyEnv = makePythonEnv({ venvPath: '/project/.venv' });
+    const result = tryPythonRewrite(
+      'pytest --version',
+      cwd,
+      pyEnv,
+      (p) => p === '/project/.venv/bin/pytest',
+    );
+    expect(result).toBe('.venv/bin/pytest --version');
   });
 });
