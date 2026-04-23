@@ -141,8 +141,13 @@ function formatActiveRules(config: HarnessConfig): string | null {
   return `  Active enforcement: ${active.join(', ')}`;
 }
 
-async function detectAndIndex(cwd: string): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
-  const env = await detectEnvironment(cwd);
+async function detectAndIndex(
+  cwd: string,
+  exec?: import('./environment.js').ExecFn,
+  existsCheck?: (path: string) => boolean,
+  statCheck?: (path: string) => { size: number } | undefined,
+): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
+  const env = await detectEnvironment(cwd, exec, existsCheck, statCheck);
   let fileCapHit: FileCapWarning | undefined;
 
   // Auto-index if jcodemunch is available but CWD isn't indexed

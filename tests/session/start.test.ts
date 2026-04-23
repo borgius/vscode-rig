@@ -355,13 +355,15 @@ describe('handleSessionStart', () => {
       const { join } = await import('node:path');
       const tmpDir = '/tmp/rig-test-graphify-' + process.pid;
       mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
-      const graphData = JSON.stringify({
+      const graphObj = {
         nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }, { id: 'c', community: 1 }],
         links: [
           { source: 'a', target: 'b', confidence: 'EXTRACTED' },
           { source: 'b', target: 'c', confidence: 'INFERRED' },
         ],
-      });
+      };
+      // Pad to exceed 1KB placeholder threshold
+      const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
@@ -404,7 +406,7 @@ describe('handleSessionStart', () => {
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), JSON.stringify({
         nodes: [{ id: 'a' }],
         links: [],
-      }));
+      }) + ' '.repeat(1100));
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
@@ -441,10 +443,11 @@ describe('handleSessionStart', () => {
       const { join } = await import('node:path');
       const tmpDir = '/tmp/rig-test-graphify-cache-' + process.pid;
       mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
-      const graphData = JSON.stringify({
+      const graphObj = {
         nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }],
         links: [{ source: 'a', target: 'b', confidence: 'EXTRACTED' }],
-      });
+      };
+      const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {

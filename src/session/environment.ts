@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { basename, join } from 'node:path';
-import { existsSync } from 'node:fs';
-import type { Environment } from '../types.js';
+import { existsSync, statSync } from 'node:fs';
+import type { Environment, GraphBuildInfo } from '../types.js';
 
 export interface ExecFn {
   (command: string, options?: { encoding?: string; timeout?: number }): string;
@@ -14,10 +14,11 @@ export async function detectEnvironment(
   cwd: string,
   exec: ExecFn = defaultExec,
   existsCheck: (path: string) => boolean = existsSync,
+  statCheck: (path: string) => { size: number } | undefined = defaultStatCheck,
 ): Promise<Environment> {
   const rtkResult = detectRtk(exec);
   const jmResult = detectJcodemunch(cwd, exec);
-  const graphifyResult = detectGraphify(cwd, exec, existsCheck);
+  const graphifyResult = detectGraphify(cwd, exec, existsCheck, statCheck);
 
   return {
     rtkAvailable: rtkResult.available,
@@ -26,8 +27,9 @@ export async function detectEnvironment(
     jcodemunchCwdIndexed: jmResult.cwdIndexed,
     jcodemunchCwdRepo: jmResult.cwdRepo,
     jcodemunchKnownRepos: jmResult.knownRepos,
-    graphifyAvailable: graphifyResult.available,
-    graphifyGraphPath: graphifyResult.graphPath,
+    graphifyAvailable: graphifyResult.state === 'ready',
+    graphifyGraphPath: graphifyResult.state === 'ready' ? graphifyResult.graphPath ?? null : null,
+    graphBuildInfo: graphifyResult.state === 'absent' && !graphifyResult._cliFound ? undefined : graphifyResult,
     detectedAt: Date.now(),
   };
 }
@@ -41,11 +43,26 @@ function detectRtk(exec: ExecFn): { available: boolean; path: string | null } {
   }
 }
 
+const PLACEHOLDER_THRESHOLD = 1024; // bytes
+
+const defaultStatCheck = (path: string): { size: number } | undefined => {
+  try {
+    return statSync(path);
+  } catch {
+    return undefined;
+  }
+};
+
+export interface GraphifyDetectResult extends GraphBuildInfo {
+  _cliFound: boolean;
+}
+
 export function detectGraphify(
   cwd: string,
   exec: ExecFn,
   existsCheck: (path: string) => boolean = existsSync,
-): { available: boolean; graphPath: string | null } {
+  statCheck: (path: string) => { size: number } | undefined = defaultStatCheck,
+): GraphifyDetectResult {
   // Check for graphify CLI — package installs as 'graphifyy' (double-y)
   let cliAvailable = false;
   try {
@@ -61,15 +78,20 @@ export function detectGraphify(
   }
 
   if (!cliAvailable) {
-    return { available: false, graphPath: null };
+    return { state: 'absent', _cliFound: false };
   }
 
   const graphPath = join(cwd, 'graphify-out', 'graph.json');
   if (existsCheck(graphPath)) {
-    return { available: true, graphPath: 'graphify-out/graph.json' };
+    const stat = statCheck(graphPath);
+    if (stat && stat.size >= PLACEHOLDER_THRESHOLD) {
+      return { state: 'ready', graphPath: 'graphify-out/graph.json', _cliFound: true };
+    }
+    // Placeholder or tiny file — treat as absent
+    return { state: 'absent', _cliFound: true };
   }
 
-  return { available: false, graphPath: null };
+  return { state: 'absent', _cliFound: true };
 }
 
 function detectJcodemunch(cwd: string, exec: ExecFn): {
