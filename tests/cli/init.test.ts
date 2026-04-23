@@ -57,13 +57,12 @@ describe('initCommand', () => {
     expect(content).toContain('stale_tests');
   });
 
-  it('creates graphify-out/graph.json placeholder', async () => {
+  it('creates graphify-out directory but no placeholder graph.json', async () => {
     await initCommand(tempDir, { force: false });
-    const graphPath = join(tempDir, 'graphify-out', 'graph.json');
-    expect(existsSync(graphPath)).toBe(true);
-    const content = readFileSync(graphPath, 'utf-8');
-    const parsed = JSON.parse(content);
-    expect(parsed).toEqual({ nodes: [], links: [] });
+    const graphifyDir = join(tempDir, 'graphify-out');
+    expect(existsSync(graphifyDir)).toBe(true);
+    const graphPath = join(graphifyDir, 'graph.json');
+    expect(existsSync(graphPath)).toBe(false);
   });
 
   it('does not overwrite existing graphify graph.json', async () => {

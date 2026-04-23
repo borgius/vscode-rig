@@ -99,12 +99,10 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     writeFileSync(configPath, yamlStringify(DEFAULT_CONFIG, { lineWidth: 0 }));
   }
 
-  // Create graphify placeholder so the MCP server doesn't crash on startup
+  // Create graphify-out directory (graph built on-demand, no placeholder)
   const graphifyDir = join(projectDir, 'graphify-out');
-  const graphJsonPath = join(graphifyDir, 'graph.json');
-  if (!existsSync(graphJsonPath)) {
+  if (!existsSync(graphifyDir)) {
     mkdirSync(graphifyDir, { recursive: true });
-    writeFileSync(graphJsonPath, '{"nodes": [], "links": []}\n');
   }
 
   // Update settings.json with hook registrations
