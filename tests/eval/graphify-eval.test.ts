@@ -146,9 +146,10 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
     description: 'ensureGraphBuilt returns status ready when graph exists at target',
     run: (envPreset) => {
       const existsCheck = () => true;
+      const statCheck = () => ({ size: 5000 });
       const exec = () => '';
-      const result = ensureGraphBuilt('/home/user/external-project', envPreset.env, exec, existsCheck);
-      const expected = envPreset.env.graphifyAvailable;
+      const result = ensureGraphBuilt('/home/user/external-project', envPreset.env, exec, existsCheck, statCheck);
+      const expected = envPreset.env.graphBuildInfo?.state === 'ready';
 
       return {
         expected: { action: expected ? 'ready' : 'skip' },
@@ -160,24 +161,29 @@ const GRAPHIFY_SCENARIOS: GraphifyScenario[] = [
   },
   {
     id: 'cross_repo_graph_build',
-    description: 'ensureGraphBuilt triggers build for new directory',
+    description: 'ensureGraphBuilt triggers build when graph state is absent',
     run: (envPreset) => {
+      const hasGraphify = !!envPreset.env.graphBuildInfo;
+      // Create an absent-state env variant only when graphify was originally present
+      const absentEnv = {
+        ...envPreset.env,
+        graphBuildInfo: hasGraphify ? { state: 'absent' as const } : undefined,
+      };
       let buildCalled = false;
-      let callCount = 0;
-      const existsCheck = () => { callCount++; return callCount > 1; };
+      const existsCheck = () => true;
+      const statCheck = () => ({ size: 5000 });
       const exec = (cmd: string) => { if (cmd.includes('graphify update')) buildCalled = true; return ''; };
-      const result = ensureGraphBuilt('/home/user/new-project', envPreset.env, exec, existsCheck);
+      const result = ensureGraphBuilt('/home/user/new-project', absentEnv, exec, existsCheck, statCheck);
 
-      const expected = envPreset.env.graphifyAvailable;
       return {
-        expected: { action: expected ? 'built' : 'skip' },
+        expected: { action: hasGraphify ? 'built' : 'skip' },
         actual: {
           action: result
             ? (result.status === 'ready' && buildCalled ? 'built' : result.status)
             : 'skip',
         },
-        score: (expected ? result !== null && result.status === 'ready' && buildCalled : result === null) ? 1.0 : 0.0,
-        pass: (expected ? result !== null && result.status === 'ready' && buildCalled : result === null),
+        score: (hasGraphify ? result !== null && result.status === 'ready' && buildCalled : result === null) ? 1.0 : 0.0,
+        pass: (hasGraphify ? result !== null && result.status === 'ready' && buildCalled : result === null),
       };
     },
   },
@@ -306,13 +312,13 @@ const TEMPLATE_SCENARIOS: GraphifyScenario[] = [
   },
   {
     id: 'session_start_gates_graphify_on_env',
-    description: 'session-start code gates graphify tool emissions on env.graphifyAvailable',
+    description: 'session-start code gates graphify tool emissions on graph state',
     run: () => {
       const __dirname = dirname(fileURLToPath(import.meta.url));
       const startPath = resolve(__dirname, '..', '..', 'src', 'session', 'start.ts');
       const content = readFileSync(startPath, 'utf-8');
 
-      const hasGraphifyGate = content.includes('if (env.graphifyAvailable)');
+      const hasGraphifyGate = content.includes('graphInfo?.state === \'ready\'');
       const hasQueryGraph = content.includes('mcp__graphify__query_graph');
       const hasGodNodes = content.includes('mcp__graphify__god_nodes');
       const hasCommunity = content.includes('mcp__graphify__get_community');

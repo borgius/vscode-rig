@@ -365,13 +365,15 @@ describe('handleSessionStart', () => {
       // Pad to exceed 1KB placeholder threshold
       const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+      const reportContent = '3 nodes · 2 edges · 2 communities detected\nExtraction: 50% EXTRACTED · 50% INFERRED · 0% AMBIGUOUS';
+      writeFileSync(join(tmpDir, 'graphify-out', 'GRAPH_REPORT.md'), reportContent);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
         if (cmd === 'which graphify') return '/usr/bin/graphify';
         if (cmd === 'git branch --show-current') return 'feat/test';
-        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        if (cmd.includes('GRAPH_REPORT.md')) return reportContent;
         return '';
       });
 
@@ -388,7 +390,7 @@ describe('handleSessionStart', () => {
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
-        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'which graphify' || cmd === 'which graphifyy') throw new Error('not found');
         if (cmd === 'git branch --show-current') return 'feat/test';
         return '';
       });
@@ -428,7 +430,7 @@ describe('handleSessionStart', () => {
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
-        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'which graphify' || cmd === 'which graphifyy') throw new Error('not found');
         if (cmd === 'git branch --show-current') return 'feat/test';
         return '';
       });
@@ -449,13 +451,15 @@ describe('handleSessionStart', () => {
       };
       const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+      const reportContent = '2 nodes · 1 edges · 1 communities detected\nExtraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS';
+      writeFileSync(join(tmpDir, 'graphify-out', 'GRAPH_REPORT.md'), reportContent);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
         if (cmd === 'which graphify') return '/usr/bin/graphify';
         if (cmd === 'git branch --show-current') return 'feat/test';
-        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        if (cmd.includes('GRAPH_REPORT.md')) return reportContent;
         return '';
       });
 

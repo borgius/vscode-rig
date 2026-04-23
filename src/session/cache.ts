@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Environment, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
+import type { Environment, GraphBuildInfo, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
 
 const ENV_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -18,6 +18,7 @@ export class SessionCache {
   private editedFiles: Map<string, Set<string>> = new Map();
   private currentPhase: string | null = null;
   private metricsBaseline: MetricsBaseline | undefined;
+  private graphBuildInfo: GraphBuildInfo | undefined;
   private metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 };
   private changedFiles: string[] = [];
   private toolsWarned = false;
@@ -87,6 +88,15 @@ export class SessionCache {
     this.save();
   }
 
+  getGraphBuildInfo(): GraphBuildInfo | undefined {
+    return this.graphBuildInfo;
+  }
+
+  setGraphBuildInfo(info: GraphBuildInfo): void {
+    this.graphBuildInfo = info;
+    this.save();
+  }
+
   getChangedFiles(): string[] {
     return [...this.changedFiles];
   }
@@ -128,6 +138,7 @@ export class SessionCache {
     this.editedFiles.clear();
     this.currentPhase = null;
     this.metricsBaseline = undefined;
+    this.graphBuildInfo = undefined;
     this.metricCounters = { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 };
     this.toolsWarned = false;
     this.changedFiles = [];
@@ -147,6 +158,7 @@ export class SessionCache {
       editedFiles: editedFilesObj,
       currentPhase: this.currentPhase,
       metricsBaseline: this.metricsBaseline ?? null,
+      graphBuildInfo: this.graphBuildInfo ?? undefined,
       metricCounters: { ...this.metricCounters },
       toolsWarned: this.toolsWarned,
       changedFiles: [...this.changedFiles],
@@ -182,6 +194,7 @@ export class SessionCache {
 
       this.currentPhase = data.currentPhase ?? null;
       this.metricsBaseline = data.metricsBaseline ?? undefined;
+      this.graphBuildInfo = data.graphBuildInfo ?? undefined;
       this.metricCounters = data.metricCounters ?? { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 };
       this.toolsWarned = data.toolsWarned ?? false;
       this.changedFiles = data.changedFiles ?? [];
