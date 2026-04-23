@@ -292,8 +292,13 @@ Task 1 (types)
 **Files:**
 - `tests/eval/graphify-eval.test.ts` (modify, lines 1-407)
 - `tests/eval/scenarios.ts` (modify, lines 20-21, 48-49)
+- `tests/eval/session-state-eval.test.ts` (modify, lines 17-18, 62-63, 90-127)
+- `tests/eval/config-override-eval.test.ts` (modify, lines 17-18)
+- `tests/eval/determinism-eval.test.ts` (modify, line 59)
+- `tests/eval/first-occurrence-eval.test.ts` (modify, lines 15-16)
+- `tests/eval/python-eval.test.ts` (modify, lines 18-19)
 
-**Test strategy:** Eval tests validate end-to-end integration. Run as final validation.
+**Test strategy:** Eval tests validate end-to-end integration. Run as final validation. All files that construct inline `Environment` objects must be updated from `graphifyAvailable`/`graphifyGraphPath` to `graphBuildInfo`.
 
 **Mock check:** Uses env presets with injected functions.
 
@@ -319,10 +324,16 @@ Task 1 (types)
   - `scout_template_lists_graphify_tools`: unchanged (tools still listed)
   - `scout_template_step_2_5_graphify`: verify state-aware language
   - `session_start_gates_graphify_on_env`: update for state-based gating
-- [ ] Step 5: Verify all eval tests pass
-- [ ] Step 6: Commit
+- [ ] Step 5: Update inline env objects in other eval files:
+  - `session-state-eval.test.ts`: 3 scenarios with `graphifyAvailable`/`graphifyGraphPath` (lines 17-18, 62-63, 101-102, 126-127) and `graphifyStats` in cache (line 108) — replace with `graphBuildInfo`
+  - `config-override-eval.test.ts`: inline env (lines 17-18) — replace with `graphBuildInfo: undefined`
+  - `determinism-eval.test.ts`: `setEnvironment()` call (line 59) — verify shape still valid
+  - `first-occurrence-eval.test.ts`: inline env (lines 15-16) — replace with `graphBuildInfo: undefined`
+  - `python-eval.test.ts`: inline env (lines 18-19) — replace with `graphBuildInfo: undefined`
+- [ ] Step 6: Verify all eval tests pass (`npm test -- tests/eval/`)
+- [ ] Step 7: Commit
 
-**Evidence:** All eval tests pass. New scenarios cover state transitions, placeholder detection, filtering, async build.
+**Evidence:** All eval tests pass. New scenarios cover state transitions, placeholder detection, filtering, async build. All five additional eval files updated for new `graphBuildInfo` shape.
 
 ---
 
