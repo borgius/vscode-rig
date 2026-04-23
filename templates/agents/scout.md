@@ -53,6 +53,7 @@ Check graphify graph state before using graph tools:
    ```bash
    graphify update <project-directory>
    ```
+
 2. Wait for completion, then proceed with relationship queries above
 3. If the build fails, skip graph context and report the failure
 

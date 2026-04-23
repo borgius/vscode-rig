@@ -7,6 +7,7 @@
 **Build command:** `graphify update <path>` (not "build")
 
 **Timing:**
+
 - Full build: ~28 seconds for 1360 files (~3M words)
 - Incremental update: ~23 seconds (no incrementality observed — re-extracts all files)
 - Query commands: ~1 second on 41K-node graph
@@ -14,7 +15,7 @@
 **Output artifacts:**
 
 | File | Size | Contents |
-|------|------|----------|
+| --- | --- | --- |
 | `graphify-out/graph.json` | 74 MB | NetworkX node-link-data format |
 | `graphify-out/GRAPH_REPORT.md` | 154 KB | Human-readable corpus stats, communities, god nodes |
 | `graphify-out/cache/` | 54 MB | Per-file AST extraction cache (1360 JSON files) |
@@ -24,6 +25,7 @@
 **No LLM needed** — entire pipeline is AST-based. Token cost: 0 input / 0 output.
 
 **Broken commands in v0.4.16:**
+
 - `cluster-only` crashes with `KeyError: 'total_files'`
 - `watch` requires optional `watchdog` package
 

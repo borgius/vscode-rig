@@ -55,6 +55,7 @@ Task 1 (types)
 ### Task 2: Create graph-state module
 
 **Files:**
+
 - `src/scout/graph-state.ts` (new)
 - `tests/scout/graph-state.test.ts` (new)
 
@@ -93,6 +94,7 @@ Task 1 (types)
 ### Task 3: Rewrite environment detection for graphify
 
 **Files:**
+
 - `src/session/environment.ts` (modify, lines 44-73)
 - `tests/session/environment.test.ts` (modify, lines 198-274)
 
@@ -123,6 +125,7 @@ Task 1 (types)
 ### Task 4: Replace file-based stats capture with CLI-based
 
 **Files:**
+
 - `src/session/metrics.ts` (modify, lines 9-35)
 - `tests/session/metrics.test.ts` (modify, lines 287-365)
 
@@ -151,6 +154,7 @@ Task 1 (types)
 ### Task 5: Rewrite session-start for async build + state tracking
 
 **Files:**
+
 - `src/session/start.ts` (modify, lines 8, 20, 29-36, 54, 65-68, 103-109, 119-121)
 - `src/session/cache.ts` (modify, lines 21, 85, 131, 150, 185)
 - `tests/session/start.test.ts` (modify, lines 352-511)
@@ -184,6 +188,7 @@ Task 1 (types)
 ### Task 6: Add god node filtering
 
 **Files:**
+
 - `src/scout/mapper.ts` (modify, lines 115-134)
 - `tests/scout/mapper.test.ts` (modify or add tests)
 
@@ -211,6 +216,7 @@ Task 1 (types)
 ### Task 7: Refactor cross-repo to use graph-state module
 
 **Files:**
+
 - `src/scout/cross-repo.ts` (modify, lines 47-81)
 - `tests/scout/cross-repo.test.ts` (modify, lines 185-272)
 
@@ -236,6 +242,7 @@ Task 1 (types)
 ### Task 8: Remove placeholder from init command
 
 **Files:**
+
 - `src/cli/init.ts` (modify, lines 102-108)
 - `tests/cli/init.test.ts` (modify, lines 60-81)
 
@@ -260,6 +267,7 @@ Task 1 (types)
 ### Task 9: Update scout agent template for state-aware triggering
 
 **Files:**
+
 - `templates/agents/scout.md` (modify, lines 4, 38-47, 93-97, 108-121, 138-144)
 
 **Test strategy:** Template content assertions in `tests/scout/scout-template.test.ts` (lines 9-29).
@@ -291,6 +299,7 @@ Task 1 (types)
 ### Task 10: Update eval tests for graphify redesign
 
 **Files:**
+
 - `tests/eval/graphify-eval.test.ts` (modify, lines 1-407)
 - `tests/eval/scenarios.ts` (modify, lines 20-21, 48-49)
 - `tests/eval/session-state-eval.test.ts` (modify, lines 17-18, 62-63, 90-127)
