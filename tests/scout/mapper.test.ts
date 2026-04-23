@@ -5,6 +5,8 @@ import {
   formatSymbolSearch,
   buildCodebaseMap,
   buildGraphContext,
+  parseGodNodes,
+  GENERIC_NOISE,
 } from '../../src/scout/mapper.js';
 import type { CodebaseMap, SymbolSummary, GraphContext } from '../../src/types.js';
 
@@ -221,5 +223,56 @@ describe('buildGraphContext', () => {
     expect(result!.communities[0]).toEqual({ id: 0, label: 'router, resolver, rules', nodeCount: 15 });
     expect(result!.communities[1]).toEqual({ id: 1, label: 'mapper, scout, cache', nodeCount: 22 });
     expect(result!.communities[2]).toEqual({ id: 2, label: 'config, session', nodeCount: 8 });
+  });
+});
+
+describe('parseGodNodes', () => {
+  it('filters out generic builtin noise', () => {
+    const text = [
+      '  1. Platform - 3428 edges',
+      '  2. .get() - 2853 edges',
+      '  3. str - 2441 edges',
+      '  4. AIAgent - 1664 edges',
+      '  5. strip() - 1253 edges',
+      '  6. BasePlatformAdapter - 1457 edges',
+    ].join('\n');
+
+    const result = parseGodNodes(text);
+    expect(result.nodes).toHaveLength(3);
+    expect(result.nodes.map(n => n.label)).toEqual(['Platform', 'AIAgent', 'BasePlatformAdapter']);
+    expect(result.filteredCount).toBe(3);
+  });
+
+  it('preserves all nodes when none match noise set', () => {
+    const text = [
+      '  1. Router - 50 edges',
+      '  2. Database - 30 edges',
+    ].join('\n');
+
+    const result = parseGodNodes(text);
+    expect(result.nodes).toHaveLength(2);
+    expect(result.filteredCount).toBe(0);
+  });
+
+  it('returns empty array and zero filtered for empty input', () => {
+    const result = parseGodNodes('');
+    expect(result.nodes).toEqual([]);
+    expect(result.filteredCount).toBe(0);
+  });
+
+  it('returns empty array and zero filtered for null input', () => {
+    const result = parseGodNodes(null);
+    expect(result.nodes).toEqual([]);
+    expect(result.filteredCount).toBe(0);
+  });
+
+  it('filters all common noise patterns from GENERIC_NOISE', () => {
+    const noiseLines = Array.from(GENERIC_NOISE).map((label, i) =>
+      `  ${i + 1}. ${label} - ${100 - i} edges`
+    ).join('\n');
+
+    const result = parseGodNodes(noiseLines);
+    expect(result.nodes).toHaveLength(0);
+    expect(result.filteredCount).toBeGreaterThan(0);
   });
 });

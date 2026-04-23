@@ -115,22 +115,44 @@ interface RawCommunity {
 const GOD_NODE_PATTERN = /^\s*\d+\.\s+(.+?)\s+-\s+(\d+)\s+edges?$/;
 const COMMUNITY_PATTERN = /^Community\s+(\d+):\s+(.+?)\s+\((\d+)\s+nodes?\)$/;
 
+export const GENERIC_NOISE = new Set([
+  'str', 'int', 'float', 'bool', 'list', 'dict', 'tuple', 'set', 'bytes',
+  'None', 'True', 'False',
+  'len', 'range', 'print', 'type', 'super', 'repr', 'hash', 'id', 'dir',
+  '.get()', 'get()', '.strip()', 'strip()', '.append()', 'append()',
+  '.format()', 'format()', '.split()', 'split()', '.join()', 'join()',
+  '.items()', 'items()', '.keys()', 'keys()', '.values()', 'values()',
+  '.pop()', 'pop()', '.update()', 'update()', '.encode()', 'encode()',
+  '.decode()', 'decode()', '.lower()', 'lower()', '.upper()', 'upper()',
+  '.replace()', 'replace()', '.startswith()', 'startswith()',
+  '.endswith()', 'endswith()', '.to_string()', 'to_string()',
+  '.to_lowercase()', 'to_lowercase()', '.to_uppercase()', 'to_uppercase()',
+  'String', 'Vec', 'Option', 'Result', 'Object', 'Integer', 'Boolean',
+  'Map', 'List', 'Set', 'Any', 'Unit',
+]);
+
 function parseStatsLine(text: string, key: string): number | null {
   const pattern = new RegExp(`^${key}:\\s*(\\d+)`, 'm');
   const match = text.match(pattern);
   return match ? parseInt(match[1], 10) : null;
 }
 
-function parseGodNodes(text: string | null): RawGodNode[] {
-  if (!text) return [];
+export function parseGodNodes(text: string | null): { nodes: RawGodNode[]; filteredCount: number } {
+  if (!text) return { nodes: [], filteredCount: 0 };
   const nodes: RawGodNode[] = [];
+  let filteredCount = 0;
   for (const line of text.split('\n')) {
     const match = line.match(GOD_NODE_PATTERN);
     if (match) {
-      nodes.push({ label: match[1], degree: parseInt(match[2], 10) });
+      const label = match[1];
+      if (GENERIC_NOISE.has(label)) {
+        filteredCount++;
+      } else {
+        nodes.push({ label, degree: parseInt(match[2], 10) });
+      }
     }
   }
-  return nodes;
+  return { nodes, filteredCount };
 }
 
 function parseCommunities(text: string): RawCommunity[] {
@@ -161,7 +183,7 @@ export function buildGraphContext(
   if (nodes === null || edges === null || communitiesCount === null) return null;
 
   return {
-    godNodes: parseGodNodes(godNodesResult),
+    godNodes: parseGodNodes(godNodesResult).nodes,
     communities: parseCommunities(statsResult),
     stats: { nodes, edges, communities: communitiesCount },
   };
