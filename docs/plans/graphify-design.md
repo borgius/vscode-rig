@@ -52,11 +52,15 @@ Six-step pipeline orchestrated in `_rebuild_code()` (watch.py:15-93):
 
 #### 1. Placeholder graph fools detection
 
-`rig init` creates `{"nodes": [], "links": []}` (init.ts:102-108). `detectGraphify()` (environment.ts:67-69) returns `available: true` when graph.json exists, regardless of content. Agent sees "graphify available" but all MCP queries return empty results.
+`rig init` creates `{"nodes": [], "links": []}` (init.ts:102-108). `detectGraphify()`
+(environment.ts:67-69) returns `available: true` when graph.json exists, regardless of content.
+Agent sees "graphify available" but all MCP queries return empty results.
 
 #### 2. No auto-build at session start
 
-`ensureGraphBuilt()` (cross-repo.ts:57-81) only runs for external directories via the scout agent. Session-start hook (start.ts) only reads existing stats — never triggers a build. First session after `rig init` always has an empty graph.
+`ensureGraphBuilt()` (cross-repo.ts:57-81) only runs for external directories via the scout agent.
+Session-start hook (start.ts) only reads existing stats — never triggers a build.
+First session after `rig init` always has an empty graph.
 
 #### 3. Stats via 74 MB file read
 
@@ -64,11 +68,15 @@ Six-step pipeline orchestrated in `_rebuild_code()` (watch.py:15-93):
 
 #### 4. buildGraphContext() never called from TypeScript
 
-`buildGraphContext()` exists in mapper.ts:151-168 but is never invoked from TypeScript code. It would be called by the scout agent (markdown template) via MCP tools — meaning GraphContext construction is ad-hoc, not programmatic.
+`buildGraphContext()` exists in mapper.ts:151-168 but is never invoked from TypeScript code.
+It would be called by the scout agent (markdown template) via MCP tools — meaning
+GraphContext construction is ad-hoc, not programmatic.
 
 #### 5. Noisy god nodes
 
-hermes-agent god nodes are dominated by generic builtins: `.get()` (2,853 degree), `str` (2,441), `strip()` (1,253), `append()`. Architecture-significant nodes (`Platform`, `AIAgent`, `BasePlatformAdapter`) are buried in noise. INFERRED edges (58% of total) are the source.
+hermes-agent god nodes are dominated by generic builtins: `.get()` (2,853 degree), `str` (2,441),
+`strip()` (1,253), `append()`. Architecture-significant nodes (`Platform`, `AIAgent`,
+`BasePlatformAdapter`) are buried in noise. INFERRED edges (58% of total) are the source.
 
 #### 6. Stats preservation fallback is fragile
 
@@ -83,7 +91,7 @@ If rtk is unavailable, stale graphify stats persist across sessions via the pres
 ### Edge Relations Distribution (hermes-agent)
 
 | Relation | Count | Notes |
-|----------|-------|-------|
+| --- | --- | --- |
 | calls | 51,827 | Function/method invocations |
 | uses | 38,574 | Generic usage (type refs, variable refs) |
 | method | 14,299 | Class-to-method membership |
@@ -99,7 +107,7 @@ If rtk is unavailable, stale graphify stats persist across sessions via the pres
 ## Design Decisions
 
 | Decision | Choice | Rationale |
-|----------|--------|-----------|
+| --- | --- | --- |
 | Build timing | Async at session start + on-demand agent trigger | User requirement: both needed |
 | Stats capture | CLI-based via `graphify benchmark` | Avoids 74 MB file read; ~1s execution |
 | Placeholder handling | Eliminate placeholder; use size-based detection | 1KB threshold distinguishes real from empty |

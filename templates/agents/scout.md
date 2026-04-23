@@ -49,6 +49,7 @@ Check graphify graph state before using graph tools:
 **If graph is absent** (no graph.json or tiny placeholder):
 
 1. Build the graph on-demand if graphify CLI is available:
+
    ```bash
    graphify update <project-directory>
    ```

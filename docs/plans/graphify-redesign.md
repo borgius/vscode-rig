@@ -33,6 +33,7 @@ Task 1 (types)
 ### Task 1: Add GraphState types and update SessionCacheFile
 
 **Files:**
+
 - `src/types.ts` (modify, lines 71-72, 86-93, 102)
 
 **Test strategy:** Type compilation check via `npm run lint`. No runtime tests — this is types only.
@@ -298,7 +299,9 @@ Task 1 (types)
 - `tests/eval/first-occurrence-eval.test.ts` (modify, lines 15-16)
 - `tests/eval/python-eval.test.ts` (modify, lines 18-19)
 
-**Test strategy:** Eval tests validate end-to-end integration. Run as final validation. All files that construct inline `Environment` objects must be updated from `graphifyAvailable`/`graphifyGraphPath` to `graphBuildInfo`.
+**Test strategy:** Eval tests validate end-to-end integration. Run as final validation.
+All files that construct inline `Environment` objects must be updated from
+`graphifyAvailable`/`graphifyGraphPath` to `graphBuildInfo`.
 
 **Mock check:** Uses env presets with injected functions.
 
@@ -325,7 +328,9 @@ Task 1 (types)
   - `scout_template_step_2_5_graphify`: verify state-aware language
   - `session_start_gates_graphify_on_env`: update for state-based gating
 - [ ] Step 5: Update inline env objects in other eval files:
-  - `session-state-eval.test.ts`: 3 scenarios with `graphifyAvailable`/`graphifyGraphPath` (lines 17-18, 62-63, 101-102, 126-127) and `graphifyStats` in cache (line 108) — replace with `graphBuildInfo`
+  - `session-state-eval.test.ts`: 3 scenarios with `graphifyAvailable`/`graphifyGraphPath`
+    (lines 17-18, 62-63, 101-102, 126-127) and `graphifyStats` in cache (line 108)
+    — replace with `graphBuildInfo`
   - `config-override-eval.test.ts`: inline env (lines 17-18) — replace with `graphBuildInfo: undefined`
   - `determinism-eval.test.ts`: `setEnvironment()` call (line 59) — verify shape still valid
   - `first-occurrence-eval.test.ts`: inline env (lines 15-16) — replace with `graphBuildInfo: undefined`
@@ -339,6 +344,11 @@ Task 1 (types)
 
 ## Notes
 
-- **graphify benchmark output:** If `graphify benchmark` doesn't provide node/edge/community counts in its output, Task 4 falls back to parsing GRAPH_REPORT.md (153 KB) instead of graph.json (74 MB). The benchmark output format will be verified during implementation.
-- **cluster-only bug:** graphify v0.4.16 has a broken `cluster-only` command. Not our concern, but the integration should handle build failures gracefully regardless of cause.
-- **Backward compatibility:** `Environment.graphifyAvailable` consumers (router/hook.ts, router/rules.ts) will need updates to check `graphBuildInfo?.state === 'ready'` instead of `graphifyAvailable`. These are simple boolean replacements.
+- **graphify benchmark output:** If `graphify benchmark` doesn't provide node/edge/community
+  counts in its output, Task 4 falls back to parsing GRAPH_REPORT.md (153 KB) instead
+  of graph.json (74 MB). The benchmark output format will be verified during implementation.
+- **cluster-only bug:** graphify v0.4.16 has a broken `cluster-only` command.
+  Not our concern, but the integration should handle build failures gracefully regardless of cause.
+- **Backward compatibility:** `Environment.graphifyAvailable` consumers (router/hook.ts,
+  router/rules.ts) will need updates to check `graphBuildInfo?.state === 'ready'` instead
+  of `graphifyAvailable`. These are simple boolean replacements.
