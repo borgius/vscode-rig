@@ -196,69 +196,74 @@ describe('detectEnvironment', () => {
 });
 
 describe('detectGraphify', () => {
-  it('returns available true with graphPath when graphify CLI and graph.json exist', () => {
+  it('returns state ready with graphPath when CLI and real graph.json exist', () => {
     const exec = makeExec({
       'which graphify': '/usr/local/bin/graphify',
     });
     const existsCheck = (path: string) =>
       path === '/fake/cwd/graphify-out/graph.json';
+    const statCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json' ? { size: 5000 } : undefined;
 
-    const result = detectGraphify('/fake/cwd', exec, existsCheck);
-    expect(result.available).toBe(true);
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('ready');
     expect(result.graphPath).toBe('graphify-out/graph.json');
   });
 
-  it('returns available false when which graphify fails', () => {
+  it('returns state absent when which graphify fails', () => {
     const exec = makeExec({
       'which graphify': new Error('not found'),
       'which graphifyy': new Error('not found'),
     });
     const existsCheck = (_path: string) => true;
+    const statCheck = (_path: string) => ({ size: 5000 });
 
-    const result = detectGraphify('/fake/cwd', exec, existsCheck);
-    expect(result.available).toBe(false);
-    expect(result.graphPath).toBeNull();
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('absent');
+    expect(result.graphPath).toBeUndefined();
   });
 
-  it('returns available true when graphifyy (uvx) binary exists and graph.json exists', () => {
-    const exec = (cmd: string) => {
-      if (cmd === 'which graphify') throw new Error('not found');
-      if (cmd === 'which graphifyy') return '/home/user/.local/bin/graphifyy';
-      throw new Error(`unexpected: ${cmd}`);
-    };
-    const existsCheck = (path: string) =>
-      path === '/fake/cwd/graphify-out/graph.json';
-
-    const result = detectGraphify('/fake/cwd', exec, existsCheck);
-    expect(result.available).toBe(true);
-    expect(result.graphPath).toBe('graphify-out/graph.json');
-  });
-
-  it('returns available false when graphifyy exists but graph.json does not', () => {
+  it('returns state absent when graphifyy (uvx) binary exists but no graph.json', () => {
     const exec = (cmd: string) => {
       if (cmd === 'which graphify') throw new Error('not found');
       if (cmd === 'which graphifyy') return '/home/user/.local/bin/graphifyy';
       throw new Error(`unexpected: ${cmd}`);
     };
     const existsCheck = (_path: string) => false;
+    const statCheck = (_path: string) => undefined;
 
-    const result = detectGraphify('/fake/cwd', exec, existsCheck);
-    expect(result.available).toBe(false);
-    expect(result.graphPath).toBeNull();
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('absent');
+    expect(result.graphPath).toBeUndefined();
   });
 
-  it('returns available false when CLI exists but graph.json does not', () => {
+  it('returns state absent when graph.json exists but is placeholder (< 1KB)', () => {
+    const exec = makeExec({
+      'which graphify': '/usr/local/bin/graphify',
+    });
+    const existsCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json';
+    const statCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json' ? { size: 50 } : undefined;
+
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('absent');
+    expect(result.graphPath).toBeUndefined();
+  });
+
+  it('returns state absent when CLI exists but no graph.json', () => {
     const exec = makeExec({
       'which graphify': '/usr/local/bin/graphify',
     });
     const existsCheck = (_path: string) => false;
+    const statCheck = (_path: string) => undefined;
 
-    const result = detectGraphify('/fake/cwd', exec, existsCheck);
-    expect(result.available).toBe(false);
-    expect(result.graphPath).toBeNull();
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('absent');
+    expect(result.graphPath).toBeUndefined();
   });
 
-  it('is wired into detectEnvironment result', async () => {
+  it('populates graphBuildInfo in detectEnvironment result', async () => {
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
@@ -267,9 +272,31 @@ describe('detectGraphify', () => {
     });
     const existsCheck = (path: string) =>
       path === '/project/graphify-out/graph.json';
+    const statCheck = (path: string) =>
+      path === '/project/graphify-out/graph.json' ? { size: 50000 } : undefined;
 
-    const env = await detectEnvironment('/project', exec, existsCheck);
+    const env = await detectEnvironment('/project', exec, existsCheck, statCheck);
+    expect(env.graphBuildInfo).toBeDefined();
+    expect(env.graphBuildInfo!.state).toBe('ready');
+    expect(env.graphBuildInfo!.graphPath).toBe('graphify-out/graph.json');
+    // Backward compat
     expect(env.graphifyAvailable).toBe(true);
     expect(env.graphifyGraphPath).toBe('graphify-out/graph.json');
+  });
+
+  it('returns state ready when graphifyy binary and real graph exist', () => {
+    const exec = (cmd: string) => {
+      if (cmd === 'which graphify') throw new Error('not found');
+      if (cmd === 'which graphifyy') return '/home/user/.local/bin/graphifyy';
+      throw new Error(`unexpected: ${cmd}`);
+    };
+    const existsCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json';
+    const statCheck = (path: string) =>
+      path === '/fake/cwd/graphify-out/graph.json' ? { size: 74000000 } : undefined;
+
+    const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
+    expect(result.state).toBe('ready');
+    expect(result.graphPath).toBe('graphify-out/graph.json');
   });
 });

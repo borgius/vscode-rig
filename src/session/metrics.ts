@@ -5,6 +5,7 @@ export type ExecFn = (cmd: string) => string;
 /**
  * Read graphify-out/graph.json (NetworkX node-link format) and compute stats.
  * Returns null if the file is missing or malformed.
+ * @deprecated Use captureGraphifyStatsViaReport instead — avoids reading 74MB files.
  */
 export function captureGraphifyStats(cwd: string, exec: ExecFn): MetricsBaseline['graphifyStats'] {
   try {
@@ -32,6 +33,56 @@ export function captureGraphifyStats(cwd: string, exec: ExecFn): MetricsBaseline
   } catch {
     return null;
   }
+}
+
+/**
+ * Parse graphify-out/GRAPH_REPORT.md for graph stats.
+ * Much lighter than reading graph.json (154KB vs 74MB).
+ * Falls back to `graphify benchmark` CLI if report unavailable.
+ */
+export function captureGraphifyStatsViaReport(cwd: string, exec: ExecFn): MetricsBaseline['graphifyStats'] {
+  // Try GRAPH_REPORT.md first (has full stats including confidence breakdown)
+  try {
+    const report = exec(`cat "${cwd}/graphify-out/GRAPH_REPORT.md"`);
+
+    // Match: "40994 nodes · 129501 edges · 439 communities detected"
+    const summaryMatch = report.match(/(\d+)\s+nodes\s*·\s*(\d+)\s+edges\s*·\s*(\d+)\s+communities/);
+    // Match: "Extraction: 42% EXTRACTED · 58% INFERRED · 0% AMBIGUOUS"
+    const extractionMatch = report.match(/Extraction:\s*(\d+)%\s*EXTRACTED\s*·\s*(\d+)%\s*INFERRED\s*·\s*(\d+)%\s*AMBIGUOUS/);
+
+    if (summaryMatch) {
+      return {
+        nodes: parseInt(summaryMatch[1], 10),
+        edges: parseInt(summaryMatch[2], 10),
+        communities: parseInt(summaryMatch[3], 10),
+        extractedPct: extractionMatch ? parseInt(extractionMatch[1], 10) : 0,
+        inferredPct: extractionMatch ? parseInt(extractionMatch[2], 10) : 0,
+        ambiguousPct: extractionMatch ? parseInt(extractionMatch[3], 10) : 0,
+      };
+    }
+  } catch {
+    // Report not available — fall through to benchmark
+  }
+
+  // Fallback: graphify benchmark CLI (nodes/edges only)
+  try {
+    const output = exec(`graphify benchmark "${cwd}/graphify-out/graph.json"`);
+    const match = output.match(/Graph:\s*(\d[\d,]*)\s+nodes,\s*(\d[\d,]*)\s+edges/);
+    if (match) {
+      return {
+        nodes: parseInt(match[1].replace(/,/g, ''), 10),
+        edges: parseInt(match[2].replace(/,/g, ''), 10),
+        communities: 0,
+        extractedPct: 0,
+        inferredPct: 0,
+        ambiguousPct: 0,
+      };
+    }
+  } catch {
+    // benchmark also unavailable
+  }
+
+  return null;
 }
 
 export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {

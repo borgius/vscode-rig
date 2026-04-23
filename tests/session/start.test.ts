@@ -355,21 +355,25 @@ describe('handleSessionStart', () => {
       const { join } = await import('node:path');
       const tmpDir = '/tmp/rig-test-graphify-' + process.pid;
       mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
-      const graphData = JSON.stringify({
+      const graphObj = {
         nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }, { id: 'c', community: 1 }],
         links: [
           { source: 'a', target: 'b', confidence: 'EXTRACTED' },
           { source: 'b', target: 'c', confidence: 'INFERRED' },
         ],
-      });
+      };
+      // Pad to exceed 1KB placeholder threshold
+      const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+      const reportContent = '3 nodes · 2 edges · 2 communities detected\nExtraction: 50% EXTRACTED · 50% INFERRED · 0% AMBIGUOUS';
+      writeFileSync(join(tmpDir, 'graphify-out', 'GRAPH_REPORT.md'), reportContent);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
         if (cmd === 'which graphify') return '/usr/bin/graphify';
         if (cmd === 'git branch --show-current') return 'feat/test';
-        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        if (cmd.includes('GRAPH_REPORT.md')) return reportContent;
         return '';
       });
 
@@ -386,7 +390,7 @@ describe('handleSessionStart', () => {
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
-        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'which graphify' || cmd === 'which graphifyy') throw new Error('not found');
         if (cmd === 'git branch --show-current') return 'feat/test';
         return '';
       });
@@ -404,7 +408,7 @@ describe('handleSessionStart', () => {
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), JSON.stringify({
         nodes: [{ id: 'a' }],
         links: [],
-      }));
+      }) + ' '.repeat(1100));
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
@@ -426,7 +430,7 @@ describe('handleSessionStart', () => {
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
-        if (cmd === 'which graphify') throw new Error('not found');
+        if (cmd === 'which graphify' || cmd === 'which graphifyy') throw new Error('not found');
         if (cmd === 'git branch --show-current') return 'feat/test';
         return '';
       });
@@ -441,18 +445,21 @@ describe('handleSessionStart', () => {
       const { join } = await import('node:path');
       const tmpDir = '/tmp/rig-test-graphify-cache-' + process.pid;
       mkdirSync(join(tmpDir, 'graphify-out'), { recursive: true });
-      const graphData = JSON.stringify({
+      const graphObj = {
         nodes: [{ id: 'a', community: 0 }, { id: 'b', community: 0 }],
         links: [{ source: 'a', target: 'b', confidence: 'EXTRACTED' }],
-      });
+      };
+      const graphData = JSON.stringify(graphObj) + ' '.repeat(1100);
       writeFileSync(join(tmpDir, 'graphify-out', 'graph.json'), graphData);
+      const reportContent = '2 nodes · 1 edges · 1 communities detected\nExtraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS';
+      writeFileSync(join(tmpDir, 'graphify-out', 'GRAPH_REPORT.md'), reportContent);
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
         if (cmd === 'which graphify') return '/usr/bin/graphify';
         if (cmd === 'git branch --show-current') return 'feat/test';
-        if (cmd.includes('cat') && cmd.includes('graph.json')) return graphData;
+        if (cmd.includes('GRAPH_REPORT.md')) return reportContent;
         return '';
       });
 

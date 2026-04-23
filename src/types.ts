@@ -59,6 +59,17 @@ export interface ToolRule {
   enforcement: EnforcementLevel;
 }
 
+// ── Graphify State Types ──
+
+export type GraphState = 'absent' | 'building' | 'ready' | 'failed';
+
+export interface GraphBuildInfo {
+  state: GraphState;
+  pid?: number;
+  startedAt?: number;
+  graphPath?: string;
+}
+
 // ── Environment Types ──
 
 export interface Environment {
@@ -68,8 +79,11 @@ export interface Environment {
   jcodemunchCwdIndexed: boolean;
   jcodemunchCwdRepo: string | null;
   jcodemunchKnownRepos: string[];
+  /** @deprecated Use graphBuildInfo instead. Removed after graphify-redesign migration. */
   graphifyAvailable: boolean;
+  /** @deprecated Use graphBuildInfo instead. Removed after graphify-redesign migration. */
   graphifyGraphPath: string | null;
+  graphBuildInfo?: GraphBuildInfo;
   detectedAt: number;
 }
 
@@ -100,6 +114,7 @@ export interface SessionCacheFile {
   currentPhase: string | null;
   metricsBaseline: MetricsBaseline | null;
   metricCounters: { rtkCalls: number; jmCalls: number; efficientCalls: number; graphifyCalls: number };
+  graphBuildInfo?: GraphBuildInfo;
   toolsWarned: boolean;
   changedFiles: string[];
   pythonEnv: PythonEnv | null;

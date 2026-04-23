@@ -1,12 +1,13 @@
 import { execSync } from 'node:child_process';
-import { basename, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { SessionCache } from './cache.js';
-import type { Environment, HarnessConfig } from '../types.js';
+import type { Environment, GraphBuildInfo, HarnessConfig } from '../types.js';
 import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
 import { detectPythonEnv } from './python-env.js';
 import { checkWorktreeSuggestion } from './worktree.js';
-import { captureMetricsBaseline, captureGraphifyStats } from './metrics.js';
-import { loadConfig, DEFAULT_CONFIG } from '../config.js';
+import { captureMetricsBaseline, captureGraphifyStatsViaReport } from './metrics.js';
+import { triggerBuild, waitForBuild } from '../scout/graph-state.js';
+import { loadConfig } from '../config.js';
 
 interface FileCapWarning {
   indexed: number;
@@ -25,9 +26,36 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   cache.setPythonEnv(pyEnv);
 
   const baseline = captureMetricsBaseline((cmd) => execSync(cmd, { encoding: 'utf-8' }));
-  // Capture graphify stats if available
-  if (env.graphifyAvailable) {
-    baseline.graphifyStats = captureGraphifyStats(cwd, (cmd) => execSync(cmd, { encoding: 'utf-8' }));
+  // Capture graphify stats via report (not the 74MB graph.json)
+  const graphInfo = env.graphBuildInfo;
+  const execFn = (cmd: string) => execSync(cmd, { encoding: 'utf-8' });
+  if (graphInfo?.state === 'ready') {
+    baseline.graphifyStats = captureGraphifyStatsViaReport(cwd, execFn);
+  } else if (graphInfo?.state === 'absent') {
+    // Async build: trigger in background, mark as building
+    const buildResult = triggerBuild(cwd, execFn);
+    if (buildResult.state === 'building') {
+      // Check if it completed quickly (small projects)
+      const checkResult = waitForBuild(buildResult, cwd,
+        (p) => { try { execSync(`test -f "${p}"`, { encoding: 'utf-8' }); return true; } catch { return false; } },
+        (p) => { try { return require('node:fs').statSync(p); } catch { return undefined; } },
+      );
+      if (checkResult.state === 'ready') {
+        env.graphBuildInfo = checkResult;
+        env.graphifyAvailable = true;
+        env.graphifyGraphPath = checkResult.graphPath ?? null;
+        baseline.graphifyStats = captureGraphifyStatsViaReport(cwd, execFn);
+      } else {
+        env.graphBuildInfo = { state: 'failed' };
+      }
+    } else {
+      env.graphBuildInfo = buildResult;
+    }
+    cache.setGraphBuildInfo(env.graphBuildInfo);
+  }
+  // Persist graphBuildInfo to session cache
+  if (env.graphBuildInfo) {
+    cache.setGraphBuildInfo(env.graphBuildInfo);
   }
   // Preserve existing baseline if recapture yields zero (e.g. rtk temporarily unavailable)
   const existingBaseline = cache.getMetricsBaseline();
@@ -51,7 +79,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     '[rig] Session initialized',
     `  rtk: ${env.rtkAvailable ? `available (${env.rtkPath})` : 'not found'}`,
     `  jcodemunch: ${env.jcodemunchAvailable ? 'available' : 'not found'}`,
-    `  graphify: ${env.graphifyAvailable ? 'available' : 'not found'}`,
+    `  graphify: ${graphInfo?.state === 'ready' ? 'available' : graphInfo?.state === 'building' ? 'building graph...' : graphInfo?.state === 'failed' ? 'build failed' : 'not found'}`,
   ];
 
   if (env.jcodemunchAvailable) {
@@ -62,7 +90,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     }
   }
 
-  if (env.graphifyAvailable && baseline.graphifyStats) {
+  if (graphInfo?.state === 'ready' && baseline.graphifyStats) {
     const gs = baseline.graphifyStats;
     lines.push(`  Graph: ${gs.nodes} nodes, ${gs.edges} edges, ${gs.communities} communities (${gs.extractedPct}% EXTRACTED)`);
   }
@@ -100,7 +128,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  Do NOT dismiss this advisory — always use scout for codebase exploration tasks');
   }
 
-  if (env.graphifyAvailable) {
+  if (graphInfo?.state === 'ready') {
     lines.push('[rig] Graphify graph tools available for relationship queries:');
     lines.push('  - mcp__graphify__query_graph for relationship context');
     lines.push('  - mcp__graphify__god_nodes for core abstractions');
@@ -116,7 +144,7 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     if (!env.jcodemunchAvailable) {
       lines.push('[WARNING] jcodemunch is not installed. Install for indexed code search: https://github.com/franklywatson/jcodemunch');
     }
-    if (!env.graphifyAvailable) {
+    if (!graphInfo) {
       lines.push('[HINT] graphify is not installed. Install for knowledge graph analysis: https://github.com/safishamsi/graphify');
     }
     cache.setToolsWarned(true);
@@ -141,8 +169,13 @@ function formatActiveRules(config: HarnessConfig): string | null {
   return `  Active enforcement: ${active.join(', ')}`;
 }
 
-async function detectAndIndex(cwd: string): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
-  const env = await detectEnvironment(cwd);
+async function detectAndIndex(
+  cwd: string,
+  exec?: import('./environment.js').ExecFn,
+  existsCheck?: (path: string) => boolean,
+  statCheck?: (path: string) => { size: number } | undefined,
+): Promise<{ env: Environment; fileCapHit?: FileCapWarning }> {
+  const env = await detectEnvironment(cwd, exec, existsCheck, statCheck);
   let fileCapHit: FileCapWarning | undefined;
 
   // Auto-index if jcodemunch is available but CWD isn't indexed

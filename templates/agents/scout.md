@@ -35,16 +35,37 @@ Call `get_file_tree` to understand:
 - Directory layout
 - Where code lives vs where tests live
 
-### Step 2.5: Map relationships (if graphify available)
+### Step 2.5: Map relationships (graphify state-aware)
 
-If graphify is installed (`which graphify` or `which graphifyy`) and `graphify-out/graph.json` exists:
+Check graphify graph state before using graph tools:
+
+**If graph is ready** (large graph.json exists in graphify-out/):
 
 1. Call `god_nodes(top_n=10)` to identify core abstractions
 2. Call `get_community(community_id)` for the top 3 communities by size
 3. Call `shortest_path(source, target)` when the user's query involves
    understanding how two components connect
 
-Skip this step entirely if graphify is not available.
+**If graph is absent** (no graph.json or tiny placeholder):
+
+1. Build the graph on-demand if graphify CLI is available:
+
+   ```bash
+   graphify update <project-directory>
+   ```
+
+2. Wait for completion, then proceed with relationship queries above
+3. If the build fails, skip graph context and report the failure
+
+**If graph is building** (already triggered by session-start):
+
+Skip graph context for now — the graph will be ready on next session.
+
+**If graph build failed** (previous attempt failed):
+
+Skip graph context. Report the failure to the user.
+
+Skip this step entirely if graphify is not installed.
 
 ### Step 3: Find key exports
 
@@ -109,14 +130,14 @@ Then proceed with steps 1-5 on the newly indexed repo
 
 When exploring a directory outside the current project:
 
-1. Check if `<target-directory>/graphify-out/graph.json` exists
-2. If not, and graphify is available (check: `which graphify` or `which graphifyy`), run:
+1. Check if `<target-directory>/graphify-out/graph.json` exists and is larger than 1KB
+2. If not (absent state), and graphify is available (`which graphify` or `which graphifyy`), run:
 
    ```bash
    graphify update <target-directory>
    ```
 
-3. If the build succeeds, proceed with Step 2.5 relationship queries
+3. If the build succeeds (graph.json now exists and is >1KB), proceed with Step 2.5 relationship queries
 4. If graphify is not installed or the build fails, skip graph context
 
 ## Alert Reporting
@@ -135,8 +156,8 @@ the response), report:
 
 ### graphify build failure
 
-If `graphify update` fails for a directory (e.g., Python recursion limit on large codebases),
-report:
+If `graphify update` fails for a directory (e.g., Python recursion limit on large codebases,
+or the resulting graph.json is still under 1KB indicating a placeholder), report:
 
 ```
 [WARNING] graphify build failed for <directory>.
