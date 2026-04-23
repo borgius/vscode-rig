@@ -192,6 +192,7 @@ describe('ensureGraphBuilt', () => {
     jcodemunchKnownRepos: [],
     graphifyAvailable: true,
     graphifyGraphPath: 'graphify-out/graph.json',
+    graphBuildInfo: { state: 'ready', graphPath: 'graphify-out/graph.json' },
     detectedAt: Date.now(),
   };
 
@@ -220,17 +221,19 @@ describe('ensureGraphBuilt', () => {
   });
 
   it('builds graph and returns status ready when graph.json does not exist', () => {
-    let callCount = 0;
-    const existsCheck = (p: string) => {
-      callCount++;
-      return callCount > 1;
+    const absentEnv: Environment = {
+      ...graphifyEnv,
+      graphBuildInfo: { state: 'absent' },
     };
+    let buildRan = false;
+    const existsCheck = () => buildRan;
+    const statCheck = () => buildRan ? { size: 5000 } : undefined;
     vi.mocked(execSync).mockImplementation((cmd: string) => {
-      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('graphify update')) { buildRan = true; return ''; }
       return '';
     });
 
-    const result = ensureGraphBuilt('/home/user/new-project', graphifyEnv, execSync as any, existsCheck);
+    const result = ensureGraphBuilt('/home/user/new-project', absentEnv, execSync as any, existsCheck, statCheck);
     expect(result).not.toBeNull();
     expect(result!.status).toBe('ready');
     expect(result!.graphPath).toBe('graphify-out/graph.json');
@@ -246,26 +249,36 @@ describe('ensureGraphBuilt', () => {
   });
 
   it('returns status build_failed when exec throws', () => {
+    const absentEnv: Environment = {
+      ...graphifyEnv,
+      graphBuildInfo: { state: 'absent' },
+    };
     const existsCheck = () => false;
+    const statCheck = () => undefined;
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd.includes('graphify update')) throw new Error('recursion depth exceeded');
       return '';
     });
 
-    const result = ensureGraphBuilt('/home/user/broken-project', graphifyEnv, execSync as any, existsCheck);
+    const result = ensureGraphBuilt('/home/user/broken-project', absentEnv, execSync as any, existsCheck, statCheck);
     expect(result).not.toBeNull();
     expect(result!.status).toBe('build_failed');
     expect(result!.graphPath).toBeUndefined();
   });
 
   it('returns status build_failed when build succeeds but graph.json still missing', () => {
+    const absentEnv: Environment = {
+      ...graphifyEnv,
+      graphBuildInfo: { state: 'absent' },
+    };
     const existsCheck = () => false;
+    const statCheck = () => undefined;
     vi.mocked(execSync).mockImplementation((cmd: string) => {
       if (cmd.includes('graphify update')) return '';
       return '';
     });
 
-    const result = ensureGraphBuilt('/home/user/empty-project', graphifyEnv, execSync as any, existsCheck);
+    const result = ensureGraphBuilt('/home/user/empty-project', absentEnv, execSync as any, existsCheck, statCheck);
     expect(result).not.toBeNull();
     expect(result!.status).toBe('build_failed');
     expect(result!.graphPath).toBeUndefined();
