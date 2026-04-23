@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   captureMetricsBaseline,
   captureGraphifyStats,
+  captureGraphifyStatsViaReport,
   incrementMetric,
   formatSavingsReport,
 } from '../../src/session/metrics.js';
@@ -358,6 +359,71 @@ describe('captureGraphifyStats', () => {
       edges: 1,
       communities: 0,
       extractedPct: 100,
+      inferredPct: 0,
+      ambiguousPct: 0,
+    });
+  });
+});
+
+describe('captureGraphifyStatsViaReport', () => {
+  it('parses GRAPH_REPORT.md summary for stats', () => {
+    const report = [
+      '# Graph Report - /project',
+      '',
+      '## Summary',
+      '- 40994 nodes · 129501 edges · 439 communities detected',
+      '- Extraction: 42% EXTRACTED · 58% INFERRED · 0% AMBIGUOUS · INFERRED: 74743 edges (avg confidence: 0.65)',
+    ].join('\n');
+    const exec = (cmd: string) => {
+      if (cmd.includes('GRAPH_REPORT.md')) return report;
+      throw new Error('unexpected');
+    };
+
+    const result = captureGraphifyStatsViaReport('/project', exec);
+    expect(result).toEqual({
+      nodes: 40994,
+      edges: 129501,
+      communities: 439,
+      extractedPct: 42,
+      inferredPct: 58,
+      ambiguousPct: 0,
+    });
+  });
+
+  it('returns null when report not found', () => {
+    const exec = () => { throw new Error('not found'); };
+    const result = captureGraphifyStatsViaReport('/project', exec);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when report does not match expected format', () => {
+    const exec = (cmd: string) => {
+      if (cmd.includes('GRAPH_REPORT.md')) return '# Some other report\nNo graph data here';
+      throw new Error('unexpected');
+    };
+    const result = captureGraphifyStatsViaReport('/project', exec);
+    expect(result).toBeNull();
+  });
+
+  it('falls back to benchmark CLI when report unavailable', () => {
+    const benchmarkOutput = [
+      'graphify token reduction benchmark',
+      '──────────────────',
+      '  Graph:           40994 nodes, 129501 edges',
+      '  Reduction:       2.8x fewer tokens per query',
+    ].join('\n');
+    const exec = (cmd: string) => {
+      if (cmd.includes('GRAPH_REPORT.md')) throw new Error('not found');
+      if (cmd.includes('graphify benchmark')) return benchmarkOutput;
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    const result = captureGraphifyStatsViaReport('/project', exec);
+    expect(result).toEqual({
+      nodes: 40994,
+      edges: 129501,
+      communities: 0,
+      extractedPct: 0,
       inferredPct: 0,
       ambiguousPct: 0,
     });
