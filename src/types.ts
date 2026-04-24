@@ -59,6 +59,17 @@ export interface ToolRule {
   enforcement: EnforcementLevel;
 }
 
+// ── Graphify Stats Types ──
+
+export interface GraphifyProjectStats {
+  nodes: number;
+  edges: number;
+  communities: number;
+  extractedPct: number;
+  inferredPct: number;
+  ambiguousPct: number;
+}
+
 // ── Graphify State Types ──
 
 export type GraphState = 'absent' | 'building' | 'ready' | 'failed';
@@ -97,14 +108,7 @@ export interface PythonEnv {
 export interface MetricsBaseline {
   totalSaved: number;
   capturedAt: number;
-  graphifyStats?: {
-    nodes: number;
-    edges: number;
-    communities: number;
-    extractedPct: number;
-    inferredPct: number;
-    ambiguousPct: number;
-  } | null;
+  graphifyStats?: Record<string, GraphifyProjectStats> | null;
 }
 
 export interface SessionCacheFile {
@@ -120,6 +124,7 @@ export interface SessionCacheFile {
   changedFiles: string[];
   pythonEnv: PythonEnv | null;
   advisedIntents?: string[];
+  scoutedDirs?: string[];
 }
 
 // ── Config Types ──
@@ -262,5 +267,18 @@ export function isGraphContext(val: unknown): val is GraphContext {
     typeof ctx.stats === 'object' &&
     ctx.stats !== null &&
     typeof (ctx.stats as { nodes: number }).nodes === 'number'
+  );
+}
+
+export function isGraphifyProjectStats(val: unknown): val is GraphifyProjectStats {
+  if (typeof val !== 'object' || val === null) return false;
+  const s = val as GraphifyProjectStats;
+  return (
+    typeof s.nodes === 'number' &&
+    typeof s.edges === 'number' &&
+    typeof s.communities === 'number' &&
+    typeof s.extractedPct === 'number' &&
+    typeof s.inferredPct === 'number' &&
+    typeof s.ambiguousPct === 'number'
   );
 }

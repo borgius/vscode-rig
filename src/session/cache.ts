@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Environment, GraphBuildInfo, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
+import type { Environment, GraphBuildInfo, GraphifyProjectStats, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
 
 const ENV_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
@@ -135,6 +135,25 @@ export class SessionCache {
   setPythonEnv(env: PythonEnv): void {
     this.pythonEnv = env;
     this.save();
+  }
+
+  getGraphifyStats(dir: string): GraphifyProjectStats | undefined {
+    return this.metricsBaseline?.graphifyStats?.[dir];
+  }
+
+  setGraphifyStats(dir: string, stats: GraphifyProjectStats): void {
+    if (!this.metricsBaseline) {
+      this.metricsBaseline = { totalSaved: 0, capturedAt: Date.now() };
+    }
+    if (!this.metricsBaseline.graphifyStats) {
+      this.metricsBaseline.graphifyStats = {};
+    }
+    this.metricsBaseline.graphifyStats[dir] = stats;
+    this.save();
+  }
+
+  getAllGraphifyStats(): Record<string, GraphifyProjectStats> | undefined {
+    return this.metricsBaseline?.graphifyStats ?? undefined;
   }
 
   reset(): void {

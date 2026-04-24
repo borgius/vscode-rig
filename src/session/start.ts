@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { join, resolve } from 'node:path';
+import { join, resolve, basename } from 'node:path';
 import { SessionCache } from './cache.js';
 import type { Environment, GraphBuildInfo, HarnessConfig } from '../types.js';
 import { detectEnvironment, callJcodemunchMcpTool } from './environment.js';
@@ -30,7 +30,10 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   const graphInfo = env.graphBuildInfo;
   const execFn = (cmd: string) => execSync(cmd, { encoding: 'utf-8' });
   if (graphInfo?.state === 'ready') {
-    baseline.graphifyStats = captureGraphifyStatsViaReport(cwd, execFn);
+    const cwdStats = captureGraphifyStatsViaReport(cwd, execFn);
+    if (cwdStats) {
+      baseline.graphifyStats = { [resolve(cwd)]: cwdStats };
+    }
   } else if (graphInfo?.state === 'absent') {
     // Async build: trigger in background, mark as building
     const buildResult = triggerBuild(cwd, execFn);
@@ -44,7 +47,10 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
         env.graphBuildInfo = checkResult;
         env.graphifyAvailable = true;
         env.graphifyGraphPath = checkResult.graphPath ?? null;
-        baseline.graphifyStats = captureGraphifyStatsViaReport(cwd, execFn);
+        const buildStats = captureGraphifyStatsViaReport(cwd, execFn);
+        if (buildStats) {
+          baseline.graphifyStats = { [resolve(cwd)]: buildStats };
+        }
       } else {
         env.graphBuildInfo = { state: 'failed' };
       }
@@ -91,8 +97,12 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
   }
 
   if (graphInfo?.state === 'ready' && baseline.graphifyStats) {
-    const gs = baseline.graphifyStats;
-    lines.push(`  Graph: ${gs.nodes} nodes, ${gs.edges} edges, ${gs.communities} communities (${gs.extractedPct}% EXTRACTED)`);
+    const entries = Object.entries(baseline.graphifyStats);
+    if (entries.length > 0) {
+      const [dir, gs] = entries[0];
+      const label = basename(dir);
+      lines.push(`  Graph (${label}): ${gs.nodes} nodes, ${gs.edges} edges, ${gs.communities} communities (${gs.extractedPct}% EXTRACTED)`);
+    }
   }
 
   lines.push(`  Detected at: ${new Date(env.detectedAt).toISOString()}`);

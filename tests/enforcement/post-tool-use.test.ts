@@ -96,4 +96,66 @@ describe('handlePostToolUse', () => {
     );
     expect(result).toBeNull();
   });
+
+  it('captures external graphify stats on mcp__jcodemunch__index_folder', () => {
+    const report = [
+      '# Graph Report - /external/meridian',
+      '',
+      '## Summary',
+      '- 420 nodes · 891 edges · 67 communities detected',
+      '- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS',
+    ].join('\n');
+    const exec = (cmd: string) => {
+      if (cmd.includes('test -f')) throw new Error('not found');
+      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('GRAPH_REPORT.md')) return report;
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    handlePostToolUse(
+      'mcp__jcodemunch__index_folder',
+      { path: '/external/meridian' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    const stats = cache.getGraphifyStats('/external/meridian');
+    expect(stats).toEqual({
+      nodes: 420, edges: 891, communities: 67,
+      extractedPct: 91, inferredPct: 9, ambiguousPct: 0,
+    });
+  });
+
+  it('does not capture stats for CWD directory on index_folder', () => {
+    const exec = () => '';
+    handlePostToolUse(
+      'mcp__jcodemunch__index_folder',
+      { path: '/home/user/claude-rig' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    // CWD stats are handled by session-start, not post-tool-use
+    expect(cache.getGraphifyStats('/home/user/claude-rig')).toBeUndefined();
+  });
+
+  it('gracefully handles graphify capture failure on external dir', () => {
+    const exec = () => { throw new Error('graphify not installed'); };
+
+    // Should not throw
+    handlePostToolUse(
+      'mcp__jcodemunch__index_folder',
+      { path: '/external/broken' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    expect(cache.getGraphifyStats('/external/broken')).toBeUndefined();
+  });
 });

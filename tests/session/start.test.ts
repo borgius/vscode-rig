@@ -466,9 +466,12 @@ describe('handleSessionStart', () => {
       await handleSessionStart(tmpDir, cache);
       const baseline = cache.getMetricsBaseline();
       expect(baseline?.graphifyStats).toBeDefined();
-      expect(baseline!.graphifyStats!.nodes).toBe(2);
-      expect(baseline!.graphifyStats!.edges).toBe(1);
-      expect(baseline!.graphifyStats!.extractedPct).toBe(100);
+      const entries = Object.entries(baseline!.graphifyStats!);
+      expect(entries.length).toBe(1);
+      const [, stats] = entries[0];
+      expect(stats.nodes).toBe(2);
+      expect(stats.edges).toBe(1);
+      expect(stats.extractedPct).toBe(100);
       rmSync(tmpDir, { recursive: true });
     });
   });
@@ -499,7 +502,7 @@ describe('handleSessionStart', () => {
       cache.setMetricsBaseline({
         totalSaved: 5000000,
         capturedAt: Date.now() - 1000,
-        graphifyStats: { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 },
+        graphifyStats: { '/home/user/test-project': { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 } },
       });
 
       vi.mocked(execSync).mockImplementation((cmd: string) => {
@@ -514,7 +517,9 @@ describe('handleSessionStart', () => {
       await handleSessionStart('/home/user/test-project', cache);
       const baseline = cache.getMetricsBaseline();
       expect(baseline?.graphifyStats).toBeDefined();
-      expect(baseline!.graphifyStats!.nodes).toBe(100);
+      const entries = Object.entries(baseline!.graphifyStats!);
+      expect(entries.length).toBe(1);
+      expect(entries[0][1].nodes).toBe(100);
     });
 
     it('uses new baseline when recapture succeeds', async () => {

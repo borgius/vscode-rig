@@ -4,7 +4,8 @@ import type { HarnessConfig } from '../types.js';
 import { checkStaleTests } from './stale-test.js';
 import { checkConstitutional } from './constitutional.js';
 import { checkZeroDefect } from './zero-defect.js';
-import { incrementMetric } from '../session/metrics.js';
+import { incrementMetric, captureExternalGraphifyStats } from '../session/metrics.js';
+import type { ExecFn } from '../session/metrics.js';
 
 /**
  * PostToolUse hook handler. Composes all enforcement checks.
@@ -16,6 +17,7 @@ export function handlePostToolUse(
   tracker: FileTracker,
   cache: SessionCache,
   config: HarnessConfig,
+  execFn?: ExecFn,
 ): string | null {
   const metric = incrementMetric(tool, args);
   if (metric) {
@@ -53,6 +55,25 @@ export function handlePostToolUse(
         const changedFiles = cache.getChangedFiles();
         const zeroDefect = checkZeroDefect(output, config, changedFiles.length > 0 ? changedFiles : undefined);
         if (zeroDefect) violations.push(zeroDefect);
+      }
+    }
+  }
+
+  // Capture graphify stats for external directories indexed via jcodemunch
+  if (tool === 'mcp__jcodemunch__index_folder' && execFn) {
+    const directory = (args.path as string) ?? (args.folder_path as string);
+    if (directory) {
+      const cwd = process.cwd();
+      // Only capture for external directories (not CWD — handled by session-start)
+      if (!directory.startsWith(cwd)) {
+        try {
+          const stats = captureExternalGraphifyStats(directory, execFn);
+          if (stats) {
+            cache.setGraphifyStats(directory, stats);
+          }
+        } catch {
+          // graphify not available — skip silently
+        }
       }
     }
   }
