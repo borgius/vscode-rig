@@ -240,3 +240,15 @@ function formatTokens(n: number): string {
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
   return `${n}`;
 }
+
+/**
+ * Resolve graphifyStats from cache to a single project's stats.
+ * The cache stores `Record<string, GraphifyProjectStats>` keyed by directory path.
+ */
+export function resolveGraphifyStats(
+  raw: Record<string, GraphifyProjectStats> | null | undefined,
+  cwd: string,
+): GraphifyProjectStats | null {
+  if (!raw) return null;
+  return raw[cwd] ?? null;
+}

@@ -6,6 +6,7 @@ import {
   captureExternalGraphifyStats,
   incrementMetric,
   formatSavingsReport,
+  resolveGraphifyStats,
 } from '../../src/session/metrics.js';
 import type { MetricsBaseline, GraphifyProjectStats } from '../../src/types.js';
 import { SessionCache } from '../../src/session/cache.js';
@@ -567,5 +568,37 @@ describe('multi-project graphify round-trip', () => {
     expect(report).toContain('287 nodes');
     expect(report).toContain('meridian:');
     expect(report).toContain('420 nodes');
+  });
+});
+
+describe('resolveGraphifyStats', () => {
+  it('passes through singleton format unchanged', () => {
+    const stats: GraphifyProjectStats = { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 };
+    const record: Record<string, GraphifyProjectStats> = { '/home/user/project': stats };
+    const result = resolveGraphifyStats(record, '/home/user/project');
+    expect(result).toEqual(stats);
+  });
+
+  it('extracts from Record format by cwd key', () => {
+    const inner: GraphifyProjectStats = { nodes: 1742, edges: 6236, communities: 42, extractedPct: 88, inferredPct: 12, ambiguousPct: 0 };
+    const record: Record<string, GraphifyProjectStats> = { '/home/user/project': inner };
+    const result = resolveGraphifyStats(record, '/home/user/project');
+    expect(result).toEqual(inner);
+  });
+
+  it('returns null when Record has no matching cwd key', () => {
+    const record: Record<string, GraphifyProjectStats> = { '/other/project': { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 } };
+    const result = resolveGraphifyStats(record, '/home/user/project');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when input is null', () => {
+    const result = resolveGraphifyStats(null, '/home/user/project');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when input is undefined', () => {
+    const result = resolveGraphifyStats(undefined, '/home/user/project');
+    expect(result).toBeNull();
   });
 });

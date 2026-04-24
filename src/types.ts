@@ -113,6 +113,7 @@ export interface MetricsBaseline {
 
 export interface SessionCacheFile {
   updatedAt: number;
+  cwd: string | null;
   environment: Environment | null;
   editedFiles: Record<string, string[]>;
   currentPhase: string | null;

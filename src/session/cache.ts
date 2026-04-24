@@ -37,6 +37,10 @@ export class SessionCache {
     return this.environment;
   }
 
+  getCwd(): string | undefined {
+    return this.cwd;
+  }
+
   setEnvironment(env: Environment): void {
     this.environment = env;
     this.save();
@@ -173,6 +177,7 @@ export class SessionCache {
     }
     return {
       updatedAt: Date.now(),
+      cwd: this.cwd ?? null,
       environment: this.environment ?? null,
       editedFiles: editedFilesObj,
       currentPhase: this.currentPhase,

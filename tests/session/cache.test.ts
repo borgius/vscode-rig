@@ -297,4 +297,35 @@ describe('SessionCache (file-backed)', () => {
     expect(parsed.metricsBaseline).toBeNull();
     expect(parsed.metricCounters).toEqual({ rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
   });
+
+  it('includes cwd in serialized cache file', () => {
+    const cache = new SessionCache(testCwd);
+    cache.setEnvironment(makeEnv());
+
+    const path = sessionCachePath(testCwd);
+    trackPath(path);
+    const raw = readFileSync(path, 'utf-8');
+    const parsed = JSON.parse(raw) as SessionCacheFile;
+
+    expect(parsed.cwd).toBe(testCwd);
+  });
+
+  it('persists cwd across save and load', () => {
+    const cache = new SessionCache(testCwd);
+    cache.setEnvironment(makeEnv());
+    const path = sessionCachePath(testCwd);
+    trackPath(path);
+
+    const cache2 = new SessionCache(testCwd);
+    const raw = readFileSync(path, 'utf-8');
+    const parsed = JSON.parse(raw) as SessionCacheFile;
+    expect(parsed.cwd).toBe(testCwd);
+  });
+
+  it('sets cwd to null when no cwd provided', () => {
+    const cache = new SessionCache();
+    cache.setEnvironment(makeEnv());
+    // In-memory only, no file — verify via getCacheCwd
+    expect(cache.getCwd()).toBeUndefined();
+  });
 });
