@@ -6,6 +6,7 @@ import {
   isToolRule,
   isEnvironment,
   isGraphContext,
+  isGraphifyProjectStats,
 } from '../src/types.js';
 
 describe('type guards', () => {
@@ -125,6 +126,34 @@ describe('type guards', () => {
       expect(isGraphContext({
         godNodes: [],
         communities: [],
+      })).toBe(false);
+    });
+  });
+
+  describe('isGraphifyProjectStats', () => {
+    it('returns true for valid stats', () => {
+      expect(isGraphifyProjectStats({
+        nodes: 287, edges: 385, communities: 52,
+        extractedPct: 84, inferredPct: 16, ambiguousPct: 0,
+      })).toBe(true);
+    });
+
+    it('returns false for null', () => {
+      expect(isGraphifyProjectStats(null)).toBe(false);
+    });
+
+    it('returns false for non-object', () => {
+      expect(isGraphifyProjectStats('stats')).toBe(false);
+    });
+
+    it('returns false when missing required fields', () => {
+      expect(isGraphifyProjectStats({ nodes: 100, edges: 200 })).toBe(false);
+    });
+
+    it('returns false when fields have wrong types', () => {
+      expect(isGraphifyProjectStats({
+        nodes: '100', edges: 200, communities: 5,
+        extractedPct: 90, inferredPct: 10, ambiguousPct: 0,
       })).toBe(false);
     });
   });

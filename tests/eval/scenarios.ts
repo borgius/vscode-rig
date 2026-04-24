@@ -107,33 +107,38 @@ export function mockRtkRewrite(rtkPath: string, args: string[]): string | null {
   if (!command) return null;
 
   // cat/head/tail → rtk read
-  if (/^(cat|head|tail)\s+/.test(command)) {
-    return command.replace(/^(cat|head|tail)\s+/, 'rtk read ');
+  if (/^\s*(cat|head|tail)\s+/.test(command)) {
+    return command.replace(/^\s*(cat|head|tail)\s+/, 'rtk read ');
   }
 
   // grep/rg → rtk grep
-  if (/^(grep|rg)\s+/.test(command)) {
-    return command.replace(/^(grep|rg)\s+/, 'rtk grep ');
+  if (/^\s*(grep|rg)\s+/.test(command)) {
+    return command.replace(/^\s*(grep|rg)\s+/, 'rtk grep ');
   }
 
   // find → rtk find
-  if (/^find\s+/.test(command)) {
-    return command.replace(/^find\s+/, 'rtk find ');
+  if (/^\s*find\s+/.test(command)) {
+    return command.replace(/^\s*find\s+/, 'rtk find ');
+  }
+
+  // fd → rtk find (rtk treats fd as a find synonym)
+  if (/^\s*fd\s+/.test(command)) {
+    return command.replace(/^\s*fd\s+/, 'rtk find ');
   }
 
   // ls → rtk ls
-  if (/^ls(\s|$)/.test(command)) {
-    return command.replace(/^ls\s*/, 'rtk ls ');
+  if (/^\s*ls(\s|$)/.test(command)) {
+    return command.replace(/^\s*ls\s*/, 'rtk ls ');
   }
 
   // git → rtk git
-  if (/^git\s+/.test(command)) {
-    return command.replace(/^git\s+/, 'rtk git ');
+  if (/^\s*git\s+/.test(command)) {
+    return command.replace(/^\s*git\s+/, 'rtk git ');
   }
 
   // gh → rtk gh
-  if (/^gh\s+/.test(command)) {
-    return command.replace(/^gh\s+/, 'rtk gh ');
+  if (/^\s*gh\s+/.test(command)) {
+    return command.replace(/^\s*gh\s+/, 'rtk gh ');
   }
 
   // No rewrite for everything else (sed, npm, docker, echo, etc.)

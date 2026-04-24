@@ -3,10 +3,12 @@ import {
   captureMetricsBaseline,
   captureGraphifyStats,
   captureGraphifyStatsViaReport,
+  captureExternalGraphifyStats,
   incrementMetric,
   formatSavingsReport,
 } from '../../src/session/metrics.js';
-import type { MetricsBaseline } from '../../src/types.js';
+import type { MetricsBaseline, GraphifyProjectStats } from '../../src/types.js';
+import { SessionCache } from '../../src/session/cache.js';
 
 function makeExec(results: Record<string, string | Error>) {
   return (cmd: string): string => {
@@ -103,7 +105,7 @@ describe('formatSavingsReport', () => {
   it('formats report with token delta, call counts, and jcodemunch stats', () => {
     const baseline: MetricsBaseline = { totalSaved: 5000000, capturedAt: Date.now() - 3600000 };
     const currentSaved = 5340000;
-    const counters = { rtkCalls: 42, jmCalls: 0, efficientCalls: 0 };
+    const counters = { rtkCalls: 42, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 };
     const jmStats = { session_tokens_saved: 85000, session_calls: 23, total_tokens_saved: 150000000 };
 
     const report = formatSavingsReport(baseline, currentSaved, counters, jmStats);
@@ -119,39 +121,41 @@ describe('formatSavingsReport', () => {
 
   it('shows no savings when delta is zero', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
-    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
     expect(report).toContain('no token savings');
   });
 
   it('shows jcodemunch available with no queries', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
     const jmStats = { session_tokens_saved: 0, session_calls: 0 };
-    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 }, jmStats);
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 }, jmStats);
     expect(report).toContain('jcodemunch');
     expect(report).toContain('no queries this session');
   });
 
   it('omits jcodemunch line when stats not provided', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
-    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 });
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 });
     expect(report).not.toContain('jcodemunch');
   });
 
   it('omits jcodemunch line when stats are null', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
-    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0 }, null);
+    const report = formatSavingsReport(baseline, 1000, { rtkCalls: 0, jmCalls: 0, efficientCalls: 0, graphifyCalls: 0 }, null);
     expect(report).not.toContain('jcodemunch');
   });
 
   it('includes graphify stats line when stats are provided', () => {
     const baseline: MetricsBaseline = { totalSaved: 1000, capturedAt: Date.now() };
     const graphifyStats = {
-      nodes: 450,
-      edges: 1200,
-      communities: 8,
-      extractedPct: 92,
-      inferredPct: 6,
-      ambiguousPct: 2,
+      '/home/user/project': {
+        nodes: 450,
+        edges: 1200,
+        communities: 8,
+        extractedPct: 92,
+        inferredPct: 6,
+        ambiguousPct: 2,
+      },
     };
     const report = formatSavingsReport(
       baseline,
@@ -229,12 +233,14 @@ describe('formatSavingsReport', () => {
 
   it('shows graphify stats in all-time format', () => {
     const graphifyStats = {
-      nodes: 261,
-      edges: 460,
-      communities: 21,
-      extractedPct: 90,
-      inferredPct: 10,
-      ambiguousPct: 0,
+      '/home/user/project': {
+        nodes: 261,
+        edges: 460,
+        communities: 21,
+        extractedPct: 90,
+        inferredPct: 10,
+        ambiguousPct: 0,
+      },
     };
     const report = formatSavingsReport(
       null,
@@ -253,12 +259,14 @@ describe('formatSavingsReport', () => {
   it('shows all tools in all-time format', () => {
     const jmStats = { session_tokens_saved: 0, session_calls: 0, total_tokens_saved: 50000000 };
     const graphifyStats = {
-      nodes: 100,
-      edges: 200,
-      communities: 5,
-      extractedPct: 80,
-      inferredPct: 20,
-      ambiguousPct: 0,
+      '/home/user/project': {
+        nodes: 100,
+        edges: 200,
+        communities: 5,
+        extractedPct: 80,
+        inferredPct: 20,
+        ambiguousPct: 0,
+      },
     };
     const report = formatSavingsReport(
       null,
@@ -427,5 +435,137 @@ describe('captureGraphifyStatsViaReport', () => {
       inferredPct: 0,
       ambiguousPct: 0,
     });
+  });
+});
+
+describe('captureExternalGraphifyStats', () => {
+  it('triggers graphify build and captures stats for external dir', () => {
+    const report = [
+      '# Graph Report - /external/meridian',
+      '',
+      '## Summary',
+      '- 420 nodes · 891 edges · 67 communities detected',
+      '- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS',
+    ].join('\n');
+    const commands: string[] = [];
+    const exec = (cmd: string) => {
+      commands.push(cmd);
+      if (cmd.includes('test -f') && cmd.includes('graph.json')) throw new Error('not found');
+      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('GRAPH_REPORT.md')) return report;
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    const result = captureExternalGraphifyStats('/external/meridian', exec);
+    expect(result).toEqual({
+      nodes: 420, edges: 891, communities: 67,
+      extractedPct: 91, inferredPct: 9, ambiguousPct: 0,
+    });
+    expect(commands.some(c => c.includes('graphify update'))).toBe(true);
+    expect(commands.some(c => c.includes('GRAPH_REPORT.md'))).toBe(true);
+  });
+
+  it('skips build when graph already exists', () => {
+    const report = [
+      '# Graph Report - /external/meridian',
+      '',
+      '## Summary',
+      '- 420 nodes · 891 edges · 67 communities detected',
+      '- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS',
+    ].join('\n');
+    const commands: string[] = [];
+    const exec = (cmd: string) => {
+      commands.push(cmd);
+      if (cmd.includes('test -f') && cmd.includes('graph.json')) return ''; // exists check passes
+      if (cmd.includes('GRAPH_REPORT.md')) return report;
+      if (cmd.includes('graphify update')) return '';
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    const result = captureExternalGraphifyStats('/external/meridian', exec);
+    expect(result).not.toBeNull();
+    expect(result!.nodes).toBe(420);
+    // Should NOT have called graphify update since graph already existed
+    expect(commands.some(c => c.includes('graphify update'))).toBe(false);
+  });
+
+  it('returns null when graphify build fails', () => {
+    const commands: string[] = [];
+    const exec = (cmd: string) => {
+      commands.push(cmd);
+      if (cmd.includes('test -f')) throw new Error('not found');
+      if (cmd.includes('graphify update')) throw new Error('build failed');
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    const result = captureExternalGraphifyStats('/external/broken', exec);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when stats capture fails after build', () => {
+    const commands: string[] = [];
+    const exec = (cmd: string) => {
+      commands.push(cmd);
+      if (cmd.includes('test -f')) throw new Error('not found');
+      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('GRAPH_REPORT.md')) throw new Error('report not found');
+      if (cmd.includes('graphify benchmark')) throw new Error('benchmark failed');
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    const result = captureExternalGraphifyStats('/external/empty', exec);
+    expect(result).toBeNull();
+  });
+});
+
+describe('multi-project graphify round-trip', () => {
+  it('session-start + external index + savings report shows both projects', () => {
+    const cache = new SessionCache();
+
+    // Simulate session-start capturing CWD stats
+    const cwdStats: GraphifyProjectStats = {
+      nodes: 287, edges: 385, communities: 52,
+      extractedPct: 84, inferredPct: 16, ambiguousPct: 0,
+    };
+    cache.setMetricsBaseline({
+      totalSaved: 5000000,
+      capturedAt: Date.now(),
+      graphifyStats: { '/home/user/claude-rig': cwdStats },
+    });
+
+    // Simulate post-tool-use capturing external dir stats
+    const meridianReport = [
+      '# Graph Report - /home/user/meridian',
+      '',
+      '## Summary',
+      '- 420 nodes · 891 edges · 67 communities detected',
+      '- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS',
+    ].join('\n');
+    const exec = (cmd: string) => {
+      if (cmd.includes('test -f')) throw new Error('not found');
+      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('GRAPH_REPORT.md')) return meridianReport;
+      throw new Error(`unexpected: ${cmd}`);
+    };
+    const externalStats = captureExternalGraphifyStats('/home/user/meridian', exec);
+    expect(externalStats).not.toBeNull();
+    cache.setGraphifyStats('/home/user/meridian', externalStats!);
+
+    // Generate savings report — should show both projects
+    const allStats = cache.getAllGraphifyStats()!;
+    const report = formatSavingsReport(
+      cache.getMetricsBaseline()!,
+      5340000,
+      { rtkCalls: 3, jmCalls: 0, efficientCalls: 0, graphifyCalls: 2 },
+      undefined,
+      allStats,
+    );
+
+    // Both projects appear in multi-project format
+    expect(report).toContain('graphify:');
+    expect(report).toContain('claude-rig:');
+    expect(report).toContain('287 nodes');
+    expect(report).toContain('meridian:');
+    expect(report).toContain('420 nodes');
   });
 });

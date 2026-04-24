@@ -206,7 +206,11 @@ It has no phase prerequisite and is accessible at any time via `/savings`.
 The session-start hook captures a `MetricsBaseline` (rtk's cumulative
 saved-token count), and the post-tool-use hook increments rtk/jcodemunch
 call counters. The `/savings` skill computes the delta and formats the report
-via `formatSavingsReport()`.
+via `formatSavingsReport()`. Graphify stats are tracked per-project in
+`MetricsBaseline.graphifyStats` (a `Record<string, GraphifyProjectStats>`
+keyed by absolute directory path). Single-project sessions render one line;
+multi-project sessions render indented per-project lines with directory
+basename labels.
 
 **Files:** `src/session/metrics.ts`, `templates/skills/savings/SKILL.md`
 
@@ -289,6 +293,12 @@ reference. `ensureGraphBuilt()` auto-builds graphify knowledge graphs for extern
 directories (runs `graphify update <dir>` if `<dir>/graphify-out/graph.json` doesn't
 exist). `ScoutCache` with 30-min TTL prevents redundant indexing.
 
+**Per-project stats:** Graphify stats are tracked per-directory in the session cache
+as `Record<string, GraphifyProjectStats>`. The CWD project stats are captured at
+session start. External directory stats are captured when `mcp__jcodemunch__index_folder`
+is called on a non-CWD directory — the post-tool-use hook triggers a graphify build
+if needed and stores the results. The `/savings` skill reports all projects.
+
 **Entry point detection:** Derives from filename patterns: `index.*`, `main.*`, `cli.*`, `app.*`, `server.*`.
 
 **Files:** `src/scout/mapper.ts`, `src/scout/cross-repo.ts`, `src/scout/scout-cache.ts`, `templates/agents/scout.md`
@@ -307,13 +317,15 @@ Loads `.harness.yaml` with layered merge (base config + local override). `getEnf
 injectable `ExecFn`. `SessionCache` with 30-min TTL persists to
 `/tmp/rig-session-{cwd-hash}.json` for cross-process state sharing between hook
 invocations. Environment detection results, edited file tracking, phase, metrics
-baseline (including graphify stats), tool call counters, and a `toolsWarned` flag
-all persist. `handleSessionStart()` auto-indexes the project, captures a metrics
-baseline on first session, emits active enforcement rules from `.harness.yaml` (so
-skill templates can reference them dynamically), captures graphify graph stats
-when available, and emits a one-time warning if rtk or jcodemunch are not installed
-(suppressed for the rest of the session via the `toolsWarned` cache flag). A `[HINT]`
-is emitted when graphify is not installed.
+baseline (including per-project graphify stats keyed by directory path), tool call
+counters, and a `toolsWarned` flag all persist. `handleSessionStart()` auto-indexes
+the project, captures a metrics baseline on first session, emits active enforcement
+rules from `.harness.yaml` (so skill templates can reference them dynamically),
+captures graphify graph stats for the CWD project when available, and emits a
+one-time warning if rtk or jcodemunch are not installed (suppressed for the rest
+of the session via the `toolsWarned` cache flag). A `[HINT]` is emitted when
+graphify is not installed. `SessionCache` provides `getGraphifyStats(dir)` and
+`setGraphifyStats(dir, stats)` accessors for per-directory graphify data.
 
 ### CLI (`src/cli/`)
 
