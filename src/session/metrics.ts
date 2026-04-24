@@ -215,7 +215,7 @@ export function resolveGraphifyStats(
 ): GraphifyStatsSingleton | null {
   if (!raw) return null;
   // Singleton format — has a `nodes` number field
-  if (typeof raw.nodes === 'number') return raw;
+  if (typeof (raw as GraphifyStatsSingleton).nodes === 'number') return raw as GraphifyStatsSingleton;
   // Record format — keyed by directory path
   if (typeof raw === 'object' && cwd in raw) return (raw as GraphifyStatsRecord)[cwd];
   return null;
