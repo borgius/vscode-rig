@@ -58,6 +58,7 @@ The savings skill reads the multi-project map and reports per-project:
 ```
 
 Single-project sessions report on one line (backward compatible):
+
 ```
   graphify: 287 nodes, 385 edges, 52 communities (84% EXTRACTED, 16% INFERRED, 0% AMBIGUOUS)
 ```
@@ -92,7 +93,9 @@ Unit tests (mocks ok): execSync (shell commands), external CLI tools (graphify, 
 **Test strategy:** Unit tests for load/save round-trip with both formats
 **Mock check:** No protected components (mocks ok for filesystem)
 
-- [ ] Step 1: Write failing tests for: loading old singleton format → migration, loading new map format → passthrough, saving new map format, `getGraphifyStats(dir)` accessor, `setGraphifyStats(dir, stats)` mutator
+- [ ] Step 1: Write failing tests for: loading old singleton format → migration,
+      loading new map format → passthrough, saving new map format,
+      `getGraphifyStats(dir)` accessor, `setGraphifyStats(dir, stats)` mutator
 - [ ] Step 2: Verify tests fail
 - [ ] Step 3: Add `getGraphifyStats(dir)` and `setGraphifyStats(dir, stats)` methods to SessionCache
 - [ ] Step 4: Update `load()` to call `normalizeGraphifyStats()` on deserialized baseline
