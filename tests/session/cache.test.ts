@@ -241,6 +241,45 @@ describe('SessionCache (file-backed)', () => {
     expect(cache.getEditedFiles('source')).toEqual(['src/foo.ts']);
   });
 
+  it('stores and retrieves per-directory graphify stats', () => {
+    const cache = new SessionCache();
+    const stats = {
+      '/home/user/project-a': {
+        nodes: 100, edges: 200, communities: 5,
+        extractedPct: 90, inferredPct: 10, ambiguousPct: 0,
+      },
+    };
+    cache.setGraphifyStats('/home/user/project-a', stats['/home/user/project-a']);
+    expect(cache.getGraphifyStats('/home/user/project-a')).toEqual(stats['/home/user/project-a']);
+    expect(cache.getGraphifyStats('/home/user/project-b')).toBeUndefined();
+  });
+
+  it('accumulates stats across multiple directories', () => {
+    const cache = new SessionCache();
+    const statsA = { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 };
+    const statsB = { nodes: 50, edges: 80, communities: 3, extractedPct: 80, inferredPct: 20, ambiguousPct: 0 };
+    cache.setGraphifyStats('/home/user/project-a', statsA);
+    cache.setGraphifyStats('/home/user/project-b', statsB);
+    expect(cache.getGraphifyStats('/home/user/project-a')).toEqual(statsA);
+    expect(cache.getGraphifyStats('/home/user/project-b')).toEqual(statsB);
+    expect(cache.getAllGraphifyStats()).toEqual({
+      '/home/user/project-a': statsA,
+      '/home/user/project-b': statsB,
+    });
+  });
+
+  it('preserves graphify stats across cache round-trip', () => {
+    const cache = new SessionCache(testCwd);
+    const stats = { nodes: 287, edges: 385, communities: 52, extractedPct: 84, inferredPct: 16, ambiguousPct: 0 };
+    cache.setGraphifyStats('/home/user/claude-rig', stats);
+
+    const path = sessionCachePath(testCwd);
+    trackPath(path);
+
+    const cache2 = new SessionCache(testCwd);
+    expect(cache2.getGraphifyStats('/home/user/claude-rig')).toEqual(stats);
+  });
+
   it('serializes to valid JSON with expected structure', () => {
     const cache = new SessionCache(testCwd);
     cache.setEnvironment(makeEnv());

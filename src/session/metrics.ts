@@ -1,4 +1,5 @@
-import type { MetricsBaseline } from '../types.js';
+import type { GraphifyProjectStats, MetricsBaseline } from '../types.js';
+import { basename, join } from 'node:path';
 
 export type ExecFn = (cmd: string) => string;
 
@@ -7,7 +8,7 @@ export type ExecFn = (cmd: string) => string;
  * Returns null if the file is missing or malformed.
  * @deprecated Use captureGraphifyStatsViaReport instead — avoids reading 74MB files.
  */
-export function captureGraphifyStats(cwd: string, exec: ExecFn): MetricsBaseline['graphifyStats'] {
+export function captureGraphifyStats(cwd: string, exec: ExecFn): GraphifyProjectStats | null {
   try {
     const raw = exec(`cat "${cwd}/graphify-out/graph.json"`);
     const data = JSON.parse(raw) as { nodes?: unknown[]; links?: unknown[] };
@@ -40,7 +41,7 @@ export function captureGraphifyStats(cwd: string, exec: ExecFn): MetricsBaseline
  * Much lighter than reading graph.json (154KB vs 74MB).
  * Falls back to `graphify benchmark` CLI if report unavailable.
  */
-export function captureGraphifyStatsViaReport(cwd: string, exec: ExecFn): MetricsBaseline['graphifyStats'] {
+export function captureGraphifyStatsViaReport(cwd: string, exec: ExecFn): GraphifyProjectStats | null {
   // Try GRAPH_REPORT.md first (has full stats including confidence breakdown)
   try {
     const report = exec(`cat "${cwd}/graphify-out/GRAPH_REPORT.md"`);
@@ -83,6 +84,33 @@ export function captureGraphifyStatsViaReport(cwd: string, exec: ExecFn): Metric
   }
 
   return null;
+}
+
+/**
+ * Build graphify graph for an external directory (if not already built)
+ * and capture its stats. Returns null if graphify is unavailable or build fails.
+ */
+export function captureExternalGraphifyStats(directory: string, exec: ExecFn): GraphifyProjectStats | null {
+  const graphPath = join(directory, 'graphify-out', 'graph.json');
+
+  // Check if graph already exists
+  let graphExists = false;
+  try {
+    exec(`test -f "${graphPath}"`);
+    graphExists = true;
+  } catch {
+    // Graph doesn't exist — trigger build
+  }
+
+  if (!graphExists) {
+    try {
+      exec(`graphify update "${directory}"`);
+    } catch {
+      return null;
+    }
+  }
+
+  return captureGraphifyStatsViaReport(directory, exec);
 }
 
 export function captureMetricsBaseline(exec: ExecFn): MetricsBaseline {
@@ -144,7 +172,7 @@ export function formatSavingsReport(
   currentSaved: number,
   counters: { rtkCalls: number; jmCalls: number; efficientCalls: number; graphifyCalls: number },
   jmStats?: JcodemunchSessionStats | null,
-  graphifyStats?: MetricsBaseline['graphifyStats'],
+  graphifyStats?: Record<string, GraphifyProjectStats> | null,
 ): string {
   const hasBaseline = baseline != null && baseline.totalSaved > 0;
   const lines: string[] = [];
@@ -185,11 +213,23 @@ export function formatSavingsReport(
     lines.push(`  efficient tools: ${counters.efficientCalls} calls (Read/Grep/Glob on code files)`);
   }
 
-  if (graphifyStats) {
+  if (graphifyStats && Object.keys(graphifyStats).length > 0) {
     const querySuffix = counters.graphifyCalls > 0 ? `, ${counters.graphifyCalls} queries` : '';
-    lines.push(
-      `  graphify: ${graphifyStats.nodes} nodes, ${graphifyStats.edges} edges, ${graphifyStats.communities} communities (${graphifyStats.extractedPct}% EXTRACTED, ${graphifyStats.inferredPct}% INFERRED, ${graphifyStats.ambiguousPct}% AMBIGUOUS)${querySuffix}`,
-    );
+    const entries = Object.entries(graphifyStats);
+    if (entries.length === 1) {
+      const [, s] = entries[0];
+      lines.push(
+        `  graphify: ${s.nodes} nodes, ${s.edges} edges, ${s.communities} communities (${s.extractedPct}% EXTRACTED, ${s.inferredPct}% INFERRED, ${s.ambiguousPct}% AMBIGUOUS)${querySuffix}`,
+      );
+    } else {
+      lines.push('  graphify:');
+      for (const [dir, s] of entries) {
+        const label = basename(dir);
+        lines.push(
+          `    ${label}: ${s.nodes} nodes, ${s.edges} edges, ${s.communities} communities (${s.extractedPct}% EXTRACTED, ${s.inferredPct}% INFERRED, ${s.ambiguousPct}% AMBIGUOUS)`,
+        );
+      }
+    }
   }
 
   return lines.join('\n');
