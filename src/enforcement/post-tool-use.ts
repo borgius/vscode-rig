@@ -59,22 +59,16 @@ export function handlePostToolUse(
     }
   }
 
-  // Capture graphify stats for external directories indexed via jcodemunch
-  if (tool === 'mcp__jcodemunch__index_folder' && execFn) {
-    const directory = (args.path as string) ?? (args.folder_path as string);
-    if (directory) {
-      const cwd = process.cwd();
-      // Only capture for external directories (not CWD — handled by session-start)
-      if (!directory.startsWith(cwd)) {
-        try {
-          const stats = captureExternalGraphifyStats(directory, execFn);
-          if (stats) {
-            cache.setGraphifyStats(directory, stats);
-          }
-        } catch {
-          // graphify not available — skip silently
-        }
+  // Capture graphify stats for external directories accessed via jcodemunch
+  const externalDir = extractExternalDirectory(tool, args);
+  if (externalDir && execFn) {
+    try {
+      const stats = captureExternalGraphifyStats(externalDir, execFn);
+      if (stats) {
+        cache.setGraphifyStats(externalDir, stats);
       }
+    } catch {
+      // graphify not available — skip silently
     }
   }
 
@@ -82,4 +76,26 @@ export function handlePostToolUse(
 
   // Return combined violations separated by separator
   return violations.join('\n\n---\n\n');
+}
+
+/**
+ * Extract an external (non-CWD) directory path from jcodemunch tool calls.
+ * Returns null for CWD paths or unrecognized tools.
+ */
+function extractExternalDirectory(
+  tool: string,
+  args: Record<string, unknown>,
+): string | null {
+  let directory: string | undefined;
+
+  if (tool === 'mcp__jcodemunch__index_folder') {
+    directory = (args.path as string) ?? (args.folder_path as string);
+  } else if (tool === 'mcp__jcodemunch__resolve_repo') {
+    directory = args.path as string;
+  }
+
+  if (!directory) return null;
+  const cwd = process.cwd();
+  if (directory.startsWith(cwd)) return null;
+  return directory;
 }

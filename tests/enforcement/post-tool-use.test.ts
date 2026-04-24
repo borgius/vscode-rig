@@ -158,4 +158,64 @@ describe('handlePostToolUse', () => {
 
     expect(cache.getGraphifyStats('/external/broken')).toBeUndefined();
   });
+
+  it('captures external graphify stats on mcp__jcodemunch__resolve_repo', () => {
+    const report = [
+      '# Graph Report - /home/user/meridian',
+      '',
+      '## Summary',
+      '- 32000 nodes · 91000 edges · 440 communities detected',
+      '- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS',
+    ].join('\n');
+    const exec = (cmd: string) => {
+      if (cmd.includes('test -f')) throw new Error('not found');
+      if (cmd.includes('graphify update')) return '';
+      if (cmd.includes('GRAPH_REPORT.md')) return report;
+      throw new Error(`unexpected: ${cmd}`);
+    };
+
+    handlePostToolUse(
+      'mcp__jcodemunch__resolve_repo',
+      { path: '/home/user/meridian' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    const stats = cache.getGraphifyStats('/home/user/meridian');
+    expect(stats).toEqual({
+      nodes: 32000, edges: 91000, communities: 440,
+      extractedPct: 90, inferredPct: 10, ambiguousPct: 0,
+    });
+  });
+
+  it('does not capture stats for CWD on resolve_repo', () => {
+    const exec = () => '';
+    handlePostToolUse(
+      'mcp__jcodemunch__resolve_repo',
+      { path: '/home/user/claude-rig' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    expect(cache.getGraphifyStats('/home/user/claude-rig')).toBeUndefined();
+  });
+
+  it('gracefully handles graphify failure on resolve_repo', () => {
+    const exec = () => { throw new Error('graphify not installed'); };
+
+    handlePostToolUse(
+      'mcp__jcodemunch__resolve_repo',
+      { path: '/external/unreachable' },
+      tracker,
+      cache,
+      config,
+      exec,
+    );
+
+    expect(cache.getGraphifyStats('/external/unreachable')).toBeUndefined();
+  });
 });
