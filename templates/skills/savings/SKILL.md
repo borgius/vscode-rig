@@ -15,10 +15,13 @@ Report token savings from rtk and jcodemunch usage during this session.
 
 1. Run `rtk gain --format json` to get current savings data. If rtk is not
    available, skip rtk reporting.
-2. Find the session cache file: `ls /tmp/rig-session-*.json`. Read the most
-   recent one (by modification time). It contains `metricsBaseline`,
-   `metricCounters` (rtkCalls, jmCalls, efficientCalls), and `environment`
-   (rtkAvailable, jcodemunchAvailable).
+2. Find the session cache file: `ls /tmp/rig-session-*.json`. For each file,
+   read it and check the `cwd` field. Use the file whose `cwd` matches the
+   current project directory (`$CLAUDE_PROJECT_DIR` or `pwd`). If no file has
+   a matching `cwd`, fall back to the most recent by modification time.
+   The cache file contains `metricsBaseline`, `metricCounters` (rtkCalls,
+   jmCalls, efficientCalls), and `environment` (rtkAvailable,
+   jcodemunchAvailable).
 3. Compute the rtk session delta: `current total_saved - baseline totalSaved`.
 4. For jcodemunch: call `mcp__jcodemunch__get_session_stats` and read
    `session_tokens_saved`, `session_calls`, `total_tokens_saved`, and
@@ -27,8 +30,13 @@ Report token savings from rtk and jcodemunch usage during this session.
    skip jcodemunch reporting.
 5. For graphify: check the session cache file for `graphifyStats` in the
    `metricsBaseline` field. If present, include the graphify line in the report.
-   Alternatively, if graphify MCP is available, call `mcp__graphify__graph_stats`
-   to get live stats. If graphify is not available, skip graphify reporting.
+   **Format handling:** `graphifyStats` may be either a singleton object
+   `{nodes, edges, communities, extractedPct, inferredPct, ambiguousPct}` or
+   a Record keyed by directory path `{"/path/to/project": {nodes, ...}}`.
+   If it is a Record, look up the entry matching the current project directory.
+   If it is a singleton, use it directly. Alternatively, if graphify MCP is
+   available, call `mcp__graphify__graph_stats` to get live stats. If graphify
+   is not available, skip graphify reporting.
 6. Format and print the report (see Output Format below). Do NOT write any
    explanatory text before or after the report — output ONLY the report lines.
 

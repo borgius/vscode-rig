@@ -5,6 +5,7 @@ import {
   captureGraphifyStatsViaReport,
   incrementMetric,
   formatSavingsReport,
+  resolveGraphifyStats,
 } from '../../src/session/metrics.js';
 import type { MetricsBaseline } from '../../src/types.js';
 
@@ -427,5 +428,36 @@ describe('captureGraphifyStatsViaReport', () => {
       inferredPct: 0,
       ambiguousPct: 0,
     });
+  });
+});
+
+describe('resolveGraphifyStats', () => {
+  it('passes through singleton format unchanged', () => {
+    const stats = { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 };
+    const result = resolveGraphifyStats(stats, '/home/user/project');
+    expect(result).toEqual(stats);
+  });
+
+  it('extracts from Record format by cwd key', () => {
+    const inner = { nodes: 1742, edges: 6236, communities: 42, extractedPct: 88, inferredPct: 12, ambiguousPct: 0 };
+    const record = { '/home/user/project': inner };
+    const result = resolveGraphifyStats(record, '/home/user/project');
+    expect(result).toEqual(inner);
+  });
+
+  it('returns null when Record has no matching cwd key', () => {
+    const record = { '/other/project': { nodes: 100, edges: 200, communities: 5, extractedPct: 90, inferredPct: 10, ambiguousPct: 0 } };
+    const result = resolveGraphifyStats(record, '/home/user/project');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when input is null', () => {
+    const result = resolveGraphifyStats(null, '/home/user/project');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when input is undefined', () => {
+    const result = resolveGraphifyStats(undefined, '/home/user/project');
+    expect(result).toBeNull();
   });
 });

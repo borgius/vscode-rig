@@ -200,3 +200,23 @@ function formatTokens(n: number): string {
   if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
   return `${n}`;
 }
+
+type GraphifyStatsSingleton = NonNullable<MetricsBaseline['graphifyStats']>;
+type GraphifyStatsRecord = Record<string, GraphifyStatsSingleton>;
+
+/**
+ * Normalize graphifyStats to singleton format regardless of storage format.
+ * Handles both singleton ({nodes, edges, ...}) and Record ({"/path": {nodes, ...}})
+ * formats so the savings report works regardless of which branch wrote the cache.
+ */
+export function resolveGraphifyStats(
+  raw: GraphifyStatsSingleton | GraphifyStatsRecord | null | undefined,
+  cwd: string,
+): GraphifyStatsSingleton | null {
+  if (!raw) return null;
+  // Singleton format — has a `nodes` number field
+  if (typeof raw.nodes === 'number') return raw;
+  // Record format — keyed by directory path
+  if (typeof raw === 'object' && cwd in raw) return (raw as GraphifyStatsRecord)[cwd];
+  return null;
+}
