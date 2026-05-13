@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SessionCache, sessionCachePath } from '../../src/session/cache.js';
 import type { Environment, PythonEnv, SessionCacheFile } from '../../src/types.js';
-import { readFileSync, unlinkSync, existsSync } from 'node:fs';
+import { readFileSync, unlinkSync, existsSync, mkdtempSync, symlinkSync, rmSync, realpathSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 function makeEnv(overrides: Partial<Environment> = {}): Environment {
   return {
@@ -134,6 +136,42 @@ describe('SessionCache (file-backed)', () => {
     expect(sessionCachePath(testCwd)).toBe(path);
     // Different cwd produces different path
     expect(sessionCachePath('/other/path')).not.toBe(path);
+  });
+
+  it('canonicalizes cwd through symlinks (portable across mac and linux)', () => {
+    // Create a real directory and a symlink pointing at it. On macOS, this
+    // also mirrors the /var → /private/var quirk that breaks cache lookups
+    // when subprocesses report process.cwd() as the resolved path while
+    // callers pass the unresolved path. On Linux the symlink behavior is
+    // identical: both inputs must hash to the same cache file.
+    const realDir = mkdtempSync(join(tmpdir(), 'rig-cache-real-'));
+    const linkParent = mkdtempSync(join(tmpdir(), 'rig-cache-link-'));
+    const linkPath = join(linkParent, 'alias');
+    symlinkSync(realDir, linkPath, 'dir');
+    try {
+      const resolved = realpathSync(linkPath);
+      expect(resolved).toBe(realpathSync(realDir));
+      // Both the symlink path and the real path must resolve to the same
+      // cache file so the SessionStart subprocess and any in-process reader
+      // agree, regardless of which form was passed in.
+      expect(sessionCachePath(linkPath)).toBe(sessionCachePath(realDir));
+      expect(sessionCachePath(linkPath, 'sess')).toBe(sessionCachePath(realDir, 'sess'));
+    } finally {
+      try { unlinkSync(linkPath); } catch { /* ignore */ }
+      rmSync(realDir, { recursive: true, force: true });
+      rmSync(linkParent, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to the raw path when realpath fails (synthetic paths)', () => {
+    // Non-existent paths must still produce a deterministic hash for callers
+    // that pass purely synthetic identifiers — realpathSync will throw and we
+    // should silently fall back. Regression coverage for the catch branch.
+    const synthetic = '/does/not/exist/' + process.pid;
+    const p1 = sessionCachePath(synthetic);
+    const p2 = sessionCachePath(synthetic);
+    expect(p1).toBe(p2);
+    expect(p1).toMatch(/^\/tmp\/rig-session-[a-f0-9]{12}\.json$/);
   });
 
   it('isolates cache paths by session_id', () => {

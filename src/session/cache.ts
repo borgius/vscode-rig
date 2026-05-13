@@ -1,12 +1,23 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Environment, GraphBuildInfo, GraphifyProjectStats, MetricsBaseline, PythonEnv, SessionCacheFile } from '../types.js';
 
 const ENV_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export function sessionCachePath(cwd: string, sessionId?: string): string {
-  const input = sessionId ? `${cwd}:${sessionId}` : cwd;
+  // Canonicalize the cwd so callers that pass an unresolved path (e.g. macOS
+  // /var/folders/... which resolves to /private/var/folders/...) hash to the
+  // same file as the hook subprocess, which sees the resolved path via
+  // process.cwd().
+  let canonical = cwd;
+  try {
+    canonical = realpathSync(cwd);
+  } catch {
+    // Path does not exist or is unreadable — fall back to the original input
+    // so synthetic paths in tests still produce a deterministic hash.
+  }
+  const input = sessionId ? `${canonical}:${sessionId}` : canonical;
   const hash = createHash('sha256').update(input).digest('hex').slice(0, 12);
   return join('/tmp', `rig-session-${hash}.json`);
 }
