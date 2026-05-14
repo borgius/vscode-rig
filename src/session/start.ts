@@ -8,6 +8,9 @@ import { checkWorktreeSuggestion } from './worktree.js';
 import { captureMetricsBaseline, captureGraphifyStatsViaReport } from './metrics.js';
 import { triggerBuild, waitForBuild } from '../scout/graph-state.js';
 import { loadConfig } from '../config.js';
+import { checkGraphifyMcpReadiness } from './graphify-self-check.js';
+import { checkPermissionsReadiness } from './permissions-self-check.js';
+import { readFileSync, existsSync } from 'node:fs';
 
 interface FileCapWarning {
   indexed: number;
@@ -144,6 +147,38 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
     lines.push('  - mcp__graphify__god_nodes for core abstractions');
     lines.push('  - mcp__graphify__get_community for module clustering');
     lines.push('  - mcp__graphify__shortest_path for dependency paths');
+  }
+
+  // Graphify MCP server self-check (only when CLI is present but MCP not ready)
+  const execFnForCheck = (cmd: string, opts?: { encoding?: string; timeout?: number }) =>
+    execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string;
+  const mcpReadiness = checkGraphifyMcpReadiness(cwd, env, execFnForCheck);
+  if (mcpReadiness.status !== 'ready' && mcpReadiness.status !== 'cli_missing') {
+    if (mcpReadiness.status === 'no_graph') {
+      lines.push(`[WARNING] graphify CLI present but no graph built. Run: ${mcpReadiness.fixCommand}`);
+    } else if (mcpReadiness.status === 'cli_only_mcp_dep_missing') {
+      lines.push('[WARNING] graphify MCP server unavailable: missing Python "mcp" dependency.');
+      lines.push(`  Fix: ${mcpReadiness.fixCommand}`);
+    } else if (mcpReadiness.status === 'cli_only_not_registered') {
+      lines.push('[WARNING] graphify CLI present but MCP server not registered with Claude Code.');
+      lines.push('  Scout will fall back to parsing graph.json instead of using mcp__graphify__* tools.');
+      lines.push(`  Fix: ${mcpReadiness.fixCommand}`);
+    }
+  }
+
+  // Permissions self-check: settings.json should auto-allow rig's required entries
+  const permsReadiness = checkPermissionsReadiness(
+    cwd,
+    (p) => readFileSync(p, 'utf-8'),
+    existsSync,
+  );
+  if (permsReadiness.status === 'missing') {
+    lines.push('[WARNING] .claude/settings.json is missing rig-required permission entries.');
+    lines.push(`  Missing: ${permsReadiness.missing.join(', ')}`);
+    lines.push(`  Fix: ${permsReadiness.fixCommand}`);
+  } else if (permsReadiness.status === 'no_settings') {
+    lines.push('[WARNING] .claude/settings.json missing or unreadable — rig permissions cannot be verified.');
+    lines.push(`  Fix: ${permsReadiness.fixCommand}`);
   }
 
   // One-time warning for missing tools

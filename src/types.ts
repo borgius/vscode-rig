@@ -59,6 +59,22 @@ export interface ToolRule {
   enforcement: EnforcementLevel;
 }
 
+// ── Graphify MCP Readiness ──
+
+export type GraphifyMcpReadiness =
+  | { status: 'ready' }
+  | { status: 'cli_missing' }
+  | { status: 'no_graph'; fixCommand: string }
+  | { status: 'cli_only_mcp_dep_missing'; fixCommand: string }
+  | { status: 'cli_only_not_registered'; fixCommand: string };
+
+// ── Permissions Self-Check ──
+
+export type PermissionsReadiness =
+  | { status: 'ok' }
+  | { status: 'no_settings'; fixCommand: string }
+  | { status: 'missing'; missing: string[]; fixCommand: string };
+
 // ── Graphify Stats Types ──
 
 export interface GraphifyProjectStats {
