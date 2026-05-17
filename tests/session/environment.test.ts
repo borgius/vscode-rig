@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { detectEnvironment, detectGraphify } from '../../src/session/environment.js';
-import type { ExecFn } from '../../src/session/environment.js';
+import {
+  detectEnvironment,
+  detectGraphify,
+  callJcodemunchMcpTool,
+  defaultMcpQuery,
+} from '../../src/session/environment.js';
+import type { ExecFn, McpQueryFn } from '../../src/session/environment.js';
 
 function makeExec(responses: Record<string, string | Error>): ExecFn {
   return (cmd: string) => {
@@ -11,6 +16,20 @@ function makeExec(responses: Record<string, string | Error>): ExecFn {
       }
     }
     throw new Error(`unexpected command: ${cmd}`);
+  };
+}
+
+// Mock for the McpQueryFn — keyed by [command, ...args].join(' ').
+function makeMcpQuery(responses: Record<string, string | Error | null>): McpQueryFn {
+  return async (command, args) => {
+    const key = [command, ...args].join(' ');
+    for (const [pattern, result] of Object.entries(responses)) {
+      if (key.includes(pattern)) {
+        if (result instanceof Error) throw result;
+        return result;
+      }
+    }
+    return null;
   };
 }
 
@@ -35,6 +54,7 @@ describe('detectEnvironment', () => {
       'which rtk': '/usr/local/bin/rtk',
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': new Error('not found'),
     });
 
     const env = await detectEnvironment('/fake/cwd', exec);
@@ -47,6 +67,7 @@ describe('detectEnvironment', () => {
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': new Error('not found'),
     });
 
     const env = await detectEnvironment('/fake/cwd', exec);
@@ -65,11 +86,12 @@ describe('detectEnvironment', () => {
     expect(env.jcodemunchAvailable).toBe(true);
   });
 
-  it('detects jcodemunch unavailable when neither CLI nor MCP found', async () => {
+  it('detects jcodemunch unavailable when neither CLI, MCP, nor uvx found', async () => {
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': new Error('not found'),
     });
 
     const env = await detectEnvironment('/fake/cwd', exec);
@@ -120,15 +142,16 @@ describe('detectEnvironment', () => {
   });
 
   it('detects jcodemunch via MCP server binary when CLI not found', async () => {
-    const mcpOutput = mcpListReposResponse([{ repo: 'local/ai-news' }]);
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch-mcp': '/home/user/.local/bin/jcodemunch-mcp\n',
       'which jcodemunch': new Error('not found'),
-      'jcodemunch-mcp': mcpOutput,
+    });
+    const mcpQuery = makeMcpQuery({
+      '/home/user/.local/bin/jcodemunch-mcp': mcpListReposResponse([{ repo: 'local/ai-news' }]),
     });
 
-    const env = await detectEnvironment('/home/user/projects/ai-news', exec);
+    const env = await detectEnvironment('/home/user/projects/ai-news', exec, undefined, undefined, mcpQuery);
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(true);
     expect(env.jcodemunchCwdRepo).toBe('local/ai-news');
@@ -136,18 +159,19 @@ describe('detectEnvironment', () => {
   });
 
   it('detects jcodemunch MCP available but CWD not indexed', async () => {
-    const mcpOutput = mcpListReposResponse([
-      { repo: 'local/other-project' },
-      { repo: 'local/third-project' },
-    ]);
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch-mcp': '/home/user/.local/bin/jcodemunch-mcp\n',
       'which jcodemunch': new Error('not found'),
-      'jcodemunch-mcp': mcpOutput,
+    });
+    const mcpQuery = makeMcpQuery({
+      '/home/user/.local/bin/jcodemunch-mcp': mcpListReposResponse([
+        { repo: 'local/other-project' },
+        { repo: 'local/third-project' },
+      ]),
     });
 
-    const env = await detectEnvironment('/home/user/projects/ai-news', exec);
+    const env = await detectEnvironment('/home/user/projects/ai-news', exec, undefined, undefined, mcpQuery);
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(false);
     expect(env.jcodemunchKnownRepos).toHaveLength(2);
@@ -158,24 +182,28 @@ describe('detectEnvironment', () => {
       'which rtk': new Error('not found'),
       'which jcodemunch-mcp': '/home/user/.local/bin/jcodemunch-mcp\n',
       'which jcodemunch': new Error('not found'),
-      'jcodemunch-mcp': 'not valid json',
+    });
+    const mcpQuery = makeMcpQuery({
+      '/home/user/.local/bin/jcodemunch-mcp': 'not valid json',
     });
 
-    const env = await detectEnvironment('/home/user/projects/ai-news', exec);
+    const env = await detectEnvironment('/home/user/projects/ai-news', exec, undefined, undefined, mcpQuery);
     // Should still mark as available since the binary exists
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(false);
   });
 
-  it('handles MCP query failure gracefully', async () => {
+  it('handles MCP query null result gracefully (timeout / no match)', async () => {
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch-mcp': '/home/user/.local/bin/jcodemunch-mcp\n',
       'which jcodemunch': new Error('not found'),
-      'jcodemunch-mcp': new Error('timeout'),
+    });
+    const mcpQuery = makeMcpQuery({
+      '/home/user/.local/bin/jcodemunch-mcp': null,
     });
 
-    const env = await detectEnvironment('/home/user/projects/ai-news', exec);
+    const env = await detectEnvironment('/home/user/projects/ai-news', exec, undefined, undefined, mcpQuery);
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(false);
   });
@@ -197,6 +225,7 @@ describe('detectEnvironment', () => {
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': new Error('not found'),
     });
 
     const before = Date.now();
@@ -227,32 +256,46 @@ describe('detectEnvironment', () => {
   // ── macOS/uvx-install detection (jcodemunch-mcp not in PATH, managed by uvx) ──
 
   it('macOS/uvx: detects jcodemunch when binary not in PATH but uvx available and CWD is indexed', async () => {
-    const mcpOutput = mcpListReposResponse([{ repo: 'local/forgd-onboarding' }]);
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
       'which uvx': '/opt/homebrew/bin/uvx',
-      'uvx jcodemunch-mcp': mcpOutput,
+    });
+    const mcpQuery = makeMcpQuery({
+      'uvx jcodemunch-mcp': mcpListReposResponse([{ repo: 'local/forgd-onboarding' }]),
     });
 
-    const env = await detectEnvironment('/Users/jerome/Documents/Claude/Projects/forgd-onboarding', exec);
+    const env = await detectEnvironment(
+      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      exec,
+      undefined,
+      undefined,
+      mcpQuery,
+    );
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(true);
     expect(env.jcodemunchCwdRepo).toBe('local/forgd-onboarding');
   });
 
   it('macOS/uvx: marks available=true but cwdIndexed=false when uvx runs but CWD not in repo list', async () => {
-    const mcpOutput = mcpListReposResponse([{ repo: 'local/other-project' }]);
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
       'which uvx': '/opt/homebrew/bin/uvx',
-      'uvx jcodemunch-mcp': mcpOutput,
+    });
+    const mcpQuery = makeMcpQuery({
+      'uvx jcodemunch-mcp': mcpListReposResponse([{ repo: 'local/other-project' }]),
     });
 
-    const env = await detectEnvironment('/Users/jerome/Documents/Claude/Projects/forgd-onboarding', exec);
+    const env = await detectEnvironment(
+      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      exec,
+      undefined,
+      undefined,
+      mcpQuery,
+    );
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(false);
     expect(env.jcodemunchCwdRepo).toBeNull();
@@ -271,38 +314,88 @@ describe('detectEnvironment', () => {
     expect(env.jcodemunchCwdIndexed).toBe(false);
   });
 
-  it('macOS/uvx: handles uvx jcodemunch-mcp startup failure gracefully (exit nonzero / timeout)', async () => {
+  it('macOS/uvx: handles uvx jcodemunch-mcp startup failure (mcpQuery returns null) gracefully', async () => {
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
       'which uvx': '/opt/homebrew/bin/uvx',
-      'uvx jcodemunch-mcp': new Error('uvx: Package jcodemunch-mcp not found'),
+    });
+    const mcpQuery = makeMcpQuery({
+      'uvx jcodemunch-mcp': null,
     });
 
-    const env = await detectEnvironment('/Users/jerome/Documents/Claude/Projects/forgd-onboarding', exec);
+    const env = await detectEnvironment(
+      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      exec,
+      undefined,
+      undefined,
+      mcpQuery,
+    );
     expect(env.jcodemunchAvailable).toBe(false);
     expect(env.jcodemunchCwdIndexed).toBe(false);
+  });
+
+  it('macOS/uvx: mcpQuery is invoked with command=uvx args=[jcodemunch-mcp] (not a shell pipe)', async () => {
+    // Regression: previously detection used `printf ... | uvx jcodemunch-mcp` as a
+    // shell pipe, which closed stdin at EOF and caused the MCP server to exit
+    // before emitting the list_repos response. The new spawn-based approach calls
+    // the binary directly with args and holds stdin open until the response arrives.
+    let capturedCommand = '';
+    let capturedArgs: string[] = [];
+    let capturedMessages: string[] = [];
+    const exec = makeExec({
+      'which rtk': new Error('not found'),
+      'which jcodemunch': new Error('not found'),
+      'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': '/opt/homebrew/bin/uvx',
+    });
+    const mcpQuery: McpQueryFn = async (command, args, messages) => {
+      capturedCommand = command;
+      capturedArgs = args;
+      capturedMessages = messages;
+      return mcpListReposResponse([{ repo: 'local/my-project' }]);
+    };
+
+    await detectEnvironment('/Users/jerome/projects/my-project', exec, undefined, undefined, mcpQuery);
+    expect(capturedCommand).toBe('uvx');
+    expect(capturedArgs).toEqual(['jcodemunch-mcp']);
+    // Must include initialize, notifications/initialized, and tools/call list_repos
+    expect(capturedMessages).toHaveLength(3);
+    expect(capturedMessages[0]).toContain('"method":"initialize"');
+    expect(capturedMessages[1]).toContain('"method":"notifications/initialized"');
+    expect(capturedMessages[2]).toContain('"name":"list_repos"');
   });
 
   it('Linux/direct-binary: existing which jcodemunch-mcp path still wins when binary is in PATH (uvx fallback not reached)', async () => {
     // On Linux with pip/pipx install, jcodemunch-mcp lands in ~/.local/bin (in PATH).
     // The direct binary path must be preferred; uvx fallback must not be reached.
-    // Note: 'which jcodemunch-mcp' must come before 'which jcodemunch' in the map
-    // because makeExec uses substring matching and the shorter key would match first.
-    const mcpOutput = mcpListReposResponse([{ repo: 'local/my-project' }]);
+    let mcpQueryCommand = '';
     const exec = makeExec({
       'which rtk': new Error('not found'),
       'which jcodemunch-mcp': '/home/user/.local/bin/jcodemunch-mcp',
       'which jcodemunch': new Error('not found'),
-      'jcodemunch-mcp': mcpOutput,
-      // uvx is NOT in this map — if the code reaches it, makeExec throws "unexpected command"
+      // uvx is NOT in this map — if `which uvx` is reached, makeExec throws
     });
+    const mcpQuery: McpQueryFn = async (command, args) => {
+      mcpQueryCommand = command;
+      if (command === '/home/user/.local/bin/jcodemunch-mcp' && args.length === 0) {
+        return mcpListReposResponse([{ repo: 'local/my-project' }]);
+      }
+      return null;
+    };
 
-    const env = await detectEnvironment('/home/user/projects/my-project', exec);
+    const env = await detectEnvironment(
+      '/home/user/projects/my-project',
+      exec,
+      undefined,
+      undefined,
+      mcpQuery,
+    );
     expect(env.jcodemunchAvailable).toBe(true);
     expect(env.jcodemunchCwdIndexed).toBe(true);
     expect(env.jcodemunchCwdRepo).toBe('local/my-project');
+    expect(mcpQueryCommand).toBe('/home/user/.local/bin/jcodemunch-mcp');
   });
 });
 
@@ -379,6 +472,7 @@ describe('detectGraphify', () => {
       'which rtk': new Error('not found'),
       'which jcodemunch': new Error('not found'),
       'which jcodemunch-mcp': new Error('not found'),
+      'which uvx': new Error('not found'),
       'which graphify': '/usr/local/bin/graphify',
     });
     const existsCheck = (path: string) =>
@@ -409,5 +503,168 @@ describe('detectGraphify', () => {
     const result = detectGraphify('/fake/cwd', exec, existsCheck, statCheck);
     expect(result.state).toBe('ready');
     expect(result.graphPath).toBe('graphify-out/graph.json');
+  });
+});
+
+describe('callJcodemunchMcpTool', () => {
+  // Helper to build an index_folder-style MCP response.
+  function mcpToolResponse(payload: object): string {
+    const rpcResponse = {
+      jsonrpc: '2.0',
+      id: 2,
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(payload) }],
+        isError: false,
+      },
+    };
+    const initResponse = { jsonrpc: '2.0', id: 1, result: { protocolVersion: '2025-03-26' } };
+    return JSON.stringify(initResponse) + '\n' + JSON.stringify(rpcResponse);
+  }
+
+  it('invokes a direct binary with empty args', async () => {
+    let capturedCommand = '';
+    let capturedArgs: string[] = [];
+    const mcpQuery: McpQueryFn = async (command, args) => {
+      capturedCommand = command;
+      capturedArgs = args;
+      return mcpToolResponse({ success: true, repo: 'local/proj' });
+    };
+
+    const result = await callJcodemunchMcpTool(
+      '/usr/local/bin/jcodemunch-mcp',
+      [],
+      'index_folder',
+      { path: '/fake/cwd' },
+      mcpQuery,
+    );
+    expect(capturedCommand).toBe('/usr/local/bin/jcodemunch-mcp');
+    expect(capturedArgs).toEqual([]);
+    expect(result).toBeTruthy();
+    expect(JSON.parse(result!)).toEqual({ success: true, repo: 'local/proj' });
+  });
+
+  it('invokes uvx with [jcodemunch-mcp] args for macOS uvx installs', async () => {
+    let capturedCommand = '';
+    let capturedArgs: string[] = [];
+    const mcpQuery: McpQueryFn = async (command, args) => {
+      capturedCommand = command;
+      capturedArgs = args;
+      return mcpToolResponse({ success: true });
+    };
+
+    const result = await callJcodemunchMcpTool(
+      'uvx',
+      ['jcodemunch-mcp'],
+      'index_folder',
+      { path: '/fake/cwd' },
+      mcpQuery,
+    );
+    expect(capturedCommand).toBe('uvx');
+    expect(capturedArgs).toEqual(['jcodemunch-mcp']);
+    expect(result).toBeTruthy();
+  });
+
+  it('sends initialize + notifications/initialized + tool call in order', async () => {
+    let capturedMessages: string[] = [];
+    const mcpQuery: McpQueryFn = async (_command, _args, messages) => {
+      capturedMessages = messages;
+      return mcpToolResponse({ ok: true });
+    };
+
+    await callJcodemunchMcpTool(
+      'uvx',
+      ['jcodemunch-mcp'],
+      'search_symbols',
+      { query: 'foo' },
+      mcpQuery,
+    );
+    expect(capturedMessages).toHaveLength(3);
+    expect(capturedMessages[0]).toContain('"method":"initialize"');
+    expect(capturedMessages[1]).toContain('"method":"notifications/initialized"');
+    expect(capturedMessages[2]).toContain('"name":"search_symbols"');
+    expect(capturedMessages[2]).toContain('"query":"foo"');
+  });
+
+  it('returns null when mcpQuery returns null (timeout / no match)', async () => {
+    const mcpQuery: McpQueryFn = async () => null;
+    const result = await callJcodemunchMcpTool(
+      'uvx',
+      ['jcodemunch-mcp'],
+      'index_folder',
+      { path: '/fake' },
+      mcpQuery,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when response lacks id:2 line', async () => {
+    const mcpQuery: McpQueryFn = async () =>
+      '{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26"}}';
+    const result = await callJcodemunchMcpTool(
+      'uvx',
+      ['jcodemunch-mcp'],
+      'index_folder',
+      { path: '/fake' },
+      mcpQuery,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null on malformed JSON', async () => {
+    const mcpQuery: McpQueryFn = async () => '{"id":2 not-valid-json';
+    const result = await callJcodemunchMcpTool(
+      'uvx',
+      ['jcodemunch-mcp'],
+      'index_folder',
+      { path: '/fake' },
+      mcpQuery,
+    );
+    expect(result).toBeNull();
+  });
+});
+
+describe('defaultMcpQuery (real-process integration)', () => {
+  // Smoke test: spawn a tiny shell script that emits a fake MCP response,
+  // verify defaultMcpQuery reads stdout and resolves when it sees `"id":<matchId>`.
+  it('resolves with stdout once matching id line arrives, then kills the child', async () => {
+    // Use printf with two separate calls so the inner JSON's quotes survive.
+    // The child sleeps after printing — defaultMcpQuery must kill it on match.
+    const start = Date.now();
+    const result = await defaultMcpQuery(
+      '/bin/sh',
+      ['-c', `printf '%s\\n' '{"jsonrpc":"2.0","id":1,"result":{}}'; printf '%s\\n' '{"jsonrpc":"2.0","id":2,"result":{"value":42}}'; sleep 10`],
+      [],
+      2,
+      5_000,
+    );
+    const elapsed = Date.now() - start;
+    expect(result).toContain('"id":2');
+    expect(result).toContain('"value":42');
+    // Must have returned quickly after id:2 — well under the sleep 10 + 5s timeout.
+    expect(elapsed).toBeLessThan(3_000);
+  });
+
+  it('returns null on timeout when no matching id appears', async () => {
+    // Spawn a process that emits unrelated output then sleeps. With a 200ms
+    // timeout and no matching id:2, we should resolve null.
+    const result = await defaultMcpQuery(
+      '/bin/sh',
+      ['-c', 'printf "unrelated\\n"; sleep 5'],
+      [],
+      2,
+      200,
+    );
+    expect(result).toBeNull();
+  });
+
+  it('returns null when spawned command does not exist', async () => {
+    const result = await defaultMcpQuery(
+      '/nonexistent/binary-that-should-not-exist',
+      [],
+      [],
+      2,
+      1_000,
+    );
+    expect(result).toBeNull();
   });
 });

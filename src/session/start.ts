@@ -18,6 +18,26 @@ interface FileCapWarning {
 }
 
 /**
+ * Resolves how to invoke `jcodemunch-mcp`: prefer a binary in PATH, fall back
+ * to `uvx jcodemunch-mcp` (macOS/Linux uvx installs). Returns null if neither
+ * is available.
+ */
+function resolveJcodemunchMcpTransport(): { command: string; args: string[] } | null {
+  try {
+    const mcpPath = execSync('which jcodemunch-mcp', { encoding: 'utf-8' }).trim();
+    if (mcpPath) return { command: mcpPath, args: [] };
+  } catch {
+    // Not in PATH — try uvx
+  }
+  try {
+    execSync('which uvx', { encoding: 'utf-8' });
+    return { command: 'uvx', args: ['jcodemunch-mcp'] };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * SessionStart hook handler. Detects environment and auto-indexes CWD
  * with jcodemunch if available but not yet indexed.
  */
@@ -245,13 +265,17 @@ async function detectAndIndex(
         }
       }
     } catch {
-      // CLI not available — try MCP auto-index via JSON-RPC
-      try {
-        const mcpPath = execSync('which jcodemunch-mcp', { encoding: 'utf-8' }).trim();
-        if (mcpPath) {
-          const execFn = (cmd: string, opts?: { encoding?: string; timeout?: number }) =>
-            execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string;
-          const text = callJcodemunchMcpTool(mcpPath, 'index_folder', { path: cwd }, execFn);
+      // CLI not available — try MCP auto-index via JSON-RPC.
+      // Resolve transport: direct binary first, then uvx fallback (macOS).
+      const transport = resolveJcodemunchMcpTransport();
+      if (transport) {
+        try {
+          const text = await callJcodemunchMcpTool(
+            transport.command,
+            transport.args,
+            'index_folder',
+            { path: cwd },
+          );
           if (text) {
             const parsedResult = JSON.parse(text);
             if (parsedResult.success) {
@@ -266,9 +290,9 @@ async function detectAndIndex(
               }
             }
           }
+        } catch {
+          // MCP auto-index failed — agent can index via MCP directly
         }
-      } catch {
-        // MCP auto-index failed — agent can index via MCP directly
       }
     }
   }
