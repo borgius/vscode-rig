@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import { basename, join } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
 import type { Environment, GraphBuildInfo } from '../types.js';
@@ -7,17 +7,82 @@ export interface ExecFn {
   (command: string, options?: { encoding?: string; timeout?: number }): string;
 }
 
+/**
+ * Sends JSON-RPC messages to an MCP server over stdio and resolves with raw stdout
+ * once a response containing `"id":<matchId>` is observed, or null on timeout/error.
+ *
+ * Keeps stdin OPEN while waiting: closing it on EOF causes some MCP servers (notably
+ * uvx-managed `jcodemunch-mcp`) to shut down before emitting later responses. The
+ * caller (this helper) kills the child the moment the desired response arrives.
+ */
+export interface McpQueryFn {
+  (
+    command: string,
+    args: string[],
+    messages: string[],
+    matchId: number,
+    timeoutMs: number,
+  ): Promise<string | null>;
+}
+
 const defaultExec: ExecFn = (cmd, opts) =>
   execSync(cmd, { encoding: 'utf-8', ...opts } as Parameters<typeof execSync>[1]) as string;
+
+export const defaultMcpQuery: McpQueryFn = (command, args, messages, matchId, timeoutMs) =>
+  new Promise((resolve) => {
+    const matchPattern = `"id":${matchId}`;
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(command, args, { stdio: ['pipe', 'pipe', 'ignore'] });
+    } catch {
+      resolve(null);
+      return;
+    }
+
+    let buffer = '';
+    let settled = false;
+
+    const finish = (result: string | null): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { child.kill('SIGTERM'); } catch { /* already dead */ }
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => finish(buffer.includes(matchPattern) ? buffer : null), timeoutMs);
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString('utf-8');
+      if (buffer.includes(matchPattern)) {
+        finish(buffer);
+      }
+    });
+
+    child.on('error', () => finish(null));
+    child.on('exit', () => finish(buffer.includes(matchPattern) ? buffer : null));
+
+    // Write all messages, but deliberately do NOT call stdin.end().
+    // Some MCP servers exit at EOF before processing queued messages — we hold
+    // stdin open until we observe the target response, then kill the child.
+    try {
+      for (const msg of messages) {
+        child.stdin?.write(msg + '\n');
+      }
+    } catch {
+      finish(null);
+    }
+  });
 
 export async function detectEnvironment(
   cwd: string,
   exec: ExecFn = defaultExec,
   existsCheck: (path: string) => boolean = existsSync,
   statCheck: (path: string) => { size: number } | undefined = defaultStatCheck,
+  mcpQuery: McpQueryFn = defaultMcpQuery,
 ): Promise<Environment> {
   const rtkResult = detectRtk(exec);
-  const jmResult = detectJcodemunch(cwd, exec);
+  const jmResult = await detectJcodemunch(cwd, exec, mcpQuery);
   const graphifyResult = detectGraphify(cwd, exec, existsCheck, statCheck);
 
   return {
@@ -94,12 +159,18 @@ export function detectGraphify(
   return { state: 'absent', _cliFound: true };
 }
 
-function detectJcodemunch(cwd: string, exec: ExecFn): {
+interface JcodemunchDetection {
   available: boolean;
   cwdIndexed: boolean;
   cwdRepo: string | null;
   knownRepos: string[];
-} {
+}
+
+async function detectJcodemunch(
+  cwd: string,
+  exec: ExecFn,
+  mcpQuery: McpQueryFn,
+): Promise<JcodemunchDetection> {
   // Try CLI binary first
   try {
     exec('which jcodemunch');
@@ -111,7 +182,7 @@ function detectJcodemunch(cwd: string, exec: ExecFn): {
   try {
     const mcpPath = exec('which jcodemunch-mcp').trim();
     if (mcpPath) {
-      return detectJcodemunchMcp(cwd, mcpPath, exec);
+      return await detectJcodemunchMcp(cwd, mcpPath, mcpQuery);
     }
   } catch {
     // MCP binary not found either
@@ -119,11 +190,11 @@ function detectJcodemunch(cwd: string, exec: ExecFn): {
 
   // macOS/uvx install: jcodemunch-mcp is managed by uvx and not in PATH.
   // Claude Code's recommended install (command: "uvx", args: ["jcodemunch-mcp"])
-  // works but `which jcodemunch-mcp` fails. Pipe JSON-RPC via uvx directly.
+  // works but `which jcodemunch-mcp` fails. Send JSON-RPC via uvx directly.
   // This also applies to Linux users who install via uvx instead of pip/pipx.
   try {
     exec('which uvx');
-    return detectJcodemunchViaUvx(cwd, exec);
+    return await detectJcodemunchViaUvx(cwd, mcpQuery);
   } catch {
     // uvx not available
   }
@@ -131,12 +202,7 @@ function detectJcodemunch(cwd: string, exec: ExecFn): {
   return { available: false, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
 }
 
-function detectJcodemunchCli(cwd: string, exec: ExecFn): {
-  available: boolean;
-  cwdIndexed: boolean;
-  cwdRepo: string | null;
-  knownRepos: string[];
-} {
+function detectJcodemunchCli(cwd: string, exec: ExecFn): JcodemunchDetection {
   try {
     const raw = exec('jcodemunch list_repos').trim();
     const parsed = JSON.parse(raw);
@@ -146,56 +212,29 @@ function detectJcodemunchCli(cwd: string, exec: ExecFn): {
   }
 }
 
-function detectJcodemunchMcp(cwd: string, mcpPath: string, exec: ExecFn): {
-  available: boolean;
-  cwdIndexed: boolean;
-  cwdRepo: string | null;
-  knownRepos: string[];
-} {
-  try {
-    const output = queryJcodemunchMcp(mcpPath, exec);
-    if (!output) return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
+const LIST_REPOS_MESSAGES = [
+  '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}',
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+  '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_repos","arguments":{}},"id":2}',
+];
 
-    // Parse JSON-RPC responses — find the list_repos response (id:2)
-    const lines = output.trim().split('\n');
-    const reposLine = lines.find(l => l.includes('"id":2'));
-    if (!reposLine) return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
-
-    const rpcResponse = JSON.parse(reposLine);
-    const textContent = rpcResponse?.result?.content?.[0]?.text;
-    if (!textContent) return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
-
-    const reposData = JSON.parse(textContent);
-    // MCP returns repos as objects with a "repo" field; extract repo names
-    const repoNames: string[] = (reposData.repos ?? []).map((r: { repo: string }) => r.repo);
-    return resolveJcodemunchRepos(cwd, repoNames);
-  } catch {
-    return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
-  }
+async function detectJcodemunchMcp(
+  cwd: string,
+  mcpPath: string,
+  mcpQuery: McpQueryFn,
+): Promise<JcodemunchDetection> {
+  const output = await mcpQuery(mcpPath, [], LIST_REPOS_MESSAGES, 2, 10_000);
+  return parseListReposResponse(cwd, output);
 }
 
-function queryJcodemunchMcp(mcpPath: string, exec: ExecFn): string | null {
-  const init = '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}';
-  const ready = '{"jsonrpc":"2.0","method":"notifications/initialized"}';
-  const listRepos = '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_repos","arguments":{}},"id":2}';
-
-  const cmd = `printf '%s\\n' '${init}' '${ready}' '${listRepos}' | '${mcpPath}' 2>/dev/null`;
-  try {
-    return exec(cmd, { timeout: 10000 });
-  } catch {
-    return null;
-  }
-}
-
-function detectJcodemunchViaUvx(cwd: string, exec: ExecFn): {
-  available: boolean;
-  cwdIndexed: boolean;
-  cwdRepo: string | null;
-  knownRepos: string[];
-} {
-  const output = queryJcodemunchViaUvx(exec);
+async function detectJcodemunchViaUvx(cwd: string, mcpQuery: McpQueryFn): Promise<JcodemunchDetection> {
+  const output = await mcpQuery('uvx', ['jcodemunch-mcp'], LIST_REPOS_MESSAGES, 2, 15_000);
   if (!output) return { available: false, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
+  return parseListReposResponse(cwd, output);
+}
 
+function parseListReposResponse(cwd: string, output: string | null): JcodemunchDetection {
+  if (!output) return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
   try {
     const lines = output.trim().split('\n');
     const reposLine = lines.find(l => l.includes('"id":2'));
@@ -210,39 +249,38 @@ function detectJcodemunchViaUvx(cwd: string, exec: ExecFn): {
     return resolveJcodemunchRepos(cwd, repoNames);
   } catch {
     return { available: true, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
-  }
-}
-
-function queryJcodemunchViaUvx(exec: ExecFn): string | null {
-  const init = '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}';
-  const ready = '{"jsonrpc":"2.0","method":"notifications/initialized"}';
-  const listRepos = '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"list_repos","arguments":{}},"id":2}';
-
-  const cmd = `printf '%s\\n' '${init}' '${ready}' '${listRepos}' | uvx jcodemunch-mcp 2>/dev/null`;
-  try {
-    return exec(cmd, { timeout: 15000 });
-  } catch {
-    return null;
   }
 }
 
 /**
- * Call a jcodemunch MCP tool via JSON-RPC stdio protocol.
- * Returns the parsed text content of the result, or null on failure.
+ * Call a jcodemunch MCP tool via JSON-RPC stdio. Returns the parsed `result.content[0].text`
+ * (typically a JSON string the caller parses), or null on failure.
+ *
+ * If `command` is a binary path like `/usr/local/bin/jcodemunch-mcp`, pass empty `args`.
+ * For uvx installs, use `command='uvx'`, `args=['jcodemunch-mcp']`.
  */
-export function callJcodemunchMcpTool(mcpPath: string, toolName: string, args: Record<string, string>, exec: ExecFn): string | null {
-  const init = '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}';
-  const ready = '{"jsonrpc":"2.0","method":"notifications/initialized"}';
-  const call = JSON.stringify({
-    jsonrpc: '2.0',
-    method: 'tools/call',
-    params: { name: toolName, arguments: args },
-    id: 2,
-  });
+export async function callJcodemunchMcpTool(
+  command: string,
+  args: string[],
+  toolName: string,
+  toolArgs: Record<string, string>,
+  mcpQuery: McpQueryFn = defaultMcpQuery,
+  timeoutMs: number = 60_000,
+): Promise<string | null> {
+  const messages = [
+    '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"rig","version":"1.0"}},"id":1}',
+    '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+    JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { name: toolName, arguments: toolArgs },
+      id: 2,
+    }),
+  ];
 
-  const cmd = `printf '%s\\n' '${init}' '${ready}' '${call}' | '${mcpPath}' 2>/dev/null`;
+  const output = await mcpQuery(command, args, messages, 2, timeoutMs);
+  if (!output) return null;
   try {
-    const output = exec(cmd, { timeout: 60_000 });
     const lines = output.trim().split('\n');
     const responseLine = lines.find(l => l.includes('"id":2'));
     if (!responseLine) return null;
@@ -253,12 +291,7 @@ export function callJcodemunchMcpTool(mcpPath: string, toolName: string, args: R
   }
 }
 
-function resolveJcodemunchRepos(cwd: string, repos: string[]): {
-  available: boolean;
-  cwdIndexed: boolean;
-  cwdRepo: string | null;
-  knownRepos: string[];
-} {
+function resolveJcodemunchRepos(cwd: string, repos: string[]): JcodemunchDetection {
   const folderName = basename(cwd);
   const cwdRepo = repos.find(r => r.split('/').pop() === folderName) ?? null;
 
