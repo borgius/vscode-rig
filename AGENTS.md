@@ -2,7 +2,7 @@
 
 ## Overview
 
-Agent middleware for Claude Code. TypeScript, vitest, commander CLI.
+Agent middleware for GitHub Copilot in VS Code. TypeScript, vitest, commander CLI.
 
 ## Commands
 
@@ -17,7 +17,7 @@ npm run lint       # Type-check (tsc --noEmit)
 
 Four-layer middleware:
 
-1. **Tool Router** (`src/router/`) -- PreToolUse hook, intent classification, priority resolution (rtk > jcodemunch > claudeTool > fallback > allow)
+1. **Tool Router** (`src/router/`) -- PreToolUse hook, intent classification, priority resolution (rtk > jcodemunch > copilotTool > fallback > allow)
 2. **Enforcement** (`src/enforcement/`) -- PostToolUse hook, composable pipeline: stale tests -> test scope -> constitutional -> zero-defect
 3. **Skill Chain** (`src/skills/`) -- Phase tracker validates transitions (brain+ -> plan+ -> tdd+ -> verify+ -> review+)
 4. **Scout** (`src/scout/`) -- Cross-repo indexing, CodebaseMap formatter, TTL cache
@@ -40,9 +40,9 @@ All types in `src/types.ts`. Important ones:
 - Config via `.harness.yaml` (YAML, layered merge with base + local)
 - Environment detection uses injectable `ExecFn` for testability
 - Session cache has 30-min TTL, file-backed in /tmp (cross-process persistence)
-- All hooks read JSON from stdin, write JSON to stdout (Claude Code hook protocol)
+- All hooks read JSON from stdin and write Copilot hook JSON to stdout
 - Skill templates use `{{VAR}}` substitution via `renderTemplate()`
-- Enforcement levels: block (exit 2), advise (print + exit 0), silent (log + exit 0)
+- Enforcement levels: block (Copilot deny), advise (additional context), silent (no output)
 
 ## Testing
 

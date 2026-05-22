@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @rig-generated
- * rig: PreToolUse hook
+ * rig: Copilot PreToolUse hook
  * Project: {{PROJECT_NAME}}
  * Generated: {{GENERATED_DATE}}
  *
@@ -40,28 +40,33 @@ import { readFileSync } from 'node:fs';
     process.exit(0);
   }
 
-  const cache = new SessionCache(cwd, input.session_id);
+  const sessionId = input.session_id ?? input.sessionId;
+  const toolName = input.tool_name ?? input.toolName;
+  const toolInput = input.tool_input ?? input.toolArgs ?? {};
+  const cache = new SessionCache(cwd, sessionId);
 
   loadConfig(resolve(cwd, '.harness.yaml')).then((config: any) => {
-    const result = handlePreToolUse(input.tool_name, input.tool_input, cache, config);
+    const result = handlePreToolUse(toolName, toolInput, cache, config);
 
-    // Transparent rewrite: output JSON with updatedInput
+    // Transparent rewrite: output Copilot hook JSON with modifiedArgs
     if (result && typeof result === 'object' && result.type === 'rewrite') {
       const output = JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          updatedInput: { command: result.command },
-        },
+        permissionDecision: 'allow',
+        modifiedArgs: { ...toolInput, command: result.command },
       });
       console.log(output);
       process.exit(0);
     }
 
-    // Advise or block: output plain text
+    // Advise or block using Copilot's permissionDecision protocol.
     if (result && typeof result === 'string') {
       console.error(result);
       if (result.startsWith('[BLOCK]')) {
-        process.exit(2); // block
+        console.log(JSON.stringify({
+          permissionDecision: 'deny',
+          permissionDecisionReason: result,
+        }));
+        process.exit(0);
       }
     }
     process.exit(0); // allow

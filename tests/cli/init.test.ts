@@ -16,35 +16,35 @@ describe('initCommand', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('creates .claude directory structure', async () => {
+  it('creates .github directory structure', async () => {
     await initCommand(tempDir, { force: false });
-    expect(existsSync(join(tempDir, '.claude'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'agents'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'hooks', 'scripts'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'agents'))).toBe(true);
   });
 
   it('creates hook scripts', async () => {
     await initCommand(tempDir, { force: false });
-    expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'post-tool-use.ts'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'session-start.ts'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'hooks', 'scripts', 'post-tool-use.ts'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'hooks', 'scripts', 'session-start.ts'))).toBe(true);
   });
 
   it('creates skill directories from templates', async () => {
     await initCommand(tempDir, { force: false });
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'plan-plus', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'tdd-plus', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'verify-plus', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'review-plus', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'savings', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'brain-plus', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'plan-plus', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'tdd-plus', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'verify-plus', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'review-plus', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'savings', 'SKILL.md'))).toBe(true);
   });
 
   it('creates scout agent definition', async () => {
     await initCommand(tempDir, { force: false });
-    expect(existsSync(join(tempDir, '.claude', 'agents', 'scout.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'agents', 'scout.md'))).toBe(true);
   });
 
   it('creates .harness.yaml with defaults', async () => {
@@ -83,7 +83,7 @@ describe('initCommand', () => {
     await initCommand(tempDir, { force: false });
     // Modify a file by appending custom content and removing the rig marker
     // (simulating a user who customized the skill)
-    const skillPath = join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md');
+    const skillPath = join(tempDir, '.github', 'skills', 'brain-plus', 'SKILL.md');
     const original = readFileSync(skillPath, 'utf-8');
     const customized = original.replace('<!-- rig-generated -->', '') + '\n# Custom addition\n';
     writeFileSync(skillPath, customized);
@@ -98,7 +98,7 @@ describe('initCommand', () => {
 
   it('overwrites existing files with --force', async () => {
     await initCommand(tempDir, { force: false });
-    const skillPath = join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md');
+    const skillPath = join(tempDir, '.github', 'skills', 'brain-plus', 'SKILL.md');
     writeFileSync(skillPath, 'overwritten');
 
     await initCommand(tempDir, { force: true });
@@ -108,116 +108,81 @@ describe('initCommand', () => {
     expect(after).toContain('brain+');
   });
 
-  it('updates settings.json with hook registrations', async () => {
-    // Create a minimal settings.json (need .claude dir first)
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    const settingsPath = join(claudeDir, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({}));
-
+  it('creates Copilot hook config with hook registrations', async () => {
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    expect(settings.hooks).toBeDefined();
-    expect(settings.hooks.PreToolUse).toBeDefined();
-    expect(settings.hooks.PostToolUse).toBeDefined();
-    expect(settings.hooks.SessionStart).toBeDefined();
+    const hookConfigPath = join(tempDir, '.github', 'hooks', 'rig-hooks.json');
+    const hookConfig = JSON.parse(readFileSync(hookConfigPath, 'utf-8'));
+    expect(hookConfig.version).toBe(1);
+    expect(hookConfig.hooks.PreToolUse).toBeDefined();
+    expect(hookConfig.hooks.PostToolUse).toBeDefined();
+    expect(hookConfig.hooks.SessionStart).toBeDefined();
   });
 
-  it('writes hook entries in correct Claude Code format', async () => {
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    const settingsPath = join(claudeDir, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({}));
-
+  it('writes hook entries in correct GitHub Copilot format', async () => {
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
 
-    // Each hook event should be an array of matcher+hooks entries
+    // Each hook event should be an array of command entries.
     for (const event of ['PreToolUse', 'PostToolUse', 'SessionStart']) {
-      const entries = settings.hooks[event];
+      const entries = hookConfig.hooks[event];
       expect(Array.isArray(entries)).toBe(true);
       expect(entries.length).toBeGreaterThan(0);
 
       const entry = entries[0];
-      expect(entry).toHaveProperty('matcher');
-      expect(entry).toHaveProperty('hooks');
-      expect(Array.isArray(entry.hooks)).toBe(true);
-
-      const hook = entry.hooks[0];
-      expect(hook).toHaveProperty('type', 'command');
-      expect(hook).toHaveProperty('command');
-      expect(hook.command).toContain('.claude/hooks/scripts/');
+      expect(entry).toHaveProperty('type', 'command');
+      expect(entry).toHaveProperty('bash');
+      expect(entry).toHaveProperty('cwd', '.');
+      expect(entry.bash).toContain('.github/hooks/scripts/');
     }
   });
 
-  it('quotes ${CLAUDE_PROJECT_DIR} path in hook commands so spaces do not break shell parsing', async () => {
-    // Regression: when CLAUDE_PROJECT_DIR contains a space (e.g.,
-    // "/Users/.../Jerome Onboarding"), unquoted shell interpolation splits
-    // the path at the space and Node ESM reports
-    //   ERR_MODULE_NOT_FOUND: Cannot find module '/Users/.../Jerome'
-    // The fix is to wrap the path in double quotes in the generated command.
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-
+  it('quotes relative hook script paths in Copilot hook commands', async () => {
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+    const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
     for (const [event, script] of [
       ['PreToolUse', 'pre-tool-use.ts'],
       ['PostToolUse', 'post-tool-use.ts'],
       ['SessionStart', 'session-start.ts'],
     ] as const) {
-      const cmd: string = settings.hooks[event][0].hooks[0].command;
-      const quotedPath = `"\${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/${script}"`;
+      const cmd: string = hookConfig.hooks[event][0].bash;
+      const quotedPath = `".github/hooks/scripts/${script}"`;
       expect(cmd).toContain(quotedPath);
-      // Negative assertion: the unquoted form must NOT appear elsewhere in the command
-      const unquotedPath = `\${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/${script}`;
+      const unquotedPath = `.github/hooks/scripts/${script}`;
       const occurrences = cmd.split(unquotedPath).length - 1;
       // The quoted form contains the unquoted as a substring, so 1 occurrence is expected
       expect(occurrences).toBe(1);
     }
   });
 
-  it('preserves existing settings when adding hooks', async () => {
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    const settingsPath = join(claudeDir, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({ permissions: { allow: ['Bash'] } }));
-
+  it('creates repository Copilot instructions', async () => {
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    expect(settings.permissions.allow).toContain('Bash');
-    expect(settings.hooks.PreToolUse[0].hooks[0].type).toBe('command');
+    const content = readFileSync(join(tempDir, '.github', 'copilot-instructions.md'), 'utf-8');
+    expect(content).toContain('Copilot instructions');
+    expect(content).toContain('.github/hooks/rig-hooks.json');
   });
 
-  it('does not duplicate hook entries on re-init', async () => {
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    const settingsPath = join(claudeDir, 'settings.json');
-    writeFileSync(settingsPath, JSON.stringify({}));
-
+  it('keeps hook config stable on re-init', async () => {
     await initCommand(tempDir, { force: false });
+    const before = readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8');
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    expect(settings.hooks.PreToolUse.length).toBe(1);
-    expect(settings.hooks.PostToolUse.length).toBe(1);
-    expect(settings.hooks.SessionStart.length).toBe(1);
+    const after = readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8');
+    expect(after).toBe(before);
   });
 
   it('creates verify-harness skill', async () => {
     await initCommand(tempDir, { force: false });
-    expect(existsSync(join(tempDir, '.claude', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(tempDir, '.github', 'skills', 'verify-harness', 'SKILL.md'))).toBe(true);
   });
 
   it('generates hook scripts that import from rig dist via dynamic import()', async () => {
     await initCommand(tempDir, { force: false });
 
-    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
       // Should use dynamic import() for ESM compatibility across Node versions
@@ -230,22 +195,22 @@ describe('initCommand', () => {
   it('generates hook scripts that use constructors with cwd, not load/save', async () => {
     await initCommand(tempDir, { force: false });
 
-    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
       // Must NOT call static load() or instance save()
       expect(content).not.toContain('SessionCache.load()');
       expect(content).not.toContain('FileTracker.load()');
       expect(content).not.toContain('cache.save()');
-      // Must use constructors with cwd and session_id
-      expect(content).toContain('new SessionCache(cwd, input.session_id)');
+      // Must use constructors with cwd and normalized session ID
+      expect(content).toContain('new SessionCache(cwd,');
     }
   });
 
   it('generates hook scripts that read input from stdin, not argv', async () => {
     await initCommand(tempDir, { force: false });
 
-    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
       expect(content).not.toContain('process.argv[2]');
@@ -253,14 +218,14 @@ describe('initCommand', () => {
     }
   });
 
-  it('generates pre-tool-use hook that only exits 2 for BLOCK, not ADVISE', async () => {
+  it('generates pre-tool-use hook that denies through Copilot JSON, not exit 2', async () => {
     await initCommand(tempDir, { force: false });
 
-    const content = readFileSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'), 'utf-8');
-    // Must check for [BLOCK] prefix before exiting 2
+    const content = readFileSync(join(tempDir, '.github', 'hooks', 'scripts', 'pre-tool-use.ts'), 'utf-8');
+    // Must check for [BLOCK] prefix before returning a deny decision
     expect(content).toContain("startsWith('[BLOCK]')");
-    // Exit 2 must be conditional, not unconditional
-    expect(content).not.toMatch(/process\.exit\(2\)\s*;\s*\n\s*\}/);
+    expect(content).toContain("permissionDecision: 'deny'");
+    expect(content).not.toContain('process.exit(2)');
     // Final fallback must be exit 0
     expect(content).toContain('process.exit(0)');
   });
@@ -268,7 +233,7 @@ describe('initCommand', () => {
   it('generates hook scripts with error handling for malformed input', async () => {
     await initCommand(tempDir, { force: false });
 
-    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
       // Must have try/catch around JSON.parse
@@ -282,17 +247,17 @@ describe('initCommand', () => {
   it('generates session-start hook with error handling', async () => {
     await initCommand(tempDir, { force: false });
 
-    const content = readFileSync(join(tempDir, '.claude', 'hooks', 'scripts', 'session-start.ts'), 'utf-8');
+    const content = readFileSync(join(tempDir, '.github', 'hooks', 'scripts', 'session-start.ts'), 'utf-8');
     // Must catch handleSessionStart failures
     expect(content).toMatch(/\.catch/);
     // Catch block must exit 0 (don't block the session)
     expect(content).toMatch(/catch.*\n.*process\.exit\(0\)/s);
   });
 
-  it('prunes old-format hooks from .claude/hooks/ on re-init', async () => {
-    // Simulate old layout: hooks directly in .claude/hooks/ (pre-scripts layout)
+  it('prunes old-format hooks from .github/hooks/ on re-init', async () => {
+    // Simulate old layout: hooks directly in .github/hooks/ (pre-scripts layout)
     await initCommand(tempDir, { force: false });
-    const oldHooksDir = join(tempDir, '.claude', 'hooks');
+    const oldHooksDir = join(tempDir, '.github', 'hooks');
     // Plant stale old-format files
     writeFileSync(join(oldHooksDir, 'pre-tool-use.ts'), '// old format');
     writeFileSync(join(oldHooksDir, 'post-tool-use.ts'), '// old format');
@@ -314,7 +279,7 @@ describe('initCommand', () => {
     await initCommand(tempDir, { force: false });
 
     // Simulate stale artifact: replace hook content with outdated code
-    const hookPath = join(tempDir, '.claude', 'hooks', 'scripts', 'session-start.ts');
+    const hookPath = join(tempDir, '.github', 'hooks', 'scripts', 'session-start.ts');
     const staleContent = `#!/usr/bin/env node
 console.log('stale old hook');
 `;
@@ -334,7 +299,7 @@ console.log('stale old hook');
 
     // Simulate a stale rig-installed skill that still has the rig watermark:
     // the content differs from the current template but still has the marker.
-    const skillPath = join(tempDir, '.claude', 'skills', 'savings', 'SKILL.md');
+    const skillPath = join(tempDir, '.github', 'skills', 'savings', 'SKILL.md');
     writeFileSync(skillPath, '<!-- rig-generated -->\n# old savings skill content\n');
 
     // Re-init without --force — should update because the file still has the marker
@@ -349,7 +314,7 @@ console.log('stale old hook');
   it('preserves user-modified skill files without --force', async () => {
     await initCommand(tempDir, { force: false });
 
-    const skillPath = join(tempDir, '.claude', 'skills', 'brain-plus', 'SKILL.md');
+    const skillPath = join(tempDir, '.github', 'skills', 'brain-plus', 'SKILL.md');
     writeFileSync(skillPath, '# My custom brain skill\n');
 
     await initCommand(tempDir, { force: false });
@@ -361,38 +326,20 @@ console.log('stale old hook');
   it('generates hook scripts with @rig-generated marker', async () => {
     await initCommand(tempDir, { force: false });
 
-    const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+    const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
     for (const hookFile of ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts']) {
       const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
       expect(content).toContain('@rig-generated');
     }
   });
 
-  it('migrates old flat-format hook entries to nested format', async () => {
-    const claudeDir = join(tempDir, '.claude');
-    mkdirSync(claudeDir, { recursive: true });
-    const settingsPath = join(claudeDir, 'settings.json');
-    // Simulate old-format settings.json (pre-fix)
-    writeFileSync(settingsPath, JSON.stringify({
-      hooks: {
-        PreToolUse: [{ matcher: '', command: 'npx tsx .claude/hooks/scripts/pre-tool-use.ts' }],
-        PostToolUse: [{ matcher: '', command: 'npx tsx .claude/hooks/scripts/post-tool-use.ts' }],
-        SessionStart: [{ matcher: '', command: 'npx tsx .claude/hooks/scripts/session-start.ts' }],
-      },
-    }));
-
+  it('writes a valid JSON hook config on every init', async () => {
+    await initCommand(tempDir, { force: false });
     await initCommand(tempDir, { force: false });
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-    for (const event of ['PreToolUse', 'PostToolUse', 'SessionStart']) {
-      const entries = settings.hooks[event];
-      // Old flat entry should be removed, replaced by single new-format entry
-      expect(entries.length).toBe(1);
-      expect(entries[0]).toHaveProperty('hooks');
-      expect(entries[0].hooks[0].type).toBe('command');
-      // No flat-format entries should remain
-      expect(entries.some((e: Record<string, unknown>) => 'command' in e && !('hooks' in e))).toBe(false);
-    }
+    const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
+    expect(hookConfig.version).toBe(1);
+    expect(hookConfig.hooks.PreToolUse[0].type).toBe('command');
   });
 
   describe('environment-aware context', () => {
@@ -404,7 +351,7 @@ console.log('stale old hook');
       };
       await initCommand(tempDir, { force: false, exec });
 
-      const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+      const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
       for (const hookFile of ['pre-tool-use.ts', 'session-start.ts']) {
         const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
         expect(content).toContain('/usr/local/bin/rtk');
@@ -415,7 +362,7 @@ console.log('stale old hook');
       const exec: ExecFn = () => { throw new Error('not found'); };
       await initCommand(tempDir, { force: false, exec });
 
-      const hooksDir = join(tempDir, '.claude', 'hooks', 'scripts');
+      const hooksDir = join(tempDir, '.github', 'hooks', 'scripts');
       for (const hookFile of ['pre-tool-use.ts', 'session-start.ts']) {
         const content = readFileSync(join(hooksDir, hookFile), 'utf-8');
         // Should still have the template structure but with unresolved placeholder
@@ -430,13 +377,10 @@ console.log('stale old hook');
     it('works without exec parameter (real detection)', async () => {
       // Should not throw — environment detection is best-effort
       await initCommand(tempDir, { force: false });
-      expect(existsSync(join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
+      expect(existsSync(join(tempDir, '.github', 'hooks', 'scripts', 'pre-tool-use.ts'))).toBe(true);
     });
 
     it('resolves absolute npx path with PATH prefix for hook commands', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
       const exec: ExecFn = (cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
@@ -445,35 +389,28 @@ console.log('stale old hook');
       };
       await initCommand(tempDir, { force: false, exec });
 
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
       for (const event of ['PreToolUse', 'PostToolUse', 'SessionStart']) {
-        const command = settings.hooks[event][0].hooks[0].command;
+        const command = hookConfig.hooks[event][0].bash;
         expect(command).toContain('PATH="/home/user/.nvm/versions/node/v20.0.0/bin:$PATH"');
         expect(command).toContain('/home/user/.nvm/versions/node/v20.0.0/bin/npx tsx');
-        // Uses CLAUDE_PROJECT_DIR instead of FQ path
-        expect(command).toContain('${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/');
+        expect(command).toContain('.github/hooks/scripts/');
         expect(command).not.toContain(tempDir);
       }
     });
 
     it('falls back to bare npx when command -v fails', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
       const exec: ExecFn = () => { throw new Error('not found'); };
       await initCommand(tempDir, { force: false, exec });
 
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      const command = settings.hooks.PreToolUse[0].hooks[0].command;
+      const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
+      const command = hookConfig.hooks.PreToolUse[0].bash;
       expect(command).toContain('npx tsx');
-      expect(command).toContain('${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/pre-tool-use.ts');
+      expect(command).toContain('.github/hooks/scripts/pre-tool-use.ts');
       expect(command).not.toContain(tempDir);
     });
 
     it('updates hook commands on re-init when npx path changes', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
       const exec1: ExecFn = (cmd: string) => {
         if (cmd === 'which rtk') throw new Error('not found');
         if (cmd === 'which jcodemunch') throw new Error('not found');
@@ -490,12 +427,12 @@ console.log('stale old hook');
       };
       await initCommand(tempDir, { force: false, exec: exec2 });
 
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
+      const hookConfig = JSON.parse(readFileSync(join(tempDir, '.github', 'hooks', 'rig-hooks.json'), 'utf-8'));
       // Should have updated to new path, not duplicated
-      expect(settings.hooks.PreToolUse.length).toBe(1);
-      expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('/new/bin/npx tsx');
-      expect(settings.hooks.PreToolUse[0].hooks[0].command).toContain('PATH="/new/bin:$PATH"');
-      expect(settings.hooks.PreToolUse[0].hooks[0].command).not.toContain('/old/');
+      expect(hookConfig.hooks.PreToolUse.length).toBe(1);
+      expect(hookConfig.hooks.PreToolUse[0].bash).toContain('/new/bin/npx tsx');
+      expect(hookConfig.hooks.PreToolUse[0].bash).toContain('PATH="/new/bin:$PATH"');
+      expect(hookConfig.hooks.PreToolUse[0].bash).not.toContain('/old/');
     });
   });
 
@@ -544,139 +481,6 @@ console.log('stale old hook');
       expect(after).toContain('graphify-out/');
       const matches = after.match(/rig-managed/g);
       expect(matches).toHaveLength(2); // still just opening + closing marker
-    });
-  });
-
-  describe('permissions', () => {
-    const noTools: ExecFn = () => { throw new Error('not found'); };
-
-    // ── Default init (no --broad-permissions) ──
-
-    it('default init adds no allow permissions (all allows are opt-in via --broad-permissions)', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      await initCommand(tempDir, { force: false, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).toHaveLength(0);
-    });
-
-    it('default init always adds secret file deny list regardless of --broad-permissions', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      await initCommand(tempDir, { force: false, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      const deny = settings.permissions.deny;
-      expect(deny).toContain('Read(**/secrets/**)');
-      expect(deny).toContain('Read(**/credentials/**)');
-      expect(deny).toContain('Read(**/*.pem)');
-      expect(deny).toContain('Read(**/*.key)');
-      expect(deny).toContain('Edit(**/secrets/**)');
-      expect(deny).toContain('Edit(**/credentials/**)');
-      expect(deny).toContain('Edit(**/*.pem)');
-      expect(deny).toContain('Edit(**/*.key)');
-      expect(deny).toContain('Write(**/secrets/**)');
-      expect(deny).toContain('Write(**/credentials/**)');
-      expect(deny).toContain('Write(**/*.pem)');
-      expect(deny).toContain('Write(**/*.key)');
-    });
-
-    // ── --broad-permissions flag ──
-
-    it('--broad-permissions adds required MCP and session-cache allow permissions', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).toContain('mcp__jcodemunch__*');
-      expect(settings.permissions.allow).toContain('mcp__graphify__*');
-      expect(settings.permissions.allow).toContain('Bash(cat /tmp/rig-session-*)');
-      expect(settings.permissions.allow).toContain('Bash(ls /tmp/rig-session-*)');
-      expect(settings.permissions.allow).toContain('Read(/tmp/rig-session-*.json)');
-      expect(settings.permissions.allow).toContain('Read(/private/tmp/rig-session-*.json)');
-      expect(settings.permissions.allow).toContain('Bash(npx:*)');
-    });
-
-    it('--broad-permissions adds rtk when rtk is available', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      const exec: ExecFn = (cmd: string) => {
-        if (cmd === 'which rtk') return '/usr/local/bin/rtk\n';
-        throw new Error('not found');
-      };
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).toContain('Bash(rtk:*)');
-    });
-
-    it('--broad-permissions does NOT add rtk when rtk is not available', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).not.toContain('Bash(rtk:*)');
-    });
-
-    it('--broad-permissions adds broad bash permissions for common read-only shell operations', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).toContain('Bash(ls:*)');
-      expect(settings.permissions.allow).toContain('Bash(cat:*)');
-      expect(settings.permissions.allow).toContain('Bash(grep:*)');
-      expect(settings.permissions.allow).toContain('Bash(find:*)');
-      expect(settings.permissions.allow).toContain('Bash(which:*)');
-      expect(settings.permissions.allow).toContain('Bash(node:*)');
-      expect(settings.permissions.allow).toContain('Bash(npm:*)');
-    });
-
-    it('--broad-permissions is idempotent on re-init (no duplicates)', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({}));
-      const exec: ExecFn = (cmd: string) => {
-        if (cmd === 'which rtk') return '/usr/local/bin/rtk\n';
-        throw new Error('not found');
-      };
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec });
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      const rtkCount = settings.permissions.allow.filter((p: string) => p === 'Bash(rtk:*)').length;
-      expect(rtkCount).toBe(1);
-      const jmCount = settings.permissions.allow.filter((p: string) => p === 'mcp__jcodemunch__*').length;
-      expect(jmCount).toBe(1);
-      const lsCount = settings.permissions.allow.filter((p: string) => p === 'Bash(ls:*)').length;
-      expect(lsCount).toBe(1);
-      const denyCount = settings.permissions.deny.filter((p: string) => p === 'Read(**/secrets/**)').length;
-      expect(denyCount).toBe(1);
-    });
-
-    it('--broad-permissions preserves existing user permissions on re-init', async () => {
-      const claudeDir = join(tempDir, '.claude');
-      mkdirSync(claudeDir, { recursive: true });
-      writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({
-        permissions: { allow: ['Bash(git status:*)'], deny: ['Bash(rm *)'] },
-      }));
-      await initCommand(tempDir, { force: false, broadPermissions: true, exec: noTools });
-
-      const settings = JSON.parse(readFileSync(join(claudeDir, 'settings.json'), 'utf-8'));
-      expect(settings.permissions.allow).toContain('Bash(git status:*)');
-      expect(settings.permissions.allow).toContain('mcp__jcodemunch__*');
-      expect(settings.permissions.deny).toContain('Bash(rm *)');
-      expect(settings.permissions.deny).toContain('Read(**/secrets/**)');
     });
   });
 });

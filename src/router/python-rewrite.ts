@@ -30,7 +30,7 @@ export function isPythonBinary(command: string): boolean {
  *
  * Only triggers when the binary is a known Python tool.
  * Uses relative paths to avoid triggering CWD path expansion rules
- * and Claude Code permission prompts on absolute paths.
+ * and GitHub Copilot permission prompts on absolute paths.
  */
 export function tryPythonRewrite(
   command: string,

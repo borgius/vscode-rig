@@ -267,7 +267,7 @@ describe('detectEnvironment', () => {
     });
 
     const env = await detectEnvironment(
-      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      '/Users/jerome/Documents/Copilot/Projects/forgd-onboarding',
       exec,
       undefined,
       undefined,
@@ -290,7 +290,7 @@ describe('detectEnvironment', () => {
     });
 
     const env = await detectEnvironment(
-      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      '/Users/jerome/Documents/Copilot/Projects/forgd-onboarding',
       exec,
       undefined,
       undefined,
@@ -309,7 +309,7 @@ describe('detectEnvironment', () => {
       'which uvx': new Error('not found'),
     });
 
-    const env = await detectEnvironment('/Users/jerome/Documents/Claude/Projects/forgd-onboarding', exec);
+    const env = await detectEnvironment('/Users/jerome/Documents/Copilot/Projects/forgd-onboarding', exec);
     expect(env.jcodemunchAvailable).toBe(false);
     expect(env.jcodemunchCwdIndexed).toBe(false);
   });
@@ -326,7 +326,7 @@ describe('detectEnvironment', () => {
     });
 
     const env = await detectEnvironment(
-      '/Users/jerome/Documents/Claude/Projects/forgd-onboarding',
+      '/Users/jerome/Documents/Copilot/Projects/forgd-onboarding',
       exec,
       undefined,
       undefined,

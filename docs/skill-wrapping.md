@@ -75,7 +75,7 @@ This skill adds security threat modeling on top of the base brainstorming skill.
 ### Phase A: Harvest Context
 
 1. Invoke the scout agent to map the codebase.
-2. Read CLAUDE.md for constitutional rules.
+2. Read AGENTS.md or .github/copilot-instructions.md for constitutional rules.
 3. Identify external interfaces, data flows, and trust boundaries.
 
 ### Phase B: Design (delegate to superpowers:brainstorming)
@@ -242,7 +242,7 @@ wrapping with project-specific context:
 ```markdown
 ## Phase A: Gather Project Context
 
-1. Load service topology from CLAUDE.md or docs/
+1. Load service topology from AGENTS.md or .github/copilot-instructions.md or docs/
 2. Check recent deployments that may correlate with the issue
 3. Pull relevant logs from the project's logging stack
 4. Identify which components are involved (from architecture docs)
@@ -275,10 +275,10 @@ Use the 4-phase systematic process with project context.
 
 ## Wiring custom wrapped skills
 
-After creating your SKILL.md file in `.claude/skills/<name>/`, two things
+After creating your SKILL.md file in `.github/skills/<name>/`, two things
 happen automatically:
 
-1. The skill appears as `/<name>` in Claude Code
+1. The skill appears as `/<name>` in GitHub Copilot in VS Code
 2. The skill procedure is followed exactly when invoked
 
 If you want phase transitions enforced (e.g., `deploy+` requires `review+`),

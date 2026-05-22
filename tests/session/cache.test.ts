@@ -309,13 +309,13 @@ describe('SessionCache (file-backed)', () => {
   it('preserves graphify stats across cache round-trip', () => {
     const cache = new SessionCache(testCwd);
     const stats = { nodes: 287, edges: 385, communities: 52, extractedPct: 84, inferredPct: 16, ambiguousPct: 0 };
-    cache.setGraphifyStats('/home/user/claude-rig', stats);
+    cache.setGraphifyStats('/home/user/vscode-rig', stats);
 
     const path = sessionCachePath(testCwd);
     trackPath(path);
 
     const cache2 = new SessionCache(testCwd);
-    expect(cache2.getGraphifyStats('/home/user/claude-rig')).toEqual(stats);
+    expect(cache2.getGraphifyStats('/home/user/vscode-rig')).toEqual(stats);
   });
 
   it('serializes to valid JSON with expected structure', () => {

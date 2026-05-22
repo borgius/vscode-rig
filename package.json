@@ -1,7 +1,7 @@
 {
   "name": "rig",
   "version": "0.3.10",
-  "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline in Claude Code",
+  "description": "Agent harness that enforces tool routing, skill chains, and multi-agent discipline for GitHub Copilot in VS Code",
   "type": "module",
   "main": "dist/cli/index.js",
   "exports": {
@@ -19,7 +19,8 @@
     "lint:md": "markdownlint-cli2 '**/*.md'"
   },
   "keywords": [
-    "claude-code",
+    "github-copilot",
+    "vscode",
     "agent-harness",
     "guardrails"
   ],

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @rig-generated
- * rig: PostToolUse hook
+ * rig: Copilot PostToolUse hook
  * Project: {{PROJECT_NAME}}
  * Generated: {{GENERATED_DATE}}
  *
@@ -42,14 +42,24 @@ import { readFileSync } from 'node:fs';
     process.exit(0);
   }
 
-  const cache = new SessionCache(cwd, input.session_id);
+  const sessionId = input.session_id ?? input.sessionId;
+  const toolName = input.tool_name ?? input.toolName;
+  const toolInput = { ...(input.tool_input ?? input.toolArgs ?? {}) };
+  const toolResult = input.tool_result ?? input.toolResult;
+  const resultText = toolResult?.text_result_for_llm ?? toolResult?.textResultForLlm;
+  if (resultText && !toolInput.output) {
+    toolInput.output = resultText;
+  }
+
+  const cache = new SessionCache(cwd, sessionId);
   const tracker = new FileTracker();
 
   loadConfig(resolve(cwd, '.harness.yaml')).then((config: any) => {
-    const result = handlePostToolUse(input.tool_name, input.tool_input, tracker, cache, config);
+    const result = handlePostToolUse(toolName, toolInput, tracker, cache, config);
 
     if (result) {
       console.error(result);
+      console.log(JSON.stringify({ additionalContext: result }));
     }
     process.exit(0); // PostToolUse never blocks, only advises
   }).catch(() => {

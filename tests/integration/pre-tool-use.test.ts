@@ -22,7 +22,7 @@ describe('PreToolUse hook E2E', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'rig-e2e-pre-'));
     // Initialize rig project to generate hook scripts
     await initCommand(tempDir, { force: false });
-    hookPath = join(tempDir, '.claude', 'hooks', 'scripts', 'pre-tool-use.ts');
+    hookPath = join(tempDir, '.github', 'hooks', 'scripts', 'pre-tool-use.ts');
     expect(existsSync(hookPath)).toBe(true);
   }, HOOK_TIMEOUT);
 
@@ -74,7 +74,7 @@ describe('PreToolUse hook E2E', () => {
 
   it('advises jcodemunch for Read on code file when indexed', async () => {
     // Set up environment in cache to simulate jcodemunch indexed
-    const cachePath = join(tempDir, '.claude', 'cache.json');
+    const cachePath = join(tempDir, '.github', 'cache.json');
     // The hook reads from the session cache, but for E2E we test via the hook script
     // which reads environment from /tmp. Since we can't control jcodemunch in E2E,
     // this test verifies the hook doesn't crash and exits 0 (advise, not block).

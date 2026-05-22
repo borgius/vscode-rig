@@ -6,12 +6,8 @@ coverage/
 .harness.local.yaml
 .rig-session.json
 
-# rig-generated files (installed, not source)
+# rig-generated local files (installed, not source)
 .harness.yaml
-.claude/settings.json
-.claude/hooks/
-.claude/skills/
-.claude/agents/scout.md
 
 # --- rig-managed (do not edit below) ---
 .harness.yaml.local

@@ -1,12 +1,11 @@
 import { execSync } from 'node:child_process';
-import { mkdirSync, existsSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderTemplate } from './renderer.js';
 import { DEFAULT_CONFIG } from '../config.js';
 import { stringify as yamlStringify } from 'yaml';
 import { detectEnvironment, type ExecFn } from '../session/environment.js';
-import { REQUIRED_PERMISSIONS, BROAD_BASH_PERMISSIONS } from './permissions.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const TEMPLATES_DIR = resolve(__dirname, '..', '..', 'templates');
@@ -18,7 +17,7 @@ interface InitOptions {
 }
 
 export async function initCommand(projectDir: string, options: InitOptions): Promise<void> {
-  const claudeDir = join(projectDir, '.claude');
+  const githubDir = join(projectDir, '.github');
   const projectName = basename(projectDir);
   const generatedDate = new Date().toISOString().split('T')[0];
   const rigDistPath = resolve(__dirname, '..');
@@ -30,10 +29,8 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     RIG_DIST_PATH: rigDistPath,
   };
 
-  let rtkAvailable = false;
   try {
     const env = await detectEnvironment(projectDir, options.exec);
-    rtkAvailable = env.rtkAvailable;
     if (env.rtkAvailable && env.rtkPath) {
       renderContext.RTK_PATH = env.rtkPath;
     }
@@ -46,9 +43,9 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 
   // Create directory structure
   const dirs = [
-    join(claudeDir, 'hooks', 'scripts'),
-    join(claudeDir, 'skills'),
-    join(claudeDir, 'agents'),
+    join(githubDir, 'hooks', 'scripts'),
+    join(githubDir, 'skills'),
+    join(githubDir, 'agents'),
   ];
   for (const dir of dirs) {
     mkdirSync(dir, { recursive: true });
@@ -57,8 +54,8 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   // Copy and render hook scripts
   const hookTemplates = ['pre-tool-use.ts', 'post-tool-use.ts', 'session-start.ts'];
 
-  // Prune old-format hooks (pre-scripts layout: files directly in .claude/hooks/)
-  const hooksDir = join(claudeDir, 'hooks');
+  // Prune old-format hooks (pre-scripts layout: files directly in .github/hooks/)
+  const hooksDir = join(githubDir, 'hooks');
   for (const hookFile of hookTemplates) {
     const oldPath = join(hooksDir, hookFile);
     if (existsSync(oldPath)) {
@@ -68,7 +65,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
 
   for (const hookFile of hookTemplates) {
     const src = join(TEMPLATES_DIR, 'hooks', hookFile);
-    const dest = join(claudeDir, 'hooks', 'scripts', hookFile);
+    const dest = join(githubDir, 'hooks', 'scripts', hookFile);
     copyGeneratedTemplate(src, dest, renderContext);
   }
 
@@ -77,7 +74,7 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   for (const skillDir of skillDirs) {
     const srcDir = join(TEMPLATES_DIR, 'skills', skillDir);
     if (!existsSync(srcDir)) continue;
-    const destDir = join(claudeDir, 'skills', skillDir);
+    const destDir = join(githubDir, 'skills', skillDir);
     mkdirSync(destDir, { recursive: true });
     copyUserTemplate(
       join(srcDir, 'SKILL.md'),
@@ -92,7 +89,17 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
   for (const agentFile of agentFiles) {
     const src = join(TEMPLATES_DIR, 'agents', agentFile);
     if (!existsSync(src)) continue;
-    copyUserTemplate(src, join(claudeDir, 'agents', agentFile), renderContext, options.force);
+    copyUserTemplate(src, join(githubDir, 'agents', agentFile), renderContext, options.force);
+  }
+
+  const instructionsSrc = join(TEMPLATES_DIR, 'copilot-instructions.md');
+  if (existsSync(instructionsSrc)) {
+    copyUserTemplate(
+      instructionsSrc,
+      join(githubDir, 'copilot-instructions.md'),
+      renderContext,
+      options.force,
+    );
   }
 
   // Write default config
@@ -107,9 +114,9 @@ export async function initCommand(projectDir: string, options: InitOptions): Pro
     mkdirSync(graphifyDir, { recursive: true });
   }
 
-  // Update settings.json with hook registrations
+  // Write Copilot hook registrations
   const npxCommand = resolveNpxPath(options.exec);
-  updateSettingsJson(claudeDir, npxCommand, rtkAvailable, options.broadPermissions ?? false);
+  writeHookConfig(githubDir, npxCommand);
 
   // Update .gitignore with rig-managed section
   updateGitignore(projectDir);
@@ -214,133 +221,38 @@ function resolveNpxPath(exec?: ExecFn): string {
   }
 }
 
-const SECRET_DENY_LIST = [
-  'Read(**/secrets/**)',
-  'Read(**/credentials/**)',
-  'Read(**/*.pem)',
-  'Read(**/*.key)',
-  'Edit(**/secrets/**)',
-  'Edit(**/credentials/**)',
-  'Edit(**/*.pem)',
-  'Edit(**/*.key)',
-  'Write(**/secrets/**)',
-  'Write(**/credentials/**)',
-  'Write(**/*.pem)',
-  'Write(**/*.key)',
-];
-
-function updateSettingsJson(claudeDir: string, npxCommand: string, rtkAvailable: boolean, broadPermissions: boolean): void {
-  const settingsPath = join(claudeDir, 'settings.json');
-  let settings: Record<string, unknown> = {};
-
-  if (existsSync(settingsPath)) {
-    settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-  }
-
-  // ── Hooks ──
-
-  if (!settings.hooks || typeof settings.hooks !== 'object') {
-    settings.hooks = {};
-  }
-  const hooks = settings.hooks as Record<string, unknown[]>;
-
-  const hookRegistrations: Record<string, string> = {
-    PreToolUse: 'pre-tool-use.ts',
-    PostToolUse: 'post-tool-use.ts',
-    SessionStart: 'session-start.ts',
+function writeHookConfig(githubDir: string, npxCommand: string): void {
+  const configPath = join(githubDir, 'hooks', 'rig-hooks.json');
+  const commandFor = (script: string) => `${npxCommand} ".github/hooks/scripts/${script}"`;
+  const hookConfig = {
+    version: 1,
+    hooks: {
+      SessionStart: [
+        {
+          type: 'command',
+          bash: commandFor('session-start.ts'),
+          cwd: '.',
+          timeoutSec: 30,
+        },
+      ],
+      PreToolUse: [
+        {
+          type: 'command',
+          bash: commandFor('pre-tool-use.ts'),
+          cwd: '.',
+          timeoutSec: 30,
+        },
+      ],
+      PostToolUse: [
+        {
+          type: 'command',
+          bash: commandFor('post-tool-use.ts'),
+          cwd: '.',
+          timeoutSec: 30,
+        },
+      ],
+    },
   };
 
-  for (const [event, script] of Object.entries(hookRegistrations)) {
-    if (!hooks[event]) {
-      hooks[event] = [];
-    }
-    const entries = hooks[event] as Array<Record<string, unknown>>;
-    // Quote the path so a CLAUDE_PROJECT_DIR containing spaces (e.g.
-    // "/Users/.../Jerome Onboarding") doesn't split into multiple args.
-    const hookScriptPath = `"\${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/${script}"`;
-    const command = `${npxCommand} ${hookScriptPath}`;
-
-    // Remove old-format entries (flat matcher+command without nested hooks array)
-    let i = entries.length;
-    while (i--) {
-      const e = entries[i];
-      if (
-        typeof e === 'object' &&
-        e !== null &&
-        'command' in e &&
-        typeof e.command === 'string' &&
-        e.command.includes(script) &&
-        !('hooks' in e)
-      ) {
-        entries.splice(i, 1);
-      }
-    }
-
-    // Find existing new-format entry and update command, or add new
-    let updated = false;
-    for (const entry of entries) {
-      if (
-        typeof entry === 'object' &&
-        entry !== null &&
-        'hooks' in entry &&
-        Array.isArray((entry as Record<string, unknown>).hooks)
-      ) {
-        const hookEntries = (entry as Record<string, unknown>).hooks as Array<Record<string, string>>;
-        for (const h of hookEntries) {
-          if (typeof h === 'object' && h.command?.includes(script)) {
-            h.command = command;
-            updated = true;
-            break;
-          }
-        }
-      }
-      if (updated) break;
-    }
-    if (!updated) {
-      entries.push({
-        matcher: '',
-        hooks: [{ type: 'command', command }],
-      });
-    }
-  }
-
-  // ── Permissions ──
-
-  if (!settings.permissions || typeof settings.permissions !== 'object') {
-    settings.permissions = { allow: [], deny: [] };
-  }
-  const permissions = settings.permissions as { allow: string[]; deny: string[] };
-  if (!Array.isArray(permissions.allow)) permissions.allow = [];
-  if (!Array.isArray(permissions.deny)) permissions.deny = [];
-
-  // Allow entries are opt-in via --broad-permissions. Without the flag, only
-  // the deny list is added. This lets users choose their own approval level
-  // rather than having rig silently pre-authorize a broad set of operations.
-  if (broadPermissions) {
-    for (const entry of REQUIRED_PERMISSIONS) {
-      if (!permissions.allow.includes(entry)) {
-        permissions.allow.push(entry);
-      }
-    }
-    // rtk: only when detected at init time
-    if (rtkAvailable && !permissions.allow.includes('Bash(rtk:*)')) {
-      permissions.allow.push('Bash(rtk:*)');
-    }
-    // Broad bash: pre-authorize common read-only shell ops to reduce prompts
-    // when agents use absolute paths (required by Claude Code system prompt).
-    for (const entry of BROAD_BASH_PERMISSIONS) {
-      if (!permissions.allow.includes(entry)) {
-        permissions.allow.push(entry);
-      }
-    }
-  }
-
-  // Default deny: secret file patterns
-  for (const entry of SECRET_DENY_LIST) {
-    if (!permissions.deny.includes(entry)) {
-      permissions.deny.push(entry);
-    }
-  }
-
-  writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  writeFileSync(configPath, JSON.stringify(hookConfig, null, 2) + '\n');
 }

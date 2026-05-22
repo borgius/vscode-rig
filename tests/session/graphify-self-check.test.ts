@@ -92,7 +92,7 @@ describe('checkGraphifyMcpReadiness — cli_only_mcp_dep_missing', () => {
       'which graphify': new Error('not found'),
       'which graphifyy': '/home/user/.local/bin/graphifyy',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'No MCP servers configured',
+      '.vscode/mcp.json': 'No MCP servers configured',
       [`${uvPythonPath} -c`]: new Error("ModuleNotFoundError: No module named 'mcp'"),
       'python3 -c': new Error("ModuleNotFoundError: No module named 'mcp'"),
     });
@@ -111,7 +111,7 @@ describe('checkGraphifyMcpReadiness — cli_only_mcp_dep_missing', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'No MCP servers configured',
+      '.vscode/mcp.json': 'No MCP servers configured',
       'python3 -c': new Error("ModuleNotFoundError: No module named 'mcp'"),
     });
     const env = makeEnv({
@@ -130,11 +130,11 @@ describe('checkGraphifyMcpReadiness — cli_only_mcp_dep_missing', () => {
 // ── status: cli_only_not_registered ─────────────────────────────────────────
 
 describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
-  it('returns cli_only_not_registered when mcp module loads but claude mcp list lacks graphify', () => {
+  it('returns cli_only_not_registered when mcp module loads but .vscode/mcp.json lacks graphify', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'jcodemunch\nsome-other-server',
+      '.vscode/mcp.json': 'jcodemunch\nsome-other-server',
       'python3 -c': '',  // mcp module loads successfully (no error)
     });
     const env = makeEnv({
@@ -144,7 +144,7 @@ describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
     const result = checkGraphifyMcpReadiness('/fake/cwd', env, exec);
     expect(result.status).toBe('cli_only_not_registered');
     if (result.status === 'cli_only_not_registered') {
-      expect(result.fixCommand).toContain('claude mcp add');
+      expect(result.fixCommand).toContain('Add graphify to .vscode/mcp.json');
       expect(result.fixCommand).toContain('graphify');
     }
   });
@@ -155,7 +155,7 @@ describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
       if (cmd === 'which graphify') throw new Error('not found');
       if (cmd === 'which graphifyy') return '/home/user/.local/bin/graphifyy';
       if (cmd === 'which python3') return '/usr/bin/python3';
-      if (cmd.includes('claude mcp list')) return 'jcodemunch';
+      if (cmd.includes('.vscode/mcp.json')) return 'jcodemunch';
       if (cmd.includes(`${uvPythonPath} -c`)) return '';   // mcp loads ok
       if (cmd.includes('python3 -c')) return '';            // fallback also ok
       throw new Error(`unexpected: ${cmd}`);
@@ -167,7 +167,7 @@ describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
     const result = checkGraphifyMcpReadiness('/fake/cwd', env, exec);
     expect(result.status).toBe('cli_only_not_registered');
     if (result.status === 'cli_only_not_registered') {
-      expect(result.fixCommand).toContain('claude mcp add');
+      expect(result.fixCommand).toContain('Add graphify to .vscode/mcp.json');
     }
   });
 
@@ -175,7 +175,7 @@ describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'nothing here',
+      '.vscode/mcp.json': 'nothing here',
       'python3 -c': '',
     });
     const env = makeEnv({
@@ -193,11 +193,11 @@ describe('checkGraphifyMcpReadiness — cli_only_not_registered', () => {
 // ── status: ready ────────────────────────────────────────────────────────────
 
 describe('checkGraphifyMcpReadiness — ready', () => {
-  it('returns ready when claude mcp list includes graphify', () => {
+  it('returns ready when workspace MCP config includes graphify', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'graphify\njcodemunch',
+      '.vscode/mcp.json': 'graphify\njcodemunch',
       'python3 -c': '',
     });
     const env = makeEnv({
@@ -208,11 +208,11 @@ describe('checkGraphifyMcpReadiness — ready', () => {
     expect(result.status).toBe('ready');
   });
 
-  it('returns ready when mcp list includes graphify (case-insensitive substring)', () => {
+  it('returns ready when MCP config includes graphify (case-insensitive substring)', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': 'Graphify (running) - /usr/bin/python3 -m graphify.serve',
+      '.vscode/mcp.json': 'Graphify (running) - /usr/bin/python3 -m graphify.serve',
       'python3 -c': '',
     });
     const env = makeEnv({
@@ -261,11 +261,11 @@ describe('checkGraphifyMcpReadiness — edge cases', () => {
     expect(result.status).toBe('no_graph');
   });
 
-  it('handles claude mcp list failure gracefully (treats as not registered)', () => {
+  it('handles MCP config read failure gracefully (treats as not registered)', () => {
     const exec = makeExec({
       'which graphify': '/usr/bin/graphify',
       'which python3': '/usr/bin/python3',
-      'claude mcp list': new Error('command not found: claude'),
+      '.vscode/mcp.json': new Error('missing MCP config'),
       'python3 -c': '',
     });
     const env = makeEnv({

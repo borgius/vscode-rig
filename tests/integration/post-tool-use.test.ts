@@ -21,7 +21,7 @@ describe('PostToolUse hook E2E', () => {
   beforeAll(async () => {
     tempDir = mkdtempSync(join(tmpdir(), 'rig-e2e-post-'));
     await initCommand(tempDir, { force: false });
-    hookPath = join(tempDir, '.claude', 'hooks', 'scripts', 'post-tool-use.ts');
+    hookPath = join(tempDir, '.github', 'hooks', 'scripts', 'post-tool-use.ts');
     expect(existsSync(hookPath)).toBe(true);
   }, HOOK_TIMEOUT);
 

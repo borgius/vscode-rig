@@ -189,7 +189,7 @@ async function detectJcodemunch(
   }
 
   // macOS/uvx install: jcodemunch-mcp is managed by uvx and not in PATH.
-  // Claude Code's recommended install (command: "uvx", args: ["jcodemunch-mcp"])
+  // GitHub Copilot's recommended install (command: "uvx", args: ["jcodemunch-mcp"])
   // works but `which jcodemunch-mcp` fails. Send JSON-RPC via uvx directly.
   // This also applies to Linux users who install via uvx instead of pip/pipx.
   try {

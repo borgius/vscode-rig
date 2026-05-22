@@ -24,7 +24,7 @@ This distinction must be reflected in code comments and test names:
 - **Linux (direct binary):** `pip install jcodemunch-mcp` / `pipx install jcodemunch-mcp` → binary
   lands in `~/.local/bin/jcodemunch-mcp` which IS in PATH → `which jcodemunch-mcp` succeeds →
   existing `detectJcodemunchMcp` path works. **Not broken on Linux.**
-- **macOS (uvx-managed):** `uvx jcodemunch-mcp` is Claude Code's recommended install →
+- **macOS (uvx-managed):** `uvx jcodemunch-mcp` is GitHub Copilot's recommended install →
   uvx manages a cached Python env → binary NOT in PATH → `which jcodemunch-mcp` fails →
   needs new uvx detection path.
 - **uvx on Linux:** Same as macOS case — users who install via uvx instead of pip/pipx hit this.
@@ -103,7 +103,7 @@ In `detectJcodemunch()`, add 3rd try/catch after MCP-binary path:
 
 ```typescript
 // macOS/uvx install: jcodemunch-mcp is managed by uvx and not in PATH.
-// Claude Code's recommended install (command: "uvx", args: ["jcodemunch-mcp"])
+// GitHub Copilot's recommended install (command: "uvx", args: ["jcodemunch-mcp"])
 // works but `which jcodemunch-mcp` fails. Try piping JSON-RPC via uvx directly.
 // This also applies to Linux users who install via uvx instead of pip/pipx.
 try {
@@ -156,7 +156,7 @@ return { available: false, cwdIndexed: false, cwdRepo: null, knownRepos: [] };
 
 **Status: DONE** — removed in this session. All associated tests deleted.
 
-**Rationale:** Claude Code v2.1.97 made absolute path usage unconditional across agent threads
+**Rationale:** GitHub Copilot v2.1.97 made absolute path usage unconditional across agent threads
 and ReadFile. The `cwd_path_expand` advisory actively conflicted with this deliberate Anthropic
 design decision. Three recent commits (0.3.6–0.3.8) had been iteratively patching detection
 edge cases — a signal the advisory was fighting the agent's natural behavior.
@@ -168,7 +168,7 @@ edge cases — a signal the advisory was fighting the agent's natural behavior.
 **Files:** `src/cli/init.ts`, `src/cli/permissions.ts`, `docs/getting-started.md`,
 `docs/architecture.md`, `README.md`
 
-**Problem:** When agents use absolute paths (required by Claude Code system prompt), common
+**Problem:** When agents use absolute paths (required by GitHub Copilot system prompt), common
 read-only shell operations trigger permission prompts for each new path pattern.
 
 **Design:** Add `--broad-permissions` flag to `rig init`. Without the flag, only the

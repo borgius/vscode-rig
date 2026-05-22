@@ -23,7 +23,7 @@ const textSearchRule: ToolRule = {
   resolutions: {
     rtk: { action: 'advise', tool: 'rtk grep', reason: 'token optimized' },
     jcodemunch: { action: 'advise', tool: 'jcodemunch search_text', reason: 'indexed search' },
-    claudeTool: { action: 'advise', tool: 'Grep', reason: 'structured output' },
+    copilotTool: { action: 'advise', tool: 'Grep', reason: 'structured output' },
     fallback: { action: 'allow' },
   },
   enforcement: 'advise',
@@ -53,15 +53,15 @@ describe('resolve', () => {
     expect((result as { action: 'advise'; tool: string }).tool).toBe('jcodemunch search_text');
   });
 
-  it('picks claudeTool resolution when neither rtk nor jcodemunch available', () => {
+  it('picks copilotTool resolution when neither rtk nor jcodemunch available', () => {
     const env = makeEnv();
     const result = resolve(textSearchRule, env);
     expect(result.action).toBe('advise');
     expect((result as { action: 'advise'; tool: string }).tool).toBe('Grep');
   });
 
-  it('picks fallback when no specialized tools available and no claudeTool', () => {
-    const ruleWithoutClaude: ToolRule = {
+  it('picks fallback when no specialized tools available and no copilotTool', () => {
+    const ruleWithoutCopilot: ToolRule = {
       match: /test/,
       intent: 'text_search',
       resolutions: {
@@ -71,7 +71,7 @@ describe('resolve', () => {
       enforcement: 'advise',
     };
     const env = makeEnv();
-    const result = resolve(ruleWithoutClaude, env);
+    const result = resolve(ruleWithoutCopilot, env);
     expect(result.action).toBe('allow');
   });
 

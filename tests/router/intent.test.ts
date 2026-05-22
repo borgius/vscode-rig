@@ -91,7 +91,7 @@ describe('classifyIntent', () => {
     });
   });
 
-  describe('Claude tool classification', () => {
+  describe('Copilot tool classification', () => {
     it('classifies Grep tool as text_search', () => {
       expect(classifyIntent('Grep', { pattern: 'export.*function' })).toBe('text_search');
     });

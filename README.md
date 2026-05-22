@@ -1,17 +1,17 @@
 # rig
 
-![Tests](https://github.com/franklywatson/claude-rig/actions/workflows/test.yml/badge.svg)
-![Coverage Gate](https://github.com/franklywatson/claude-rig/actions/workflows/coverage.yml/badge.svg)
-![Docs Quality](https://github.com/franklywatson/claude-rig/actions/workflows/docs.yml/badge.svg)
+![Tests](https://github.com/borgius/vscode-rig/actions/workflows/test.yml/badge.svg)
+![Coverage Gate](https://github.com/borgius/vscode-rig/actions/workflows/coverage.yml/badge.svg)
+![Docs Quality](https://github.com/borgius/vscode-rig/actions/workflows/docs.yml/badge.svg)
 
-Agent harness that enforces tool routing, skill chains, and multi-agent discipline for [Claude Code](https://claude.ai/code).
+Agent harness that enforces tool routing, skill chains, and multi-agent discipline for [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview).
 
 ## What it does
 
-Rig installs guardrails into a Claude Code project:
+Rig installs guardrails into a GitHub Copilot project:
 
-- **Tool Router** -- intercepts shell commands via PreToolUse hooks, transparently rewrites
-  `grep`/`find`/`cat`/`git` to rtk when available (using Claude Code's `updatedInput` protocol);
+- **Tool Router** -- intercepts shell commands via Copilot `PreToolUse` hooks, transparently rewrites
+  `grep`/`find`/`cat`/`git` to rtk when available (using Copilot's `modifiedArgs` protocol);
   advises on native Read/Grep/Glob when jcodemunch is indexed; blocks `sed -i` and `rtk cat` on code files
 - **Enforcement Pipeline** -- PostToolUse hooks check stale tests, test scope, constitutional rules (real dependencies in stack/E2E tests), and zero-defect status (with pre-existing failure classification)
 - **Skill Chain** -- ordered workflow skills: `brain+` -> `plan+` -> `tdd+` -> `verify+` -> `review+`, plus standalone `investigate` and `savings`
@@ -23,7 +23,7 @@ Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patte
 
 ## Requirements
 
-- [Claude Code](https://claude.ai/code) CLI
+- [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview) with agent mode and hooks enabled
 - Node.js 18+
 - [superpowers](https://github.com/obra/superpowers) -- base skills framework (required; all skill chain skills wrap `superpowers:*` skills)
 - [rtk](https://github.com/franklywatson/rtk) -- token-optimized command proxy (strongly recommended; tool router redirects `grep`/`find`/`cat` through rtk when available)
@@ -37,8 +37,8 @@ Built from the [agentic-patterns](https://github.com/franklywatson/agentic-patte
 
 ```bash
 # Clone and build
-git clone https://github.com/franklywatson/claude-rig.git
-cd claude-rig
+git clone https://github.com/borgius/vscode-rig.git
+cd vscode-rig
 npm install
 npm run build
 
@@ -49,49 +49,20 @@ npm link
 cd /path/to/your/project
 rig init
 
-# Optional: pre-authorize common tools to reduce permission prompts (see below)
-rig init --broad-permissions
-
-# Verify installation (in a Claude Code session)
+# Verify installation (in a GitHub Copilot in VS Code session)
 /verify-harness
 ```
 
-The `init` command generates hooks, skills, agents, config, and permissions into your
-project's `.claude/` directory. Hook commands use `${CLAUDE_PROJECT_DIR}` for portability
-across machines.
-
-### Permissions
-
-By default `rig init` only adds the secret-file **deny** list (`**/secrets/**`,
-`**/credentials/**`, `**/*.pem`, `**/*.key` for Read, Edit, Write). No allow entries
-are written — you control your own approval level.
-
-Use `--broad-permissions` to pre-authorize common tools and reduce repeated prompts:
-
-```bash
-rig init --broad-permissions
-```
-
-This adds to `permissions.allow`: MCP tools (`mcp__jcodemunch__*`, `mcp__graphify__*`),
-session cache reads (`Bash(cat /tmp/rig-session-*)` etc.), `Bash(npx:*)`,
-`Bash(rtk:*)` (when rtk detected), and broad bash read-ops (`Bash(ls:*)`,
-`Bash(cat:*)`, `Bash(grep:*)`, `Bash(find:*)`, `Bash(which:*)`, `Bash(node:*)`,
-`Bash(npm:*)`).
-
-**Why broad bash permissions?** Claude Code's system prompt requires agents to use
-absolute paths unconditionally (since v2.1.97). Each new absolute path triggers a
-permission prompt unless the command pattern is pre-authorized. `--broad-permissions`
-pre-authorizes common read-only operations so agents can explore the codebase without
-constant approval dialogs.
-
-Existing user permissions are preserved on re-init. Entries are deduplicated automatically.
-The deny list is always applied regardless of the flag.
+The `init` command generates Copilot hooks, skills, agents, repository instructions,
+and config into your project's `.github/` directory. Hook commands use relative paths
+from the repository root so they work in VS Code, Copilot CLI, and Copilot cloud agent
+sandboxes.
 
 ## Architecture
 
 ```
 +---------------------------------------------+
-|                Claude Code                   |
+|                GitHub Copilot in VS Code                   |
 +------------+------------+-------------------+
 | PreToolUse | PostToolUse| Session Start     |
 | Hook       | Hook       | Hook              |
@@ -135,7 +106,7 @@ rules:
     rtk_cat_code: block        # block rtk cat on code files
 ```
 
-Each enforcement rule can be `block` (hook exits nonzero), `advise` (prints warning),
+Each enforcement rule can be `block` (Copilot `permissionDecision: "deny"`), `advise` (prints warning),
 or `silent` (logs only). Active enforcement rules are emitted at session start and
 referenced dynamically by skill templates -- set `no_mocks: silent` to disable
 no-mock enforcement entirely.
@@ -160,9 +131,10 @@ standalone (no phase prerequisite). `debug+` mandates scout context harvesting.
 ## What gets installed
 
 ```
-.claude/
-  settings.json          # Hook registrations + permissions
+.github/
+  copilot-instructions.md # Repository-wide Copilot instructions
   hooks/
+    rig-hooks.json       # Copilot hook registrations
     scripts/
       pre-tool-use.ts    # Tool router
       post-tool-use.ts   # Enforcement pipeline
@@ -192,7 +164,7 @@ npm run lint     # type-check only
 
 ## Dogfooding
 
-Rig uses itself during development. After building, run `rig init` in this repo to install hooks, skills, and agents into the local `.claude/` directory:
+Rig uses itself during development. After building, run `rig init` in this repo to install hooks, skills, and agents into the local `.github/` directory:
 
 ```bash
 npm run build && npm link
@@ -210,7 +182,7 @@ Rig was built in seven iterative phases, each evaluated against
 used as a reference implementation. The approach was to study gstack's patterns,
 identify patterns worth adopting and avoiding, then build rig with deliberate
 advantages at each layer. The full phase plans and retrospectives are preserved
-in [commit a9ee32f](https://github.com/franklywatson/claude-rig/tree/a9ee32f9b8e78f138aafeb0dd1e13af272c8706e/docs).
+in [commit a9ee32f](https://github.com/borgius/vscode-rig/tree/a9ee32f9b8e78f138aafeb0dd1e13af272c8706e/docs).
 
 | Phase | Layer | Key decision vs gstack |
 | ----- | ----- | ---------------------- |
@@ -226,7 +198,7 @@ Every project has different requirements for rigor and oversight. A solo
 prototype needs lighter guardrails than a production system handling financial
 transactions. Some domains demand determinism — non-negotiable rules that can't
 be talked around. Rig lets builders codify their project's non-negotiables as
-enforceable hooks, then rest easy knowing Claude will follow them.
+enforceable hooks, then rest easy knowing Copilot will follow them.
 
 [superpowers](https://github.com/obra/superpowers) and
 [gstack](https://github.com/garrytan/gstack) are excellent tools in their own

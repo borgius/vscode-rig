@@ -29,7 +29,7 @@ Invoke this skill BEFORE starting any design work. It adds three capabilities on
    Agent(subagent_type="scout", prompt="Map the codebase structure for [feature area]. Focus on: existing patterns, related modules, test infrastructure, and entry points relevant to [feature].")
    ```
 
-2. Read the project's CLAUDE.md for project-specific rules.
+2. Read the project's `.github/copilot-instructions.md` or `AGENTS.md` for project-specific rules.
 
 3. Identify:
    - Existing patterns this feature should follow

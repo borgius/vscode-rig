@@ -17,20 +17,20 @@ const program = new Command();
 
 program
   .name('rig')
-  .description('Agent harness that enforces tool routing, skill chains, and multi-agent discipline for Claude Code')
+  .description('Agent harness that enforces tool routing, skill chains, and multi-agent discipline for GitHub Copilot in VS Code')
   .version(pkg.version);
 
 program
   .command('init')
-  .description('Scaffold hooks, skills, agents, and config into .claude/')
+  .description('Scaffold Copilot hooks, skills, agents, instructions, and config into .github/')
   .option('--force', 'Overwrite existing files', false)
-  .option('--broad-permissions', 'Pre-authorize common tools in .claude/settings.json (MCP tools, session cache, npx, rtk, and broad bash read-ops). Without this flag, no allow permissions are added — only the secret-file deny list.', false)
+  .option('--broad-permissions', 'Deprecated GitHub Copilot compatibility flag; ignored for Copilot hooks.', false)
   .option('--dir <path>', 'Target project directory', process.cwd())
   .action(async (options) => {
     const projectDir = resolve(options.dir);
     console.log(`Initializing rig in ${projectDir}...`);
     await initCommand(projectDir, { force: options.force, broadPermissions: options.broadPermissions });
-    console.log('Done. Start a new Claude Code session to activate.');
+    console.log('Done. Start a new GitHub Copilot agent session in VS Code to activate.');
   });
 
 program.parse();

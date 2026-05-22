@@ -16,7 +16,7 @@ export function isCodeFile(filePath: string): boolean {
 /**
  * Default routing rules — ported and evolved from damage-control-guardrails.
  *
- * Priority resolution for each rule: rtk > jcodemunch > claudeTool > fallback
+ * Priority resolution for each rule: rtk > jcodemunch > copilotTool > fallback
  * Enforcement: block | advise | silent (configurable per-rule in .harness.yaml)
  */
 export function getDefaultRules(cwd?: string): ToolRule[] {
@@ -106,7 +106,7 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       resolutions: {
         rtk: { action: 'advise', tool: 'rtk grep', reason: 'rtk provides filtered, token-optimized grep output (60-90% savings)' },
         jcodemunch: { action: 'advise', tool: 'jcodemunch search_text or search_symbols', reason: 'jcodemunch provides typed, indexed results with summaries (80-85% token savings)' },
-        claudeTool: { action: 'advise', tool: 'Grep', reason: 'Claude Grep tool is preferred over raw bash grep — structured output' },
+        copilotTool: { action: 'advise', tool: 'Grep', reason: 'Copilot Grep tool is preferred over raw bash grep — structured output' },
         fallback: { action: 'allow' },
       },
       enforcement: 'advise',
@@ -121,13 +121,13 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       resolutions: {
         rtk: { action: 'advise', tool: 'rtk find', reason: 'rtk provides filtered file discovery' },
         jcodemunch: { action: 'advise', tool: 'jcodemunch get_file_tree or get_repo_outline', reason: 'jcodemunch provides cached, semantic file tree with symbol counts (80% token savings)' },
-        claudeTool: { action: 'advise', tool: 'Glob', reason: 'Claude Glob tool is preferred over raw bash find — targeted patterns' },
+        copilotTool: { action: 'advise', tool: 'Glob', reason: 'Copilot Glob tool is preferred over raw bash find — targeted patterns' },
         fallback: { action: 'allow' },
       },
       enforcement: 'advise',
     },
 
-    // ── File Read (Bash cat/head only — Claude Read tool is pass-through) ──
+    // ── File Read (Bash cat/head only — Copilot Read tool is pass-through) ──
     {
       match: (tool: string, args: Record<string, unknown>) => {
         return tool === 'Bash' && classifyIntent(tool, args) === 'file_read';
@@ -136,20 +136,20 @@ export function getDefaultRules(cwd?: string): ToolRule[] {
       resolutions: {
         rtk: { action: 'advise', tool: 'rtk cat', reason: 'rtk provides filtered, token-optimized file reading (60-90% savings)' },
         jcodemunch: { action: 'advise', tool: 'jcodemunch get_file_content', reason: 'jcodemunch provides cached, token-efficient file content (80-85% savings)' },
-        claudeTool: { action: 'advise', tool: 'Read', reason: 'Use Claude Read tool instead of cat/head — cleaner output, no artifacts' },
+        copilotTool: { action: 'advise', tool: 'Read', reason: 'Use Copilot Read tool instead of cat/head — cleaner output, no artifacts' },
         fallback: { action: 'allow' },
       },
       enforcement: 'advise',
     },
 
-    // ── File Modify (Bash sed -i / awk > only — Claude Edit/Write tools are pass-through) ──
+    // ── File Modify (Bash sed -i / awk > only — Copilot Edit/Write tools are pass-through) ──
     {
       match: (tool: string, args: Record<string, unknown>) => {
         return tool === 'Bash' && classifyIntent(tool, args) === 'file_modify';
       },
       intent: 'file_modify',
       resolutions: {
-        _: { action: 'block', reason: 'Use Claude Edit tool for file modifications — validates exact matches before applying changes. Never use sed -i or awk redirects.' },
+        _: { action: 'block', reason: 'Use Copilot Edit tool for file modifications — validates exact matches before applying changes. Never use sed -i or awk redirects.' },
       },
       enforcement: 'block',
     },

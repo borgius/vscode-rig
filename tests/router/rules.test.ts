@@ -155,9 +155,9 @@ describe('native tool rules', () => {
     const rule = rules.find(r => r.intent === 'native_read');
     expect(rule).toBeDefined();
     expect(rule!.resolutions.jcodemunch).toBeDefined();
-    // No rtk or claudeTool resolution — agent is already on the native tool
+    // No rtk or copilotTool resolution — agent is already on the native tool
     expect(rule!.resolutions.rtk).toBeUndefined();
-    expect(rule!.resolutions.claudeTool).toBeUndefined();
+    expect(rule!.resolutions.copilotTool).toBeUndefined();
   });
 
   it('matches Grep tool to native_grep rule', () => {
@@ -171,7 +171,7 @@ describe('native tool rules', () => {
     expect(rule).toBeDefined();
     expect(rule!.resolutions.jcodemunch).toBeDefined();
     expect(rule!.resolutions.rtk).toBeUndefined();
-    expect(rule!.resolutions.claudeTool).toBeUndefined();
+    expect(rule!.resolutions.copilotTool).toBeUndefined();
   });
 
   it('matches Glob tool on code pattern to native_glob rule', () => {
@@ -191,7 +191,7 @@ describe('native tool rules', () => {
     expect(rule).toBeDefined();
     expect(rule!.resolutions.jcodemunch).toBeDefined();
     expect(rule!.resolutions.rtk).toBeUndefined();
-    expect(rule!.resolutions.claudeTool).toBeUndefined();
+    expect(rule!.resolutions.copilotTool).toBeUndefined();
   });
 
   it('matches rtk cat on code file to rtk_cat_code rule', () => {
