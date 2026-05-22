@@ -30,7 +30,10 @@ session begins). Look for lines like:
 
 **From a terminal**, run:
 
-Check `.vscode/mcp.json` or `.github/copilot/settings.json`. If `graphify` does not appear, the MCP server is not registered. If it does appear, check that `mcp__graphify__*` tools are visible in the available tools list at session start.
+Check `.vscode/mcp.json` or `.github/copilot/settings.json`. If `graphify`
+does not appear, the MCP server is not registered. If it does appear, check
+that `mcp__graphify__*` tools are visible in the available tools list at
+session start.
 
 ### Failure mode 1: Missing Python `mcp` dependency
 

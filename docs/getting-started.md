@@ -177,7 +177,6 @@ Remove the generated files:
 rm -rf .github/hooks/ .github/skills/ .github/agents/scout.md .github/copilot-instructions.md .harness.yaml
 ```
 
-
 ## Next steps
 
 - Read [docs/architecture.md](architecture.md) for the full system design
