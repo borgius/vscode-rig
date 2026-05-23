@@ -163,6 +163,8 @@ describe('initCommand', () => {
     const content = readFileSync(join(tempDir, '.github', 'copilot-instructions.md'), 'utf-8');
     expect(content).toContain('Copilot instructions');
     expect(content).toContain('.github/hooks/rig-hooks.json');
+    expect(content).toContain('copilot plugin marketplace add obra/superpowers-marketplace');
+    expect(content).toContain('copilot plugin install superpowers@superpowers-marketplace');
   });
 
   it('keeps hook config stable on re-init', async () => {

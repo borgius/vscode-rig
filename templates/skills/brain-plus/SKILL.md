@@ -11,6 +11,22 @@ user-invocable: true
 
 Wraps `superpowers:brainstorming`. Requires superpowers to be installed.
 
+## Superpowers Bridge
+
+This is a rig wrapper around the base superpowers skill `brainstorming`. In GitHub
+Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When running this skill, activate the base workflow through Copilot's `skill`
+tool before following the rig-specific additions. Try `superpowers:brainstorming` first;
+if the installed plugin exposes unqualified names, use `brainstorming`. If the base
+skill is unavailable, continue with this wrapper's embedded procedure and report
+that superpowers is not installed.
+
 ## Before You Begin
 
 Invoke this skill BEFORE starting any design work. It adds three capabilities on top of the base brainstorming skill:

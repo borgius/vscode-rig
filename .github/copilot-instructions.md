@@ -9,6 +9,9 @@ TypeScript with Vitest tests and a Commander CLI.
 - Copilot hooks read JSON from stdin and write Copilot hook JSON to stdout:
   `permissionDecision`/`modifiedArgs` for `PreToolUse`, and `additionalContext`
   for `SessionStart` and `PostToolUse`.
+- Rig wrapper skills bridge to superpowers; connect superpowers to Copilot with
+  `copilot plugin marketplace add obra/superpowers-marketplace` and
+  `copilot plugin install superpowers@superpowers-marketplace`.
 - Keep `.harness.yaml` as the source of truth for enforcement levels.
 - Use injectable `ExecFn` functions for environment-detection tests.
 - Do not add mock-based shortcuts to environment detection.

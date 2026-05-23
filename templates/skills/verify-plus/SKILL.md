@@ -11,6 +11,22 @@ user-invocable: true
 
 Wraps `superpowers:verification-before-completion`. Requires superpowers to be installed.
 
+## Superpowers Bridge
+
+This is a rig wrapper around the base superpowers skill `verification-before-completion`. In GitHub
+Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When running this skill, activate the base workflow through Copilot's `skill`
+tool before following the rig-specific additions. Try `superpowers:verification-before-completion` first;
+if the installed plugin exposes unqualified names, use `verification-before-completion`. If the base
+skill is unavailable, continue with this wrapper's embedded procedure and report
+that superpowers is not installed.
+
 **This skill activates verify+ phase in the enforcement layer.** During this phase:
 
 - Full test suite runs are ALLOWED (this is the verification phase)

@@ -58,6 +58,23 @@ and config into your project's `.github/` directory. Hook commands use relative 
 from the repository root so they work in VS Code, Copilot CLI, and Copilot cloud agent
 sandboxes.
 
+### Connecting superpowers to Copilot
+
+Rig's skill chain is a set of Copilot-compatible wrapper skills around the
+upstream superpowers workflows. Install superpowers for GitHub Copilot CLI:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+After installation, use `/brain+`, `/plan+`, `/tdd+`, `/verify+`, `/review+`,
+and `/debug+` from this project. Each wrapper first activates the matching base
+superpowers workflow through Copilot's `skill` tool when available, then adds
+rig-specific scout context, `.harness.yaml` enforcement, evidence, and
+verification guidance. If the superpowers plugin is not available, the wrapper
+continues with its embedded procedure and reports that superpowers is missing.
+
 ## Architecture
 
 ```
@@ -117,9 +134,9 @@ no-mock enforcement entirely.
 | ----- | ------- | ----- |
 | `brain+` | Ideation and requirements | `superpowers:brainstorming` |
 | `plan+` | Implementation planning | `superpowers:writing-plans` |
-| `tdd+` | Test-driven development | `superpowers:tdd` |
-| `verify+` | Installation verification | `superpowers:code-reviewer` |
-| `review+` | Code review | `superpowers:code-reviewer` |
+| `tdd+` | Test-driven development | `superpowers:test-driven-development` |
+| `verify+` | Evidence-based verification | `superpowers:verification-before-completion` |
+| `review+` | Code review | `superpowers:requesting-code-review` |
 | `debug+` | Systematic debugging | `superpowers:systematic-debugging` |
 | `savings` | Session token savings report | -- |
 | `investigate` | Alias for `debug+` | -- |

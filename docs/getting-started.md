@@ -71,6 +71,23 @@ This generates:
 | `.github/agents/scout.md` | Cross-repo scout agent |
 | `.harness.yaml` | Enforcement configuration |
 
+## Connect superpowers to Copilot
+
+Install the upstream superpowers plugin for GitHub Copilot CLI:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+Rig's `.github/skills/*/SKILL.md` files are Copilot-compatible wrapper skills.
+When `/brain+`, `/plan+`, `/tdd+`, `/verify+`, `/review+`, or `/debug+` runs,
+the wrapper activates the matching base superpowers skill through Copilot's
+`skill` tool when available, then applies rig-specific scout context,
+`.harness.yaml` enforcement, and evidence requirements. If superpowers is not
+available, the wrapper falls back to its embedded procedure and reports the
+missing plugin.
+
 ## Verify installation
 
 Start a GitHub Copilot in VS Code session in your project and run:
@@ -79,7 +96,8 @@ Start a GitHub Copilot in VS Code session in your project and run:
 /verify-harness
 ```
 
-This runs a 28-point checklist confirming hooks, skills, agents, and config are correctly wired.
+This runs a 31-point checklist confirming hooks, skills, superpowers, agents,
+and config are correctly wired.
 
 ## Use the skill chain
 

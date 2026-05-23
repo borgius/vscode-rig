@@ -15,8 +15,8 @@ Every wrapped skill follows three phases:
 
 1. **Pre-process** -- enrich context with project-specific state (scout agent
    results, constitutional rules, environment detection, phase history)
-2. **Delegate** -- invoke the underlying `superpowers:*` skill with that
-   enriched context
+2. **Delegate** -- activate the underlying superpowers skill through Copilot's
+   `skill` tool with that enriched context
 3. **Post-process** -- validate output against project-specific constraints
    (stale tests, no-mock enforcement, evidence standards)
 
@@ -51,6 +51,23 @@ wrapping, every phase automatically carries your project's non-negotiables --
 and the enforcement hooks make them programmatic (can't be talked around by the
 agent).
 
+## Copilot bridge
+
+Install the upstream superpowers plugin for GitHub Copilot CLI before relying on
+wrapped skills:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+Inside each rig wrapper, add a **Superpowers Bridge** section that tells Copilot
+to activate the base workflow through the `skill` tool. Use the namespaced form
+first, such as `superpowers:brainstorming`; if the installed plugin exposes
+unqualified names, use `brainstorming`. If neither name is available, the
+wrapper should continue with its embedded procedure and report that superpowers
+is missing.
+
 ## Scenario 1: Security-hardened brainstorming
 
 A fintech project adds threat modeling as a mandatory design step inside `brain+`:
@@ -80,7 +97,8 @@ This skill adds security threat modeling on top of the base brainstorming skill.
 
 ### Phase B: Design (delegate to superpowers:brainstorming)
 
-Invoke `superpowers:brainstorming` with the enriched context.
+Activate `superpowers:brainstorming` with Copilot's `skill` tool and the
+enriched context.
 
 ### Phase C: Threat Model (project-specific overlay)
 
@@ -134,7 +152,7 @@ An API project enforces latency budgets as first-class test assertions:
 ```markdown
 ---
 name: tdd+
-description: "Wraps superpowers:tdd with latency budget assertions"
+description: "Wraps superpowers:test-driven-development with latency budget assertions"
 user-invocable: true
 ---
 
@@ -145,7 +163,7 @@ installed.
 
 ## Procedure
 
-### Phase B: Implement Each Task (delegate to superpowers:tdd)
+### Phase B: Implement Each Task (delegate to superpowers:test-driven-development)
 
 **RED -- Write the failing test first:**
 
@@ -230,8 +248,8 @@ just `git push` and hope.
 
 ## Scenario 6: Wrapping unwrapped superpowers skills
 
-Rig wraps 6 of 14 superpowers skills. The remaining 8 are available for
-wrapping with project-specific context:
+Rig wraps the core superpowers workflows used by this harness. Other
+superpowers skills are available for wrapping with project-specific context:
 
 ### debug+ (wraps `superpowers:systematic-debugging`)
 
