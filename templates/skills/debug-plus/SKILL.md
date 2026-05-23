@@ -11,6 +11,22 @@ user-invocable: true
 
 Wraps `superpowers:systematic-debugging`. Requires superpowers to be installed.
 
+## Superpowers Bridge
+
+This is a rig wrapper around the base superpowers skill `systematic-debugging`. In GitHub
+Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When running this skill, activate the base workflow through Copilot's `skill`
+tool before following the rig-specific additions. Try `superpowers:systematic-debugging` first;
+if the installed plugin exposes unqualified names, use `systematic-debugging`. If the base
+skill is unavailable, continue with this wrapper's embedded procedure and report
+that superpowers is not installed.
+
 No phase prerequisite — invoke from any skill chain phase when you encounter a
 bug, test failure, or unexpected behavior.
 
@@ -72,7 +88,12 @@ This skill adds scout-mandated context harvesting on top of the base debugging s
    [Specific change needed to resolve the issue]
    ```
 
-2. If the fix is straightforward, implement it and run the relevant tests.
+2. Confirm the investigation is complete:
+   - [ ] Failure reproduced with exact output
+   - [ ] Root cause identified with evidence
+   - [ ] Fix path documented or applied
+
+3. If the fix is straightforward, implement it and run the relevant tests.
    If the fix requires a larger change, return to the current phase with the finding.
 
 ## Skill Chain

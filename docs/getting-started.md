@@ -2,7 +2,8 @@
 
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) CLI installed and configured
+- [GitHub Copilot in VS Code](https://code.visualstudio.com/docs/copilot/overview)
+  with agent mode and hooks enabled
 - Node.js 18+
 - [superpowers](https://github.com/obra/superpowers) -- base skills framework.
   **Required.** Every skill in the chain (`brain+`, `plan+`, `tdd+`,
@@ -35,8 +36,8 @@ Strongly recommended:
 
 ```bash
 # Clone and build rig
-git clone https://github.com/franklywatson/claude-rig.git
-cd claude-rig
+git clone https://github.com/borgius/vscode-rig.git
+cd vscode-rig
 npm install
 npm run build
 
@@ -47,81 +48,60 @@ npm link
 cd /path/to/your/project
 rig init
 
-# Optional: pre-authorize common tools to reduce permission prompts
-rig init --broad-permissions
 ```
 
 This generates:
 
 | Path | Purpose |
 | ---- | ------- |
-| `.claude/hooks/scripts/pre-tool-use.ts` | Tool router -- redirects grep/find/cat to better tools |
-| `.claude/hooks/scripts/post-tool-use.ts` | Enforcement -- stale tests, constitutional, zero-defect |
-| `.claude/hooks/scripts/session-start.ts` | Auto-indexes your project on session start |
-| `.claude/skills/brain-plus/` | Ideation skill |
-| `.claude/skills/plan-plus/` | Planning skill |
-| `.claude/skills/tdd-plus/` | Test-driven development skill |
-| `.claude/skills/verify-plus/` | Verification skill |
-| `.claude/skills/review-plus/` | Code review skill |
-| `.claude/skills/debug-plus/` | Systematic debugging with scout context |
-| `.claude/skills/verify-harness/` | Installation verifier |
-| `.claude/skills/savings/` | Session token savings report |
-| `.claude/skills/investigate/` | Alias for debug+ |
-| `.claude/agents/scout.md` | Cross-repo scout agent |
-| `.claude/settings.json` | Hook registrations (merged, not overwritten) |
+| `.github/hooks/scripts/pre-tool-use.ts` | Tool router -- redirects grep/find/cat to better tools |
+| `.github/hooks/scripts/post-tool-use.ts` | Enforcement -- stale tests, constitutional, zero-defect |
+| `.github/hooks/scripts/session-start.ts` | Auto-indexes your project on session start |
+| `.github/hooks/rig-hooks.json` | Copilot hook registrations |
+| `.github/copilot-instructions.md` | Repository-wide Copilot instructions |
+| `.github/skills/brain-plus/` | Ideation skill |
+| `.github/skills/plan-plus/` | Planning skill |
+| `.github/skills/tdd-plus/` | Test-driven development skill |
+| `.github/skills/verify-plus/` | Verification skill |
+| `.github/skills/review-plus/` | Code review skill |
+| `.github/skills/debug-plus/` | Systematic debugging with scout context |
+| `.github/skills/verify-harness/` | Installation verifier |
+| `.github/skills/savings/` | Session token savings report |
+| `.github/skills/investigate/` | Alias for debug+ |
+| `.github/agents/scout.md` | Cross-repo scout agent |
 | `.harness.yaml` | Enforcement configuration |
 
-## Reducing permission prompts
+## Connect superpowers to Copilot
 
-Claude Code requires agents to use absolute paths (system prompt requirement since v2.1.97).
-This means common shell operations like `ls /project/src/` trigger a permission prompt for
-each new path pattern, which can feel like a lot of approvals.
-
-Use `--broad-permissions` to pre-authorize common read-only operations:
+Install the upstream superpowers plugin for GitHub Copilot CLI:
 
 ```bash
-rig init --broad-permissions
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
 ```
 
-This adds the following to `.claude/settings.json` `permissions.allow`:
-
-```
-mcp__jcodemunch__*     # jcodemunch MCP tools (symbol search, file tree)
-mcp__graphify__*       # graphify MCP tools (knowledge graph)
-Bash(cat /tmp/rig-session-*)  # session cache reads (savings skill)
-Bash(ls /tmp/rig-session-*)
-Read(/tmp/rig-session-*.json)
-Read(/private/tmp/rig-session-*.json)
-Bash(npx:*)            # hook scripts use npx tsx
-Bash(rtk:*)            # rtk token-optimized commands (when rtk detected)
-Bash(ls:*)             # broad bash read-ops
-Bash(cat:*)
-Bash(grep:*)
-Bash(find:*)
-Bash(which:*)
-Bash(node:*)
-Bash(npm:*)
-```
-
-Without the flag, only the secret-file deny list is written (`Read(**/secrets/**)` etc.) —
-no allow entries are added and you control approvals yourself.
-
-The `--broad-permissions` flag is idempotent: running `rig init --broad-permissions` again
-after the first time will not duplicate entries.
+Rig's `.github/skills/*/SKILL.md` files are Copilot-compatible wrapper skills.
+When `/brain+`, `/plan+`, `/tdd+`, `/verify+`, `/review+`, or `/debug+` runs,
+the wrapper activates the matching base superpowers skill through Copilot's
+`skill` tool when available, then applies rig-specific scout context,
+`.harness.yaml` enforcement, and evidence requirements. If superpowers is not
+available, the wrapper falls back to its embedded procedure and reports the
+missing plugin.
 
 ## Verify installation
 
-Start a Claude Code session in your project and run:
+Start a GitHub Copilot in VS Code session in your project and run:
 
 ```
 /verify-harness
 ```
 
-This runs a 28-point checklist confirming hooks, skills, agents, and config are correctly wired.
+This runs a 31-point checklist confirming hooks, skills, superpowers, agents,
+and config are correctly wired.
 
 ## Use the skill chain
 
-Skills are invoked as slash commands in Claude Code:
+Skills are invoked as slash commands in GitHub Copilot in VS Code:
 
 ```
 /brain+    -> Ideate and gather requirements
@@ -164,7 +144,7 @@ rules:
 
 | Level | What happens |
 | ----- | ------------ |
-| `block` | Hook rejects the tool call (exit 2) |
+| `block` | Hook returns `permissionDecision: "deny"` |
 | `advise` | Warning printed, tool call proceeds |
 | `silent` | Logged only, no visible output |
 
@@ -172,7 +152,7 @@ rules:
 
 ### PreToolUse: Tool Router
 
-When Claude tries to run a shell command like `grep -r "pattern" src/`, the pre-tool-use hook intercepts it:
+When Copilot tries to run a shell command like `grep -r "pattern" src/`, the pre-tool-use hook intercepts it:
 
 1. **Classifies intent** -- `grep` becomes `text_search`
 2. **Checks environment** -- rtk available? jcodemunch indexed?
@@ -190,7 +170,7 @@ Each check returns a violation message or null. All violations are combined as a
 
 ### Session Start: Auto-indexing
 
-When a Claude Code session starts, the session-start hook:
+When a GitHub Copilot in VS Code session starts, the session-start hook:
 
 1. Detects available tools (rtk, jcodemunch, graphify)
 2. Auto-indexes the project via jcodemunch if not already indexed
@@ -205,17 +185,15 @@ To regenerate templates (e.g., after updating rig):
 rig init --force
 ```
 
-This overwrites existing hook and skill templates but preserves your `.harness.yaml` config and any custom settings in `.claude/settings.json`.
+This overwrites existing hook and skill templates but preserves your `.harness.yaml` config.
 
 ## Uninstall
 
 Remove the generated files:
 
 ```bash
-rm -rf .claude/hooks/ .claude/skills/ .claude/agents/scout.md .harness.yaml
+rm -rf .github/hooks/ .github/skills/ .github/agents/scout.md .github/copilot-instructions.md .harness.yaml
 ```
-
-Then remove hook registrations from `.claude/settings.json`. The `init` command added entries under `hooks.PreToolUse` and `hooks.PostToolUse` and `hooks.SessionStart` -- remove those arrays.
 
 ## Next steps
 

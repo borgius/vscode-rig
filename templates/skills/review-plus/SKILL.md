@@ -11,6 +11,22 @@ user-invocable: true
 
 Wraps `superpowers:requesting-code-review`. Requires superpowers to be installed.
 
+## Superpowers Bridge
+
+This is a rig wrapper around the base superpowers skill `requesting-code-review`. In GitHub
+Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When running this skill, activate the base workflow through Copilot's `skill`
+tool before following the rig-specific additions. Try `superpowers:requesting-code-review` first;
+if the installed plugin exposes unqualified names, use `requesting-code-review`. If the base
+skill is unavailable, continue with this wrapper's embedded procedure and report
+that superpowers is not installed.
+
 ## Procedure
 
 ### Phase A: Gather Review Context

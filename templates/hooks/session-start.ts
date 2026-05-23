@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * @rig-generated
- * rig: SessionStart hook
+ * rig: Copilot SessionStart hook
  * Project: {{PROJECT_NAME}}
  * Generated: {{GENERATED_DATE}}
  *
@@ -35,10 +35,11 @@ import { readFileSync } from 'node:fs';
       // No stdin or malformed — proceed without session isolation
     }
 
-    const cache = new SessionCache(cwd, input.session_id);
+    const cache = new SessionCache(cwd, input.session_id ?? input.sessionId);
 
     handleSessionStart(cwd, cache).then((output: string) => {
       console.error(output);
+      console.log(JSON.stringify({ additionalContext: output }));
       process.exit(0);
     }).catch(() => {
       // Session init failed — don't block the session

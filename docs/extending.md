@@ -24,7 +24,7 @@ pipeline collects all violations and reports them together.
 Add a check that flags committed secrets, API keys, and tokens:
 
 ```typescript
-// .claude/hooks/scripts/check-secrets.ts
+// .github/hooks/scripts/check-secrets.ts
 const SECRET_PATTERNS = [
   /AKIA[0-9A-Z]{16}/,                        // AWS access key
   /ghp_[0-9a-zA-Z]{36}/,                     // GitHub token
@@ -113,7 +113,7 @@ const level = (config.rules as any).secrets?.enforcement ?? 'block';
 
 ## Custom skills
 
-Add a new skill by creating a SKILL.md file in `.claude/skills/<name>/`:
+Add a new skill by creating a SKILL.md file in `.github/skills/<name>/`:
 
 ```markdown
 ---
@@ -132,14 +132,14 @@ Run these checks before any merge or deployment:
 4. Review any new network calls for proper authentication
 ```
 
-The skill appears as `/security-review` in Claude Code. To wrap a superpowers
+The skill appears as `/security-review` in GitHub Copilot in VS Code. To wrap a superpowers
 skill with project-specific enforcement (like the built-in chain skills do),
 see [skill-wrapping.md](skill-wrapping.md) for the wrapping pattern and
 scenarios.
 
 ## Custom agents
 
-Add agent definitions in `.claude/agents/`. Each agent is a markdown file with
+Add agent definitions in `.github/agents/`. Each agent is a markdown file with
 YAML frontmatter specifying tool restrictions and turn limits:
 
 ```markdown

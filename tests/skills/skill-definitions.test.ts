@@ -4,7 +4,15 @@ import { resolve, join } from 'node:path';
 
 const TEMPLATES = resolve(import.meta.dirname, '..', '..', 'templates', 'skills');
 
-const EXPECTED_SKILLS = ['brain-plus', 'plan-plus', 'tdd-plus', 'verify-plus', 'review-plus', 'investigate'];
+const EXPECTED_SKILLS = ['brain-plus', 'plan-plus', 'tdd-plus', 'verify-plus', 'review-plus', 'debug-plus', 'investigate'];
+const WRAPPED_SKILLS: Record<string, string> = {
+  'brain-plus': 'brainstorming',
+  'plan-plus': 'writing-plans',
+  'tdd-plus': 'test-driven-development',
+  'verify-plus': 'verification-before-completion',
+  'review-plus': 'requesting-code-review',
+  'debug-plus': 'systematic-debugging',
+};
 
 describe('skill template validation', () => {
   it('all expected skill directories exist', () => {
@@ -41,6 +49,17 @@ describe('skill template validation', () => {
 
     it('references superpowers wrapping', () => {
       expect(body.toLowerCase()).toContain('superpowers');
+    });
+
+    it('documents the Copilot superpowers bridge for wrapped skills', () => {
+      const baseSkill = WRAPPED_SKILLS[skillDir];
+      if (!baseSkill) return;
+      expect(body).toContain('## Superpowers Bridge');
+      expect(body).toContain('copilot plugin marketplace add obra/superpowers-marketplace');
+      expect(body).toContain('copilot plugin install superpowers@superpowers-marketplace');
+      expect(body).toContain(`superpowers:${baseSkill}`);
+      expect(body).toContain(`use \`${baseSkill}\``);
+      expect(body).toContain("Copilot's `skill`");
     });
 
     it('references skill chain navigation', () => {
@@ -82,6 +101,14 @@ describe('skill template validation', () => {
       expect(body).not.toContain('never mock');
       expect(body).not.toContain('Constitutional no-mock rules are enforced');
       expect(body).not.toContain('no_mocks');
+    });
+
+    it('verify-harness checks Copilot superpowers integration', () => {
+      const content = readFileSync(join(TEMPLATES, 'verify-harness', 'SKILL.md'), 'utf-8');
+      expect(content).toContain('copilot plugin list');
+      expect(content).toContain('superpowers:brainstorming');
+      expect(content).toContain('Superpowers Bridge');
+      expect(content).toContain('TOTAL: XX/31 passed');
     });
   });
 });

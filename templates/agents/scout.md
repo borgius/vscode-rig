@@ -25,13 +25,13 @@ You are a context harvesting agent. Your job is to map the codebase structure so
 
 Before any exploration, determine which capabilities are actually available in
 this session. The presence of a CLI on PATH does not imply the matching MCP
-server is wired into Claude Code — these are independent.
+server is wired into GitHub Copilot — these are independent.
 
 1. **jcodemunch MCP:** attempt `mcp__jcodemunch__list_repos`. If the call
    succeeds, jcodemunch MCP is available. If the tool is missing from your
    tool list or errors, jcodemunch MCP is unavailable.
 2. **graphify MCP:** check whether `mcp__graphify__graph_stats` (or any
-   `mcp__graphify__*` tool) is available. Do not call it speculatively if it
+   `mcp__graphify__*` tool) is available in Copilot. Do not call it speculatively if it
    is not in your tool list.
 3. **graphify CLI fallback:** run `which graphify` (and `which graphifyy` as a
    legacy alias). If graphify MCP is unavailable but the CLI is present and

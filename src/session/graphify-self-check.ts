@@ -3,25 +3,25 @@ import type { ExecFn } from './environment.js';
 import type { Environment, GraphifyMcpReadiness } from '../types.js';
 
 /**
- * Probes whether the graphify MCP server is reachable from Claude Code.
+ * Probes whether the graphify MCP server is reachable from GitHub Copilot.
  *
  * Two failure modes prevent `mcp__graphify__*` tools from appearing in a
- * Claude Code session even when the graphify CLI is installed:
+ * GitHub Copilot session even when the graphify CLI is installed:
  *
  * 1. Missing `mcp` Python dependency — `python3 -m graphify.serve` throws
  *    `ModuleNotFoundError: No module named 'mcp'`. Fix: reinstall graphifyy
  *    via uv with the mcp extra.
  *
- * 2. Server not registered with Claude Code — `claude mcp list` doesn't
- *    mention graphify. Fix: `claude mcp add graphify ...`.
+ * 2. Server not registered with GitHub Copilot — workspace MCP config doesn't
+ *    mention graphify. Fix: add a graphify server entry to `.vscode/mcp.json`.
  *
  * Detection strategy:
  * - We probe the mcp module with `python3 -c "import mcp"` (a safe, fast
  *   import check) rather than starting the server (`python3 -m graphify.serve`)
  *   which would block waiting for stdio JSON-RPC input. The uv-tool python
  *   path is tried first because graphifyy ships its own interpreter.
- * - We check `claude mcp list` output for the substring "graphify" to detect
- *   registration. If `claude` itself isn't on PATH we treat the status as
+ * - We check common VS Code/Copilot MCP config files for the substring
+ *   "graphify" to detect registration. Missing config is treated as
  *   cli_only_not_registered (conservative — better to advise than to assume).
  */
 export function checkGraphifyMcpReadiness(
@@ -53,11 +53,11 @@ export function checkGraphifyMcpReadiness(
     };
   }
 
-  // Step 4: Is the server registered with Claude Code?
-  const registered = isRegisteredWithClaude(exec);
+  // Step 4: Is the server registered with GitHub Copilot?
+  const registered = isRegisteredWithCopilot(cwd, exec);
   if (!registered) {
     const graphJsonPath = join(cwd, 'graphify-out', 'graph.json');
-    const fixCommand = buildMcpAddCommand(pythonPath!, graphJsonPath);
+    const fixCommand = buildMcpConfigInstruction(pythonPath!, graphJsonPath);
     return { status: 'cli_only_not_registered', fixCommand };
   }
 
@@ -120,13 +120,16 @@ function probeMcpModule(pythonPath: string, exec: ExecFn): boolean {
 }
 
 /**
- * Returns true when `claude mcp list` output mentions "graphify" (case-insensitive).
- * Returns false on any error (claude not found, command fails, etc.) — conservative
- * default so we advise rather than silently assume registration.
+ * Returns true when common Copilot/VS Code MCP config files mention "graphify"
+ * (case-insensitive). Returns false on any error — conservative default so we
+ * advise rather than silently assume registration.
  */
-function isRegisteredWithClaude(exec: ExecFn): boolean {
+function isRegisteredWithCopilot(cwd: string, exec: ExecFn): boolean {
   try {
-    const output = exec('claude mcp list', { timeout: 10_000 });
+    const output = exec(
+      `cat "${cwd}/.vscode/mcp.json" "${cwd}/.github/copilot/settings.json" 2>/dev/null || true`,
+      { timeout: 10_000 },
+    );
     return /graphify/i.test(output);
   } catch {
     return false;
@@ -134,11 +137,9 @@ function isRegisteredWithClaude(exec: ExecFn): boolean {
 }
 
 /**
- * Builds the `claude mcp add` fix command. The server is project-scoped
- * because it takes a specific graph.json path — a per-project .mcp.json
- * is the architecturally clean approach, but `claude mcp add` with
- * explicit args works for a quick fix instruction.
+ * Builds the Copilot MCP config fix instruction. The server is project-scoped
+ * because it takes a specific graph.json path.
  */
-function buildMcpAddCommand(pythonPath: string, graphJsonPath: string): string {
-  return `claude mcp add graphify ${pythonPath} -m graphify.serve ${graphJsonPath}`;
+function buildMcpConfigInstruction(pythonPath: string, graphJsonPath: string): string {
+  return `Add graphify to .vscode/mcp.json: command=${pythonPath}, args=["-m","graphify.serve","${graphJsonPath}"]`;
 }

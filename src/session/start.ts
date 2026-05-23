@@ -9,8 +9,6 @@ import { captureMetricsBaseline, captureGraphifyStatsViaReport } from './metrics
 import { triggerBuild, waitForBuild } from '../scout/graph-state.js';
 import { loadConfig } from '../config.js';
 import { checkGraphifyMcpReadiness } from './graphify-self-check.js';
-import { checkPermissionsReadiness } from './permissions-self-check.js';
-import { readFileSync, existsSync } from 'node:fs';
 
 interface FileCapWarning {
   indexed: number;
@@ -180,25 +178,10 @@ export async function handleSessionStart(cwd: string, cache: SessionCache): Prom
       lines.push('[WARNING] graphify MCP server unavailable: missing Python "mcp" dependency.');
       lines.push(`  Fix: ${mcpReadiness.fixCommand}`);
     } else if (mcpReadiness.status === 'cli_only_not_registered') {
-      lines.push('[WARNING] graphify CLI present but MCP server not registered with Claude Code.');
+      lines.push('[WARNING] graphify CLI present but MCP server not registered with GitHub Copilot.');
       lines.push('  Scout will fall back to parsing graph.json instead of using mcp__graphify__* tools.');
       lines.push(`  Fix: ${mcpReadiness.fixCommand}`);
     }
-  }
-
-  // Permissions self-check: settings.json should auto-allow rig's required entries
-  const permsReadiness = checkPermissionsReadiness(
-    cwd,
-    (p) => readFileSync(p, 'utf-8'),
-    existsSync,
-  );
-  if (permsReadiness.status === 'missing') {
-    lines.push('[WARNING] .claude/settings.json is missing rig-required permission entries.');
-    lines.push(`  Missing: ${permsReadiness.missing.join(', ')}`);
-    lines.push(`  Fix: ${permsReadiness.fixCommand}`);
-  } else if (permsReadiness.status === 'no_settings') {
-    lines.push('[WARNING] .claude/settings.json missing or unreadable — rig permissions cannot be verified.');
-    lines.push(`  Fix: ${permsReadiness.fixCommand}`);
   }
 
   // One-time warning for missing tools

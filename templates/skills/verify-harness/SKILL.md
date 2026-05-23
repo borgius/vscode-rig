@@ -49,6 +49,9 @@ Run each check and report PASS/FAIL with evidence.
 - [ ] **SK3**: `/tdd+` shows in skill list
 - [ ] **SK4**: `/verify+` shows in skill list
 - [ ] **SK5**: `/review+` shows in skill list
+- [ ] **SK6**: Run `copilot plugin list` if Copilot CLI is available — confirm `superpowers` is installed or report the install commands
+- [ ] **SK7**: Confirm the Copilot `skill` tool can activate a base superpowers workflow, such as `superpowers:brainstorming` or `brainstorming`
+- [ ] **SK8**: Open `.github/skills/brain-plus/SKILL.md` and confirm it contains the Superpowers Bridge instructions
 
 ### Agents
 
@@ -69,10 +72,11 @@ Session Start:  X/5 passed
 Tool Router:    X/8 passed
 Enforcement:    X/6 passed
 Skills:         X/5 passed
+Superpowers:    X/3 passed
 Agents:         X/2 passed
 Configuration:  X/2 passed
 
-TOTAL: XX/28 passed
+TOTAL: XX/31 passed
 
 Failures:
 - [ID]: [what happened]. Expected: [expected]. Got: [actual].

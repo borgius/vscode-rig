@@ -11,6 +11,22 @@ user-invocable: true
 
 Wraps `superpowers:test-driven-development`. Requires superpowers to be installed.
 
+## Superpowers Bridge
+
+This is a rig wrapper around the base superpowers skill `test-driven-development`. In GitHub
+Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When running this skill, activate the base workflow through Copilot's `skill`
+tool before following the rig-specific additions. Try `superpowers:test-driven-development` first;
+if the installed plugin exposes unqualified names, use `test-driven-development`. If the base
+skill is unavailable, continue with this wrapper's embedded procedure and report
+that superpowers is not installed.
+
 **This skill activates tdd+ phase in the enforcement layer.** During this phase:
 
 - Full test suite runs are redirected (use scoped tests only)

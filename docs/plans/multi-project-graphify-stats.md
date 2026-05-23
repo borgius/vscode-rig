@@ -7,7 +7,7 @@
 
 Graphify stats are captured and reported for the CWD project only. When the agent
 scouts an external repo (e.g., `~/projects/meridian`), the savings report shows
-CWD stats (claude-rig), not the scouted project's stats. Two gaps:
+CWD stats (vscode-rig), not the scouted project's stats. Two gaps:
 
 1. **No graphify build triggered for external repos** — `ensureGraphBuilt` exists
    but is only called by the scout agent template, not by any programmatic hook.
@@ -53,7 +53,7 @@ The savings skill reads the multi-project map and reports per-project:
   rtk: 6.6M saved (3 calls, +0 this session)
   jcodemunch: 6.0M saved (18 queries, 195.9M total all-time)
   graphify:
-    claude-rig: 287 nodes, 385 edges, 52 communities (84% EXTRACTED, 16% INFERRED, 0% AMBIGUOUS)
+    vscode-rig: 287 nodes, 385 edges, 52 communities (84% EXTRACTED, 16% INFERRED, 0% AMBIGUOUS)
     meridian: 420 nodes, 891 edges, 67 communities (91% EXTRACTED, 9% INFERRED, 0% AMBIGUOUS)
 ```
 

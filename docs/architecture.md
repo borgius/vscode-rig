@@ -9,7 +9,7 @@ without the scout agent.
 
 **Key decisions:**
 
-1. **Hooks over prompts** -- Enforcement runs as code (Claude Code hooks), not as persuasive text. Hooks can't be ignored by the agent.
+1. **Hooks over prompts** -- Enforcement runs as code (GitHub Copilot in VS Code hooks), not as persuasive text. Hooks can't be ignored by the agent.
 2. **Typed over unstructured** -- `CodebaseMap`, `Resolution`, `IntentType` are typed data structures, not prose. Downstream code queries them programmatically.
 3. **Config over convention** -- `.harness.yaml` controls enforcement levels. Users adjust thresholds without touching code.
 4. **Compose over inherit** -- Enforcement checks are independent functions composed in `handlePostToolUse()`. Each check is testable in isolation.
@@ -20,7 +20,7 @@ These principles come from the [agentic-patterns](https://github.com/franklywats
 
 ## Layer 1: Tool Router
 
-The tool router intercepts shell commands before Claude Code executes them.
+The tool router intercepts shell commands before GitHub Copilot in VS Code executes them.
 
 ```
 User types: grep -r "TODO" src/
@@ -90,7 +90,7 @@ in `SessionCache`. Detection checks for `.venv/` directory and `which uv`.
 
 ### Priority chain
 
-`_` (wildcard) -> `rtk` -> `jcodemunch` -> `claudeTool` -> `fallback` -> allow
+`_` (wildcard) -> `rtk` -> `jcodemunch` -> `copilotTool` -> `fallback` -> allow
 
 The resolver checks each priority level. First match wins. The wildcard `_` always wins if present. If nothing matches, the command is allowed.
 
@@ -329,10 +329,9 @@ graphify is not installed. `SessionCache` provides `getGraphifyStats(dir)` and
 
 ### CLI (`src/cli/`)
 
-`initCommand()` generates hooks, skills, agents, and config from templates via
-`renderTemplate()` (`{{VAR}}` substitution). Registers hooks in
-`.claude/settings.json` via `updateSettingsJson()` (idempotent, preserves
-existing settings).
+`initCommand()` generates Copilot hooks, skills, agents, repository instructions,
+and config from templates via `renderTemplate()` (`{{VAR}}` substitution). It
+writes hook registrations to `.github/hooks/rig-hooks.json`.
 
 ---
 
@@ -355,10 +354,11 @@ copyTemplate() for each:
   - skills/verify-harness/SKILL.md
   - skills/savings/SKILL.md
   - agents/scout.md
+  - copilot-instructions.md
      |
 renderTemplate() replaces {{VAR}} placeholders
      |
-updateSettingsJson() registers hooks in .claude/settings.json
+writeHookConfig() registers hooks in .github/hooks/rig-hooks.json
      |
 Writes .harness.yaml with default enforcement config
 ```
@@ -375,7 +375,7 @@ Key design decisions:
 | Typed CodebaseMap over prose context | Composable, queryable by downstream code |
 | File-backed cache in /tmp | Cross-process state sharing; hooks are separate processes that need shared state. OS cleans /tmp automatically. |
 | `npx` over global install | Lower barrier, no global package management |
-| Separate `.harness.yaml` over CLAUDE.md injection | Cleaner separation of concerns, version-controllable |
+| Separate `.harness.yaml` over instruction injection | Cleaner separation of concerns, version-controllable |
 | Static SKILL.md templates over resolver pipeline | Simpler for 5 skills; resolver pipeline deferred |
 
 ---
@@ -393,7 +393,7 @@ Key design decisions:
 - graphify build may fail on very large codebases (6000+ files) due to Python
   AST recursion limits during tree-sitter traversal. The scout agent falls back
   to jcodemunch-only analysis and reports the failure.
-- **Absolute paths and permission prompts**: Claude Code's system prompt (since
+- **Absolute paths and permission prompts**: GitHub Copilot in VS Code's system prompt (since
   v2.1.97) requires agents to use absolute paths unconditionally. Each new
   absolute path in a Bash command triggers a permission prompt unless pre-authorized.
   `rig init --broad-permissions` pre-authorizes common read-only operations to

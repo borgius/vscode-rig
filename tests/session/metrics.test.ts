@@ -531,7 +531,7 @@ describe('multi-project graphify round-trip', () => {
     cache.setMetricsBaseline({
       totalSaved: 5000000,
       capturedAt: Date.now(),
-      graphifyStats: { '/home/user/claude-rig': cwdStats },
+      graphifyStats: { '/home/user/vscode-rig': cwdStats },
     });
 
     // Simulate post-tool-use capturing external dir stats
@@ -564,7 +564,7 @@ describe('multi-project graphify round-trip', () => {
 
     // Both projects appear in multi-project format
     expect(report).toContain('graphify:');
-    expect(report).toContain('claude-rig:');
+    expect(report).toContain('vscode-rig:');
     expect(report).toContain('287 nodes');
     expect(report).toContain('meridian:');
     expect(report).toContain('420 nodes');

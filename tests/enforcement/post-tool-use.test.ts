@@ -132,7 +132,7 @@ describe('handlePostToolUse', () => {
     const exec = () => '';
     handlePostToolUse(
       'mcp__jcodemunch__index_folder',
-      { path: '/home/user/claude-rig' },
+      { path: '/home/user/vscode-rig' },
       tracker,
       cache,
       config,
@@ -140,7 +140,7 @@ describe('handlePostToolUse', () => {
     );
 
     // CWD stats are handled by session-start, not post-tool-use
-    expect(cache.getGraphifyStats('/home/user/claude-rig')).toBeUndefined();
+    expect(cache.getGraphifyStats('/home/user/vscode-rig')).toBeUndefined();
   });
 
   it('gracefully handles graphify capture failure on external dir', () => {
@@ -194,14 +194,14 @@ describe('handlePostToolUse', () => {
     const exec = () => '';
     handlePostToolUse(
       'mcp__jcodemunch__resolve_repo',
-      { path: '/home/user/claude-rig' },
+      { path: '/home/user/vscode-rig' },
       tracker,
       cache,
       config,
       exec,
     );
 
-    expect(cache.getGraphifyStats('/home/user/claude-rig')).toBeUndefined();
+    expect(cache.getGraphifyStats('/home/user/vscode-rig')).toBeUndefined();
   });
 
   it('gracefully handles graphify failure on resolve_repo', () => {

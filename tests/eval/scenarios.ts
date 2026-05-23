@@ -248,7 +248,7 @@ export const ALL_SCENARIOS: EvalScenario[] = [
     },
   },
 
-  // ── Native tools (no rewrite — these are Claude tools, not Bash) ──
+  // ── Native tools (no rewrite — these are Copilot tools, not Bash) ──
 
   {
     id: 'native_read_code',

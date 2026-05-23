@@ -12,6 +12,19 @@ user-invocable: true
 Redirects to `/debug+` which wraps `superpowers:systematic-debugging` with scout
 agent context harvesting. This alias exists for backward compatibility.
 
+## Superpowers Bridge
+
+`investigate` delegates to `debug+`; `debug+` bridges to the base superpowers
+skill `systematic-debugging`. In GitHub Copilot, connect superpowers first:
+
+```bash
+copilot plugin marketplace add obra/superpowers-marketplace
+copilot plugin install superpowers@superpowers-marketplace
+```
+
+When using this alias, invoke `/debug+` so the wrapper can activate the base
+debugging workflow via Copilot's `skill` tool.
+
 ## Procedure
 
 Use `/debug+` instead. It follows the same systematic debugging process:

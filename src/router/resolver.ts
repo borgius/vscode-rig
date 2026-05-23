@@ -11,7 +11,7 @@ function normalizeResolution(raw: EnvResolution | undefined): Resolution | null 
 /**
  * Resolve the best tool for a matched rule given the current environment.
  *
- * Priority: wildcard (_) > rtk > jcodemunch > claudeTool > fallback > allow
+ * Priority: wildcard (_) > rtk > jcodemunch > copilotTool > fallback > allow
  *
  * Wildcard resolutions (keyed by `_`) always win regardless of environment state.
  * This is used for hard blocks like sed -i that should never be allowed.
@@ -34,9 +34,9 @@ export function resolve(rule: ToolRule, env: Environment): Resolution {
     if (jm) return jm;
   }
 
-  // Claude built-in tools
-  const claude = normalizeResolution(resolutions.claudeTool);
-  if (claude) return claude;
+  // Copilot built-in tools
+  const copilot = normalizeResolution(resolutions.copilotTool);
+  if (copilot) return copilot;
 
   // Fallback
   const fallback = normalizeResolution(resolutions.fallback);

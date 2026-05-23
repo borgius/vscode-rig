@@ -1,57 +1,11 @@
 # Troubleshooting
 
-## Repeated permission prompts for `/tmp/rig-session-*.json`
-
-### Symptom
-
-When running `/savings` or any skill that reads session cache files, you get
-permission prompts for `Bash(ls /tmp/rig-session-*.json)`,
-`Read(/tmp/rig-session-*.json)`, or similar — even after running `rig init`.
-
-### Cause
-
-Earlier versions of `rig init` only auto-allowed `Bash(cat /tmp/rig-session-*)`
-but not the `ls` listing step or `Read` tool reads of those same files. The
-savings skill's own procedure uses all three. The README's claim that this was
-"auto-permissioned" was incomplete.
-
-### Diagnosis
-
-Starting in rig 0.3.5+, the session-start hook emits this warning when
-`.claude/settings.json` is missing any required entries:
-
-```
-[WARNING] .claude/settings.json is missing rig-required permission entries.
-  Missing: Bash(ls /tmp/rig-session-*), Read(/tmp/rig-session-*.json)
-  Fix: rig init --force
-```
-
-To check manually, look at `.claude/settings.json` and confirm `permissions.allow`
-contains all of:
-
-- `mcp__jcodemunch__*`
-- `mcp__graphify__*`
-- `Bash(cat /tmp/rig-session-*)`
-- `Bash(ls /tmp/rig-session-*)`
-- `Read(/tmp/rig-session-*.json)`
-- `Read(/private/tmp/rig-session-*.json)` *(macOS: /tmp resolves to /private/tmp before permission matching)*
-- `Bash(npx:*)`
-
-### Fix
-
-```bash
-rig init --force
-```
-
-`rig init --force` is idempotent — it only adds missing entries and preserves
-existing user customizations (other allow entries, deny rules, hook configs).
-
 ## Graphify MCP not available
 
 ### What's happening
 
 The graphify CLI can be installed and have a valid `graphify-out/graph.json`
-without the `mcp__graphify__*` tools being available to Claude Code. When this
+without the `mcp__graphify__*` tools being available to GitHub Copilot. When this
 happens, the scout agent silently falls back to parsing `graph.json` directly
 rather than using the MCP server. You lose relationship query tools
 (`god_nodes`, `get_community`, `shortest_path`, `query_graph`) and instead get
@@ -62,27 +16,24 @@ an actionable `[WARNING]` with the exact fix command.
 
 ### How to diagnose
 
-**In a Claude Code session**, check the session-start output (printed when the
+**In a GitHub Copilot session**, check the session-start output (printed when the
 session begins). Look for lines like:
 
 ```
 [WARNING] graphify CLI present but no graph built. Run: graphify update .
 [WARNING] graphify MCP server unavailable: missing Python "mcp" dependency.
   Fix: uv tool install graphifyy --with mcp --force
-[WARNING] graphify CLI present but MCP server not registered with Claude Code.
+[WARNING] graphify CLI present but MCP server not registered with GitHub Copilot.
   Scout will fall back to parsing graph.json instead of using mcp__graphify__* tools.
-  Fix: claude mcp add graphify <python-path> -m graphify.serve <graph-path>
+  Fix: add graphify to .vscode/mcp.json
 ```
 
 **From a terminal**, run:
 
-```bash
-claude mcp list
-```
-
-If `graphify` does not appear in the output, the MCP server is not registered.
-If it does appear, check that the tools are visible in Claude Code by looking
-for `mcp__graphify__*` in the available tools list at session start.
+Check `.vscode/mcp.json` or `.github/copilot/settings.json`. If `graphify`
+does not appear, the MCP server is not registered. If it does appear, check
+that `mcp__graphify__*` tools are visible in the available tools list at
+session start.
 
 ### Failure mode 1: Missing Python `mcp` dependency
 
@@ -112,23 +63,14 @@ virtual environment. The `--force` flag ensures the existing install is replaced
 ~/.local/share/uv/tools/graphifyy/bin/python3 -c "import mcp; print('ok')"
 ```
 
-### Failure mode 2: Server not registered with Claude Code
+### Failure mode 2: Server not registered with GitHub Copilot
 
-**Symptom:** `mcp` module loads successfully but `claude mcp list` does not
-include `graphify`.
+**Symptom:** `mcp` module loads successfully but workspace MCP config does not include `graphify`.
 
-**Cause:** The graphify MCP server must be explicitly registered with Claude
-Code before it will be available in sessions. The server takes a specific
+**Cause:** The graphify MCP server must be explicitly registered with Copilot before it will be available in sessions. The server takes a specific
 `graph.json` path as an argument, making it project-scoped.
 
-**Fix (per-project):**
-
-```bash
-claude mcp add graphify \
-  ~/.local/share/uv/tools/graphifyy/bin/python3 \
-  -m graphify.serve \
-  /path/to/your/project/graphify-out/graph.json
-```
+**Fix (per-project):** add a `graphify` server to `.vscode/mcp.json`.
 
 Where:
 
@@ -138,11 +80,7 @@ Where:
 - `/path/to/your/project/graphify-out/graph.json` — the absolute path to the
   project's graph file
 
-**Alternative (project `.mcp.json`):**
-
-A per-project `.mcp.json` is the architecturally cleaner approach because the
-server path includes the project-specific `graph.json`. Add to your project
-root:
+Add to your project `.vscode/mcp.json`:
 
 ```json
 {
@@ -155,12 +93,7 @@ root:
 }
 ```
 
-**Verify:**
-
-```bash
-claude mcp list
-# graphify should appear in the output
-```
+**Verify:** restart the Copilot agent session and confirm `mcp__graphify__*` tools appear.
 
 ### Failure mode 3: No graph built yet
 
@@ -187,7 +120,7 @@ which runs these checks in order:
 1. Is `graphify` or `graphifyy` on PATH? → `cli_missing` if not
 2. Does `graphify-out/graph.json` exist (size > 1 KB)? → `no_graph` if not
 3. Does `python3 -c "import mcp"` succeed in the graphifyy venv? → `cli_only_mcp_dep_missing` if not
-4. Does `claude mcp list` include "graphify"? → `cli_only_not_registered` if not
+4. Does workspace MCP config include "graphify"? → `cli_only_not_registered` if not
 5. All checks pass → `ready`
 
 Status `cli_missing` is silent (graphify is optional). All other non-ready

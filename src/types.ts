@@ -52,7 +52,7 @@ export interface ToolRule {
     _?: EnvResolution;
     rtk?: EnvResolution;
     jcodemunch?: EnvResolution;
-    claudeTool?: EnvResolution;
+    copilotTool?: EnvResolution;
     fallback?: EnvResolution;
   };
   enforcement: EnforcementLevel;
